@@ -1,4 +1,4 @@
-import { Store, type LucideIcon } from "lucide-react";
+import { ListOrdered, Store, User, type LucideIcon } from "lucide-react";
 
 type ISidebarConstant = {
   items: {
@@ -18,6 +18,16 @@ export const sidebarConstant: ISidebarConstant = {
       title: "Stores",
       url: "/stores",
       icon: Store,
+    },
+    {
+      title: "Orders",
+      url: "/orders",
+      icon: ListOrdered,
+    },
+    {
+      title: "Users",
+      url: "/users",
+      icon: User,
     },
   ],
 };

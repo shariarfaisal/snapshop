@@ -1,4 +1,5 @@
 import { Button } from "@/components";
+import StoreList from "@/components/stores/store-list";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -11,6 +12,7 @@ const Stores = () => {
           <span>New Store</span>
         </Button>
       </Link>
+      <StoreList />
     </div>
   );
 };

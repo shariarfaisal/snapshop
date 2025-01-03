@@ -18,6 +18,11 @@ import { EyeOff } from "lucide-react";
 import { useState } from "react";
 import { EyeOpenIcon } from "@radix-ui/react-icons";
 import { CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { useMutation } from "@tanstack/react-query";
+import { AUTH_API } from "@/services/auth";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { isAxiosError } from "axios";
 
 const formSchema = z
   .object({
@@ -37,6 +42,7 @@ const formSchema = z
   });
 
 export const SignUpForm = () => {
+  const { push } = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,10 +53,33 @@ export const SignUpForm = () => {
       confirmPassword: "",
     },
   });
+  const { mutate } = useMutation({
+    mutationFn: AUTH_API.signup,
+    onSuccess: () => {
+      form.reset();
+      push("/login");
+      toast.success("Account created successfully. Please log in to continue.");
+    },
+    onError: (error) => {
+      const msg = isAxiosError(error)
+        ? error.response?.data.message
+        : error.message;
+      toast.error(msg);
+    },
+  });
 
   // Handle form submission
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+    const { password, confirmPassword } = values;
+    if (password !== confirmPassword) {
+      form.setError("confirmPassword", {
+        message: "Passwords do not match",
+      });
+
+      return;
+    }
+
+    mutate(values);
   }
 
   return (

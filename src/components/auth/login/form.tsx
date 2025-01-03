@@ -14,10 +14,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { EyeOff } from "lucide-react";
+import { EyeOff, Loader } from "lucide-react";
 import { useState } from "react";
 import { EyeOpenIcon } from "@radix-ui/react-icons";
 import { CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { useMutation } from "@tanstack/react-query";
+import { AUTH_API } from "@/services/auth";
+import { isAxiosError } from "axios";
+import { toast } from "sonner";
+import { setCookie } from "cookies-next";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -27,6 +33,7 @@ const formSchema = z.object({
 });
 
 export const LoginForm = () => {
+  const { push } = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -35,10 +42,28 @@ export const LoginForm = () => {
       password: "",
     },
   });
+  const { mutate, isPending } = useMutation({
+    mutationFn: AUTH_API.login,
+    onSuccess: (data) => {
+      form.reset();
+      setCookie("x-auth-token", data.token, {
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/",
+      });
+      push("/");
+    },
+    onError: (error) => {
+      if (isAxiosError(error)) {
+        toast.error(error.response?.data.message);
+      } else {
+        toast.error("An error occurred. Please try again.");
+      }
+    },
+  });
 
   // 2. Define a submit handler.
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+    mutate(values);
   }
 
   return (
@@ -98,9 +123,19 @@ export const LoginForm = () => {
           />
 
           <Button className="w-full h-10 rounded-md" type="submit">
+            {isPending && <Loader className="w-5 h-5 mr-2 animate-spin" />}
             Sign In
           </Button>
-          <div className="text-sm text-end">
+          <div className="text-sm flex items-center justify-between">
+            <div>
+              Don&apos;t have an account?{" "}
+              <Link
+                className="hover:underline transition-all duration-150 text-blue-500"
+                href="/signup"
+              >
+                Sign Up
+              </Link>
+            </div>
             <Link
               className="hover:underline transition-all duration-150"
               href="/reset-password"

@@ -1,115 +1,143 @@
 "use client";
-
-import { useState } from "react";
+import React from "react";
 import {
   Card,
   CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui";
+import { Product } from "@/types/product";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { PRODUCT_API } from "@/services/product";
+import Markdown from "react-markdown";
 
-const productDetails = {
-  id: 1,
-  name: "Wireless Headphones",
-  price: "$199",
-  description:
-    "Experience immersive sound quality with our top-of-the-line wireless headphones. Designed for comfort and durability, these headphones are perfect for music lovers.",
-  stock: "In Stock",
-  category: "Audio",
-  images: ["/headphone.svg", "/headphone.svg"], // Replace with actual image paths
-  rating: 4.5,
-  reviews: [
-    { id: 1, name: "John Doe", comment: "Great sound quality!", rating: 5 },
-    {
-      id: 2,
-      name: "Jane Smith",
-      comment: "Very comfortable to wear.",
-      rating: 4,
-    },
-  ],
-};
+interface ProductProps {
+  product: Product;
+}
 
-export default function ProductDetailsPage() {
-  const [selectedImage, setSelectedImage] = useState(productDetails.images[0]);
+const ProductDetails: React.FC<ProductProps> = () => {
+  const { id } = useParams();
+  const {
+    data: product,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ["getProduct", id],
+    queryFn: async () => PRODUCT_API.getProductById(id as string),
+    retry: false,
+  });
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!product || error) {
+    return <div>Product not found</div>;
+  }
   return (
-    <div className="p-4 container mx-auto py-8">
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">{productDetails.name}</CardTitle>
-          <CardDescription className="text-gray-500">
-            {productDetails.category}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Product Images */}
-          <div className="flex flex-col md:flex-row md:space-x-6">
-            <div className="flex-shrink-0">
-              <Image
-                src={selectedImage}
-                alt={productDetails.name}
-                width={400}
-                height={400}
-                className="rounded-md"
-              />
-              <div className="flex space-x-4 mt-4">
-                {productDetails.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(image)}
-                    className={`border rounded-md p-1 ${
-                      image === selectedImage
-                        ? "border-blue-500"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt="Thumbnail"
-                      width={80}
-                      height={80}
-                      className="rounded-md"
-                    />
-                  </button>
-                ))}
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="grid grid-cols-1 items-center lg:grid-cols-2 gap-8">
+        {/* Product Media */}
+        <Carousel className="w-[calc(100%-2rem)]">
+          <CarouselContent>
+            {product.media?.map((media, index) => (
+              <CarouselItem key={index} className="lg:basis-1/2">
+                <div className="p-1">
+                  <Image
+                    key={media.id}
+                    src={media.url}
+                    width={500}
+                    height={500}
+                    alt={media.altText || "Product image"}
+                    className="w-full h-64 object-cover rounded-lg border"
+                  />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+
+        {/* Product Info */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <h1 className="text-3xl font-bold text-gray-800">
+                {product.name}
+              </h1>
+              <p className="text-sm text-gray-500">{`Created on ${new Date(
+                product.createdAt
+              ).toLocaleDateString()}`}</p>
+            </CardHeader>
+            <CardContent>
+              <p className="text-lg text-gray-700">
+                <Markdown>{product.description}</Markdown>
+              </p>
+              <div className="mt-6 space-y-4">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-600">
+                    Base Price:
+                  </span>
+                  <span className="text-xl font-bold text-gray-900">
+                    ${product.basePrice.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-semibold text-gray-600">Stock:</span>
+                  <span className="text-xl text-green-600">
+                    {product.stock} units
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Product Details */}
-            <div className="mt-6 md:mt-0">
-              <p className="text-lg font-semibold text-green-600">
-                {productDetails.stock}
-              </p>
-              <p className="text-lg font-semibold text-gray-800">
-                Price: {productDetails.price}
-              </p>
-              <p className="mt-4 text-gray-700">{productDetails.description}</p>
-              <Button className="mt-6">Add to Cart</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              {/* Attributes */}
+              {product.attributes && (
+                <div className="mt-6">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    Attributes
+                  </h3>
+                  <ul className="space-y-2 mt-4">
+                    {product.attributes.map((attribute) => (
+                      <li key={attribute.id} className="flex justify-between">
+                        <span className="text-gray-600">{attribute.key}:</span>
+                        <span className="text-gray-900">{attribute.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-      {/* Reviews Section */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Customer Reviews</h2>
-        <div className="space-y-4">
-          {productDetails.reviews.map((review) => (
-            <Card key={review.id} className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">{review.name}</CardTitle>
-                <CardDescription>Rating: {review.rating}/5</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700">{review.comment}</p>
-              </CardContent>
-            </Card>
-          ))}
+              {/* Variants */}
+              {product.variants && (
+                <div className="mt-6">
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    Variants
+                  </h3>
+                  <ul className="space-y-2 mt-4">
+                    {product.variants.map((variant) => (
+                      <li key={variant.id} className="flex justify-between">
+                        <span className="text-gray-600">{variant.name}</span>
+                        <span className="text-gray-900">
+                          ${variant.price.toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default ProductDetails;

@@ -13,7 +13,6 @@ export const $clientPrivate = axios.create({
 });
 $clientPrivate.defaults.headers.common["Accept"] = "application/json";
 $clientPrivate.defaults.headers.common["X-Request-Source"] = "web";
-$clientPrivate.defaults.withCredentials = true;
 
 $clientPrivate.interceptors.request.use(
   async (config) => {
@@ -35,7 +34,7 @@ $clientPrivate.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      deleteCookie("auth");
+      deleteCookie("x-auth-token");
 
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";

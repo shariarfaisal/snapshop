@@ -23,47 +23,68 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Label } from "../ui";
+import { useMutation } from "@tanstack/react-query";
+import { STORE_API } from "@/services/store";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks";
+import { isAxiosError } from "axios";
 
 const formSchema = z.object({
-  storeName: z
+  name: z
     .string()
     .min(2, { message: "Store name must be at least 2 characters" })
     .max(50, { message: "Store name cannot exceed 50 characters" }),
   storeLogo: z.any().refine((file) => file && file.size < 5000000, {
     message: "File size should be less than 5MB",
   }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  phone: z.string().regex(/^\+?[0-9]{10,15}$/, {
-    message: "Please enter a valid phone number",
-  }),
   currency: z.string().min(1, { message: "Please select a currency" }),
   address: z
     .string()
     .min(5, { message: "Address must be at least 5 characters" }),
-  domain: z
-    .string()
-    .optional()
-    .refine((val) => !val || /^[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/.test(val), {
-      message: "Enter a valid domain (e.g., mystore.com)",
-    }),
+  domain: z.string().refine((val) => !val || /^[a-zA-Z0-9-]+$/.test(val), {
+    message: "Enter a valid domain (e.g., mystore.com)",
+  }),
+  description: z.string().optional(),
 });
 
 export const CreateNewStore = () => {
+  const { push } = useRouter();
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      storeName: "",
+      name: "",
       storeLogo: null,
-      email: "",
-      phone: "",
       currency: "",
       address: "",
+      domain: "",
+      description: "",
+    },
+  });
+  const { mutate } = useMutation({
+    mutationFn: STORE_API.createNewStore,
+    onSuccess: (data) => {
+      form.reset();
+      push(`/stores/${data.id}`);
+      toast({
+        variant: "default",
+        description: "Store created successfully",
+      });
+    },
+    onError: (error) => {
+      const msg = isAxiosError(error)
+        ? error.response?.data?.message
+        : "An error occurred";
+      toast({
+        variant: "destructive",
+        description: msg,
+      });
     },
   });
 
   // Handle form submission
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+    mutate(values);
   }
 
   return (
@@ -79,7 +100,7 @@ export const CreateNewStore = () => {
           {/* Store Name Field */}
           <FormField
             control={form.control}
-            name="storeName"
+            name="name"
             render={({ field }) => (
               <FormItem>
                 <Label>Store Name</Label>
@@ -134,46 +155,6 @@ export const CreateNewStore = () => {
             )}
           />
 
-          {/* Email Field */}
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <Label>Email</Label>
-                <FormControl>
-                  <Input
-                    className="rounded-md h-10"
-                    type="email"
-                    placeholder="Store email address"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Phone Field */}
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <Label>Phone Number</Label>
-                <FormControl>
-                  <Input
-                    className="rounded-md h-10"
-                    type="tel"
-                    placeholder="Phone number (e.g., +1234567890)"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           {/* Currency Field */}
           <FormField
             control={form.control}
@@ -217,6 +198,25 @@ export const CreateNewStore = () => {
                   <Textarea
                     className="rounded-md"
                     placeholder="Enter your store address"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* DEscription Field */}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <Label>Description</Label>
+                <FormControl>
+                  <Textarea
+                    className="rounded-md"
+                    placeholder="Describe your store"
                     {...field}
                   />
                 </FormControl>

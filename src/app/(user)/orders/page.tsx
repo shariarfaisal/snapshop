@@ -11,83 +11,146 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-const initialOrders = [
-  {
-    id: 1,
-    customer: "John Doe",
-    date: "2023-12-01",
-    total: "$199.00",
-    status: "Pending",
-    items: [{ name: "Wireless Headphones", quantity: 1, price: "$199.00" }],
-  },
-  {
-    id: 2,
-    customer: "Jane Smith",
-    date: "2023-12-02",
-    total: "$299.00",
-    status: "Shipped",
-    items: [{ name: "Smartwatch", quantity: 1, price: "$299.00" }],
-  },
-];
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components";
+import { useAppStore } from "@/store/useAppStore";
+import Link from "next/link";
+import { Search, ShoppingCart } from "lucide-react";
+import { ORDER_API } from "@/services/order";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState(initialOrders);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const { stores } = useAppStore();
+  const [filters, setFilters] = useState<{
+    page: number;
+    limit: number;
+    storeId?: number;
+    status?: string;
+    customerId?: number;
+    search?: string;
+  }>({
+    page: 1,
+    limit: 100,
+  });
+  const [search, setSearch] = useState("");
+  const { data } = useQuery({
+    queryKey: ["orders", filters],
+    queryFn: () => ORDER_API.getOrders(filters),
+  });
 
-  const handleView = (order) => {
-    setSelectedOrder(order);
-    setIsDialogOpen(true);
-  };
-
-  const handleStatusChange = (orderId, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
-  };
-
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setSelectedOrder(null);
+  const handleStatusChange = (orderId: number, newStatus: string) => {
+    console.log(orderId, newStatus);
   };
 
   return (
     <div className="container mx-auto p-4">
       <Card className="shadow-md">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl">Manage Orders</CardTitle>
+          <div className="flex gap-2 items-center ">
+            <div className="relative">
+              <Input
+                value={search}
+                className="w-[200px] rounded-lg px-3"
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setFilters({ ...filters, search: e.currentTarget.value });
+                  }
+                }}
+                placeholder="Search"
+              />
+              <button
+                type="button"
+                className="hover:text-gray-400  absolute right-2 top-2.5"
+                onClick={() => {
+                  setFilters({ ...filters, search: search });
+                }}
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </div>
+            <Select
+              onValueChange={(value) =>
+                setFilters({ ...filters, storeId: Number(value) })
+              }
+            >
+              <SelectTrigger className="w-[160px]">
+                <ShoppingCart className="w-4 h-4" />
+                <SelectValue placeholder="Select Store" />
+              </SelectTrigger>
+              <SelectContent>
+                {stores?.map((s) => {
+                  return (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                      {s.name}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <Select
+              onValueChange={(status) => {
+                if (status === "all") {
+                  setFilters({ ...filters, status: undefined });
+                } else {
+                  setFilters({ ...filters, status: status });
+                }
+              }}
+            >
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Shipped">Shipped</SelectItem>
+                <SelectItem value="Delivered">Delivered</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Order ID</TableHead>
+                <TableHead>Store</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Date</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {orders.map((order) => (
+            <TableBody className="text-gray-600">
+              {data?.orders?.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell>{order.id}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>{order.date}</TableCell>
-                  <TableCell>{order.total}</TableCell>
+                  <TableCell className="text-lg text-gray-700">
+                    # {order.id}
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/stores/${order.store?.id}`}>
+                      {order?.store?.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/customers/${order.customer?.id}`}>
+                      {order.customer?.name}
+                    </Link>
+                  </TableCell>
+
+                  <TableCell>৳{order.totalPrice}</TableCell>
                   <TableCell>
                     <select
-                      value={order.status}
+                      value={order.orderStatus}
                       onChange={(e) =>
                         handleStatusChange(order.id, e.target.value)
                       }
@@ -100,14 +163,15 @@ export default function OrdersPage() {
                     </select>
                   </TableCell>
                   <TableCell>
+                    {new Date(order.createdAt).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
                     <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleView(order)}
-                      >
-                        View
-                      </Button>
+                      <Link href={`/orders/${order.id}`}>
+                        <Button variant="outline" size="sm">
+                          View
+                        </Button>
+                      </Link>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -116,46 +180,6 @@ export default function OrdersPage() {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Order Details Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
-          </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4">
-              <p>
-                <strong>Customer:</strong> {selectedOrder.customer}
-              </p>
-              <p>
-                <strong>Date:</strong> {selectedOrder.date}
-              </p>
-              <p>
-                <strong>Total:</strong> {selectedOrder.total}
-              </p>
-              <p>
-                <strong>Status:</strong> {selectedOrder.status}
-              </p>
-              <div>
-                <h4 className="text-lg font-semibold">Items</h4>
-                <ul className="list-disc pl-5">
-                  {selectedOrder.items.map((item, index) => (
-                    <li key={index}>
-                      {item.quantity}x {item.name} - {item.price}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-          <div className="flex justify-end mt-4">
-            <Button variant="outline" onClick={handleDialogClose}>
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

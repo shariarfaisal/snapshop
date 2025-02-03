@@ -20,6 +20,11 @@ export default function StoreDetailsPage() {
     queryKey: ["stores", id],
     queryFn: async () => STORE_API.getStoreById(parseInt(id as string)),
   });
+  const url = new URL(window.location.href);
+
+  const getFullSubdomain = (subdomain: string) => {
+    return `${url.protocol}//${subdomain}.${url.host}`;
+  };
 
   return (
     <div className="container mx-auto p-4 py-8">
@@ -28,13 +33,6 @@ export default function StoreDetailsPage() {
         <Card className="shadow-md">
           <CardHeader>
             <div className="flex items-center space-x-4">
-              {/* <Image
-              src={data.logo}
-              alt={`${data.name} Logo`}
-              width={80}
-              height={80}
-              className="rounded-full"
-            /> */}
               <div className="flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full">
                 <span className="text-2xl font-bold text-gray-600">
                   {data.name.charAt(0)}
@@ -51,7 +49,7 @@ export default function StoreDetailsPage() {
               <p>
                 <strong>Domain:</strong>{" "}
                 <a
-                  href={`https://${data.domain}`}
+                  href={getFullSubdomain(data.domain)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 underline"
@@ -68,12 +66,12 @@ export default function StoreDetailsPage() {
             <Button variant="outline" className="mr-2">
               Edit Store
             </Button>
-            <Link href="/stores/1/manage-products">
+            <Link href={`/products?storeId=${data.id}`}>
               <Button className="mr-2" variant="outline">
                 Manage Products
               </Button>
             </Link>
-            <Link href="/stores/1/add-product">
+            <Link href={`/add-product/${data.id}`}>
               <Button variant="outline">Add Products</Button>
             </Link>
           </CardFooter>

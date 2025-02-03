@@ -69,7 +69,7 @@ export const LoginForm = () => {
   return (
     <CardContent className="w-full max-w-[30rem] space-y-3">
       <CardTitle className="w-full text-3xl 2xl:text-4xl text-center">
-        Create an account
+        Sign In
       </CardTitle>
       <CardDescription className="w-full text-center text-base">
         Enter your email below to create your account

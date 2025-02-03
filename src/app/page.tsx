@@ -17,6 +17,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { STORE_API } from "@/services";
 
 // Define the type for stores
 interface Store {
@@ -27,45 +29,57 @@ interface Store {
 // Define the type for sales data
 interface SalesData {
   name: string;
-  sales: number;
+  total: number;
   storeId: number;
 }
 
-// Dummy stores
+interface TopSellingProduct {
+  productId: number;
+  _sum: {
+    quantity: number;
+    price: number;
+  };
+  productName: string;
+}
+
+interface AnalyticsData {
+  totalSales: number;
+  totalOrders: number;
+  customerCount: number;
+  newCustomers: number;
+  orderStatusCount: { orderStatus: string; _count: { id: number } }[];
+  salesGrowth: number;
+  topSellingProducts: TopSellingProduct[];
+  sales: SalesData[];
+}
+
 const stores: Store[] = [
   { id: 0, name: "All Stores" },
   { id: 1, name: "Tech Gadgets Store" },
   { id: 2, name: "Fashion Boutique" },
 ];
 
-// Dummy sales data
-const allSalesData: SalesData[] = [
-  { name: "Jan", sales: 3000, storeId: 1 },
-  { name: "Feb", sales: 2500, storeId: 1 },
-  { name: "Mar", sales: 3500, storeId: 2 },
-  { name: "Apr", sales: 4000, storeId: 1 },
-  { name: "May", sales: 4500, storeId: 2 },
-];
 export default function Home() {
-  const [selectedStore, setSelectedStore] = useState<number>(0);
-  const [filteredSales, setFilteredSales] = useState<SalesData[]>(allSalesData);
-
-  const metrics = {
-    totalSales: "$15,000",
-    totalOrders: 120,
-    totalCustomers: 75,
-    averageOrderValue: "$125",
-  };
+  const { data, isLoading } = useQuery<AnalyticsData>({
+    queryKey: ["analytics"],
+    queryFn: () => STORE_API.getAnalytics(),
+  });
 
   // Handle store filter changes
-  const handleStoreFilter = (storeId: number) => {
-    setSelectedStore(storeId);
-    if (storeId === 0) {
-      setFilteredSales(allSalesData); // Show all data
-    } else {
-      setFilteredSales(allSalesData.filter((data) => data.storeId === storeId));
-    }
-  };
+  const handleStoreFilter = (storeId: number) => {};
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!data) {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p>No data available.</p>
+      </div>
+    );
+  }
 
   return (
     <UserLayout>
@@ -98,7 +112,7 @@ export default function Home() {
               <CardTitle>Total Sales</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{metrics.totalSales}</p>
+              <p className="text-2xl font-bold">${data.totalSales || 0}</p>
             </CardContent>
           </Card>
           <Card className="shadow-md">
@@ -106,7 +120,7 @@ export default function Home() {
               <CardTitle>Total Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{metrics.totalOrders}</p>
+              <p className="text-2xl font-bold">{data.totalOrders}</p>
             </CardContent>
           </Card>
           <Card className="shadow-md">
@@ -114,18 +128,70 @@ export default function Home() {
               <CardTitle>Total Customers</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{metrics.totalCustomers}</p>
+              <p className="text-2xl font-bold">{data.customerCount}</p>
             </CardContent>
           </Card>
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>Average Order Value</CardTitle>
+              <CardTitle>New Customers</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{metrics.averageOrderValue}</p>
+              <p className="text-2xl font-bold">{data.newCustomers}</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Order Status Count */}
+        <div className="mb-8">
+          <h3 className="text-2xl font-semibold">Order Status</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {data.orderStatusCount.map((status, index) => (
+              <Card key={index} className="shadow-md mb-4">
+                <CardHeader>
+                  <CardTitle>{status.orderStatus}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>{status._count.id} Orders</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Sales Growth */}
+        <div className="mb-8">
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>Sales Growth</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">${data.salesGrowth}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Selling Products */}
+        {data.topSellingProducts && (
+          <div className="mb-8 space-y-2 min-h-[120px]">
+            <h3 className="text-2xl font-semibold">Top Selling Products</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3">
+              {data.topSellingProducts?.map((product, index) => (
+                <Card key={index} className="shadow-md mb-4">
+                  <CardHeader>
+                    <CardTitle>{product.productName}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Quantity Sold: {product._sum.quantity}</p>
+                    <p>Total Sales: ${product._sum.price}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            {data.topSellingProducts.length === 0 && (
+              <p className="text-gray-500 text-center">No products found.</p>
+            )}
+          </div>
+        )}
 
         {/* Sales Chart */}
         <Card>
@@ -134,11 +200,11 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={filteredSales}>
+              <BarChart data={data.sales || []}>
                 <XAxis dataKey="name" />
-                <YAxis />
+                <YAxis dataKey="total" />
                 <Tooltip />
-                <Bar dataKey="sales" fill="#82ca9d" />
+                <Bar dataKey="total" fill="#82ca9d" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

@@ -14,4 +14,8 @@ export const STORE_API = {
     const { data } = await $clientPrivate.get<Store>(`/stores/${id}`);
     return data;
   },
+  async getAnalytics() {
+    const { data } = await $clientPrivate.get("/analytics");
+    return data;
+  },
 };

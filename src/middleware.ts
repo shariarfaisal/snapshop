@@ -67,16 +67,47 @@ function handleAuthMiddleware(request: NextRequest) {
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl;
+  const host = request.headers.get("host");
+  const subdomain = host?.split(".")[0];
 
   if (url.pathname.startsWith("/api/")) {
     return handleApiMiddleware(request);
   }
 
-  if (url.pathname === "/auth") {
-    return handleAuthMiddleware(request);
+  console.log({
+    host,
+    subdomain,
+    url,
+  });
+
+  if (subdomain?.includes(url.hostname) || url.pathname === "/not-found") {
+    if (url.pathname === "/auth") {
+      return handleAuthMiddleware(request);
+    }
+
+    return handleProtectedRoute(request);
   }
 
-  return handleProtectedRoute(request);
+  if (subdomain && isValidSubdomain(subdomain)) {
+    console.log(`/subdomain/${subdomain}${url.pathname}`);
+
+    // Rewrite the URL for subdomains to `/subdomain/{subdomain}/{path}`
+    return NextResponse.rewrite(
+      new URL(
+        `/subdomain/${subdomain}${url.pathname}${url.search}${url.hash}`,
+        request.url
+      )
+    );
+  }
+
+  // If subdomain is invalid, redirect to "not found" page
+  return NextResponse.redirect(
+    new URL(`${url.protocol}//${url.host}/not-found`)
+  );
+}
+
+function isValidSubdomain(subdomain?: string) {
+  return !!subdomain;
 }
 
 export const config = {

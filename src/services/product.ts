@@ -1,4 +1,4 @@
-import { ProductFormValues } from "@/app/(user)/stores/[id]/add-product/schema";
+import { ProductFormValues } from "@/app/(user)/add-product/[id]/schema";
 import { $clientPrivate } from "./client";
 import { Product } from "@/types/product";
 

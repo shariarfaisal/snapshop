@@ -14,14 +14,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { EyeOff } from "lucide-react";
+import { EyeOff, Loader } from "lucide-react";
 import { useState } from "react";
 import { EyeOpenIcon } from "@radix-ui/react-icons";
 import { CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { useMutation } from "@tanstack/react-query";
 import { AUTH_API } from "@/services/auth";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useToast } from "@/hooks";
 import { isAxiosError } from "axios";
 
 const formSchema = z
@@ -43,6 +43,7 @@ const formSchema = z
 
 export const SignUpForm = () => {
   const { push } = useRouter();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,33 +54,51 @@ export const SignUpForm = () => {
       confirmPassword: "",
     },
   });
-  const { mutate } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: AUTH_API.signup,
     onSuccess: () => {
       form.reset();
       push("/login");
-      toast.success("Account created successfully. Please log in to continue.");
+      toast({
+        title: "Success",
+        description: "Account created successfully. Please log in to continue.",
+      });
     },
     onError: (error) => {
-      const msg = isAxiosError(error)
-        ? error.response?.data.message
-        : error.message;
-      toast.error(msg);
+      if (isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || "Registration failed";
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMessage,
+        });
+        
+        if (error.response?.status === 409) {
+          form.setError("email", {
+            type: "manual",
+            message: "This email is already registered"
+          });
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
     },
   });
 
   // Handle form submission
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const { password, confirmPassword } = values;
+    const { password, confirmPassword, ...rest } = values;
     if (password !== confirmPassword) {
       form.setError("confirmPassword", {
         message: "Passwords do not match",
       });
-
       return;
     }
-
-    mutate(values);
+    mutate({ ...rest, password });
   }
 
   return (
@@ -177,7 +196,8 @@ export const SignUpForm = () => {
           />
 
           {/* Submit Button */}
-          <Button className="w-full h-10 rounded-md" type="submit">
+          <Button disabled={isPending} className="w-full h-10 rounded-md" type="submit">
+            {isPending && <Loader className="w-5 h-5 mr-2 animate-spin" />}
             Sign Up
           </Button>
           <div className="text-sm text-center">

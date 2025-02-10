@@ -3,6 +3,22 @@ import { useState } from "react";
 import { Button, Input } from "@/components";
 import { useMutation } from "@tanstack/react-query";
 import MEDIA_API from "@/services/media";
+import Image from "next/image";
+
+interface UploadedFile {
+  url: string;
+  type: string;
+}
+
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
 
 const MediaUpload = ({
   error,
@@ -16,6 +32,7 @@ const MediaUpload = ({
   removeMedia: (index: number) => void;
 }) => {
   const [file, setFile] = useState<File>();
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile>();
   const [progress, setProgress] = useState(0);
   const { mutate } = useMutation({
     mutationKey: ["upload-file"],
@@ -27,9 +44,7 @@ const MediaUpload = ({
         }
       );
       setFileUrl(fileUrl, fileType);
-    },
-    onSuccess: (data) => {
-      console.log(data);
+      setUploadedFile({ url: fileUrl, type: fileType });
     },
     onError: (error) => {
       console.log(error);
@@ -84,13 +99,22 @@ const MediaUpload = ({
         {file && (
           <div className="w-full flex gap-3 items-center border p-2 rounded-md">
             <div className="w-10 h-10">
-              {file.type.startsWith("image") && (
-                <ImageIcon className="w-10 h-10" />
-              )}
-              {file.type.startsWith("video") && (
+              {file.type.startsWith("image") ? (
+                uploadedFile ? (
+                  <div className="relative w-10 h-10">
+                    <Image
+                      src={uploadedFile.url}
+                      alt="Uploaded image"
+                      fill
+                      className="object-cover rounded-md"
+                    />
+                  </div>
+                ) : (
+                  <ImageIcon className="w-10 h-10" />
+                )
+              ) : file.type.startsWith("video") ? (
                 <VideoIcon className="w-10 h-10" />
-              )}
-              {file.type.startsWith("application") && (
+              ) : (
                 <DockIcon className="w-10 h-10" />
               )}
             </div>
@@ -98,8 +122,12 @@ const MediaUpload = ({
               <p className="text-sm w-full text-gray-600 truncate">
                 {file.name}
               </p>
-              <p className="text-xs text-gray-400">{file.size} bytes</p>
-              <span className="text-xs text-gray-400">upload: {progress}%</span>
+              <p className="text-xs text-gray-400">
+                {formatFileSize(file.size)}
+              </p>
+              <span className="text-xs text-gray-400">
+                {progress === 100 ? "Uploaded" : `upload: ${progress}%`}
+              </span>
             </div>
           </div>
         )}

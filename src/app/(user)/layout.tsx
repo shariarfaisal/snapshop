@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/components";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { LayoutHeader } from "@/components/layout/header";
 import { STORE_API } from "@/services";
+import { AUTH_API } from "@/services/auth";
 import { useAppStore } from "@/store/useAppStore";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -12,13 +13,21 @@ const UserLayout = ({ children }: { children: React.ReactNode }) => {
     queryKey: ["stores"],
     queryFn: STORE_API.getStores,
   });
-  const { setStores } = useAppStore();
+  const { setStores, setUser } = useAppStore();
+
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: AUTH_API.getMe,
+  });
 
   useEffect(() => {
     if (stores) {
       setStores(stores);
     }
-  }, [stores]);
+    if (user) {
+      setUser(user);
+    }
+  }, [stores, setStores, user, setUser]);
 
   return (
     <SidebarProvider>

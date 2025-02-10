@@ -38,7 +38,7 @@ export default function AddProduct() {
       </div>
 
       {data && (
-        <div className="space-y-4 mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 p-3 md:p-5">
+        <div className="space-y-4 mt-4 p-3 md:p-5">
           {forms.map((id) => (
             <Card key={id}>
               <CardContent className="py-5">

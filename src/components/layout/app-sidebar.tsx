@@ -23,72 +23,11 @@ import {
   DropdownMenuTrigger,
 } from "../ui";
 import { useQuery } from "@tanstack/react-query";
-import { STORE_API } from "@/services";
 import { Link2, Plus, LogOut, User, Store } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks";
 
-const AddProduct = () => {
-  const { data, isLoading } = useQuery({
-    queryKey: ["stores"],
-    queryFn: STORE_API.getStores,
-  });
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const { toast } = useToast();
-
-  const handleClick = () => {
-    if (!data || data.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "No stores found",
-        description: "Please create a store first before adding products."
-      });
-      return;
-    }
-    setOpen(true);
-  };
-
-  return (
-    <>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuItem className="p-0">
-            <SidebarMenuButton
-              key={100}
-              tooltip={"Add Product"}
-              onClick={handleClick}
-              className={`px-3 py-2 h-10 hover:bg-gray-100 flex justify-between items-center ${
-                pathname.startsWith("/add-product") ? "bg-slate-100 text-green-600" : ""
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <Plus className="size-5" />
-                <span>Add Product</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </DropdownMenuTrigger>
-        {data && data.length > 0 && (
-          <DropdownMenuContent className="w-56">
-            {data.map((store) => (
-              <DropdownMenuItem key={store.id} onClick={() => setOpen(false)}>
-                <Link href={`/add-product/${store.id}`}>
-                  <div>{store.name}</div>
-                  <p className="text-lg text-gray-500 flex items-center gap-1">
-                    <Link2 className="w-4" />
-                    {store.domain}
-                  </p>
-                </Link>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        )}
-      </DropdownMenu>
-    </>
-  );
-};
 
 const NavUser = () => {
   const [open, setOpen] = useState(false);
@@ -161,7 +100,7 @@ const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
               )}
             >
               <span className="truncate text-primaryBlack font-semibold text-xl">
-                <Link href={"/"}>SnapShop</Link>
+                <Link href={"/"}>TaleemOne</Link>
               </span>
             </div>
           </SidebarMenuButton>
@@ -172,7 +111,6 @@ const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
       <SidebarContent>
         <SidebarGroup className="w-full !p-0 overflow-hidden">
           <SidebarMenu className={cn("p-3", open ? "px-3.5" : "px-2")}>
-            <AddProduct />
             {sidebarConstant.items.map((item, index) => (
               <SidebarMenuItem key={index} className="p-0">
                 <Link href={item.url}>

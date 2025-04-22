@@ -1,8 +1,13 @@
 import {
-  ShoppingBag,
-  ShoppingCart,
-  Store,
-  User,
+  Users,
+  BookOpen,
+  GraduationCap,
+  FileText,
+  CreditCard,
+  Settings,
+  Building2,
+  ClipboardList,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 
@@ -21,24 +26,54 @@ type ISidebarConstant = {
 export const sidebarConstant: ISidebarConstant = {
   items: [
     {
-      title: "Stores",
-      url: "/stores",
-      icon: Store,
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: GraduationCap,
     },
     {
-      title: "Products",
-      url: "/products",
-      icon: ShoppingBag,
+      title: "Users",
+      url: "/admin/users",
+      icon: Users,
     },
     {
-      title: "Orders",
-      url: "/orders",
-      icon: ShoppingCart,
+      title: "Programs",
+      url: "/admin/programs",
+      icon: BookOpen,
     },
     {
-      title: "Customers",
-      url: "/customers",
-      icon: User,
+      title: "Campuses",
+      url: "/admin/campuses",
+      icon: Building2,
+    },
+    {
+      title: "Admissions",
+      url: "/admin/admissions",
+      icon: FileText,
+    },
+    {
+      title: "Exams",
+      url: "/admin/exams",
+      icon: ClipboardList,
+    },
+    {
+      title: "Finance",
+      url: "/admin/finance",
+      icon: CreditCard,
+    },
+    {
+      title: "Forms",
+      url: "/admin/forms",
+      icon: FileText,
+    },
+    {
+      title: "Notifications",
+      url: "/admin/notifications",
+      icon: Bell,
+    },
+    {
+      title: "Settings",
+      url: "/settings",
+      icon: Settings,
     },
   ],
 };

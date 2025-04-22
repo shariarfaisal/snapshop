@@ -6,7 +6,7 @@ export default function AuthLayout({
   return (
     <div className="relative w-full min-h-screen">
       <header className="sticky top-0 left-0 w-full p-4 ">
-        <h1 className="text-xl font-semibold">SnapShop</h1>
+        <h1 className="text-xl font-semibold">TaleemOne</h1>
       </header>
       {children}
     </div>

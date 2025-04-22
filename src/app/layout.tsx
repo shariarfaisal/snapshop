@@ -4,8 +4,8 @@ import NextTopLoader from "nextjs-toploader";
 import Provider from "./provider";
 
 export const metadata: Metadata = {
-  title: "SnapShop",
-  description: "SnapShop",
+  title: "TaleemOne",
+  description: "TaleemOne",
 };
 
 export default function RootLayout({

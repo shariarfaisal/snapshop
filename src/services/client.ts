@@ -7,12 +7,14 @@ export const $clientPublic = axios.create({
 });
 $clientPublic.defaults.headers.common["Accept"] = "application/json";
 $clientPublic.defaults.headers.common["X-Request-Source"] = "web";
+$clientPublic.defaults.headers.common["x-app-id"] = process.env.NEXT_PUBLIC_APP_ID;
 
 export const $clientPrivate = axios.create({
   baseURL: BASE_API_URL,
 });
 $clientPrivate.defaults.headers.common["Accept"] = "application/json";
 $clientPrivate.defaults.headers.common["X-Request-Source"] = "web";
+$clientPrivate.defaults.headers.common["x-app-id"] = process.env.NEXT_PUBLIC_APP_ID;
 
 $clientPrivate.interceptors.request.use(
   async (config) => {

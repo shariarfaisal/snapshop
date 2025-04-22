@@ -7,24 +7,24 @@ interface LoginResponse {
 }
 
 interface LoginPayload {
-  email: string;
+  username: string;
   password: string;
 }
 
 export const AUTH_API = {
   async signup(payload: { name: string; email: string; password: string }) {
-    const { data } = await $clientPublic.post("/auth/register", payload);
+    const { data } = await $clientPublic.post("/register", payload);
     return data;
   },
   async login(payload: LoginPayload) {
     const { data } = await $clientPublic.post<LoginResponse>(
-      "/auth/login",
+      "/v1/login",
       payload
     );
     return data;
   },
-  getMe: async () => {
-    const { data } = await $clientPrivate.get<User>("/me");
+  getProfile: async () => {
+    const { data } = await $clientPrivate.get<User>("/v1/me");
     return data;
   },
 };

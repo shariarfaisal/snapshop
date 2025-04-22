@@ -26,7 +26,9 @@ import { setCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  username: z.string().min(1, {
+    message: "Username is required",
+  }),
   password: z.string().min(8, {
     message: "Password must be at least 8 characters",
   }),
@@ -38,7 +40,7 @@ export const LoginForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -46,6 +48,7 @@ export const LoginForm = () => {
     mutationFn: AUTH_API.login,
     onSuccess: (data) => {
       form.reset();
+      console.log(data);
       setCookie("x-auth-token", data.token, {
         maxAge: 60 * 60 * 24 * 30, // 30 days
         path: "/",
@@ -78,14 +81,14 @@ export const LoginForm = () => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField
             control={form.control}
-            name="email"
+            name="username"
             render={({ field }) => (
               <FormItem className="mb-0">
                 <FormControl>
                   <Input
                     className="rounded-md h-10"
-                    type="email"
-                    placeholder="name@example.com"
+                    type="text"
+                    placeholder="Username"
                     {...field}
                   />
                 </FormControl>

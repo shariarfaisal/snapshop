@@ -1,6 +1,7 @@
 import { useAppStore } from "@/store/useAppStore";
 import { useRouter } from "next/navigation";
 import { deleteCookie } from "cookies-next";
+import { AUTH_API } from "@/services";
 
 export const useAuth = () => {
   const { user, setUser } = useAppStore();
@@ -21,8 +22,15 @@ export const useAuth = () => {
     }
   };
 
+
+  const getProfile = async () => {
+    const data = await AUTH_API.getProfile();
+    setUser(data);
+  };
+
   return {
     user,
     logout,
+    getProfile,
   };
 };

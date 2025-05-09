@@ -4,16 +4,32 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStore } from "../useStore";
 import { WEBSITE_API } from "@/services/website";
 import { Minus, Plus } from "lucide-react";
-import { Button, Label, RadioGroup, RadioGroupItem } from "@/components";
-import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CartItem } from "@/app/subdomain/[subdomain]/useStore";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CreditCard } from "lucide-react";
 
 export default function CartPage() {
-  const { cart } = useStore();
+  const { cart, auth, setAuthOpen } = useStore();
+
+  useEffect(() => {
+    if (!auth) {
+      setAuthOpen("login");
+    }
+  }, [auth, setAuthOpen]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["cart", cart],
@@ -25,8 +41,7 @@ export default function CartPage() {
       {isLoading && <div>Loading...</div>}
       <div className="w-full max-w-2xl mx-auto p-4 md:p-10 space-y-3">
         {data && <CartItems data={data} />}
-
-        {data && data.length > 0 && <MakeOrder items={data} />}
+        {data && data.length > 0 && auth && <MakeOrder items={data} />}
       </div>
     </div>
   );
@@ -51,20 +66,27 @@ const MakeOrder = ({
   const { toast } = useToast();
   const { push } = useRouter();
   const [address, setAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [showDialog, setShowDialog] = useState(false);
+
   const { mutate } = useMutation({
     mutationFn: WEBSITE_API.makeOrder,
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Order Placed",
         description: "Your order has been placed successfully",
       });
 
-      push(`/cart/success`);
+      push(`/orders/${data.id}`);
       clearCart();
     },
   });
 
   const orderHandler = () => {
+    if (paymentMethod === "online") {
+      setShowDialog(true);
+      return;
+    }
     mutate({
       items,
       shippingAddress: address,
@@ -83,16 +105,45 @@ const MakeOrder = ({
       </div>
       <div className="space-y-2">
         <label>Payment Method</label>
-        <RadioGroup defaultValue="cod">
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="default" id="cod" />
-            <Label htmlFor="cod">Cash On Delivery</Label>
+        <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="cod" id="cod" />
+              <Label htmlFor="cod">Cash On Delivery</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="online" id="online" />
+              <Label htmlFor="online" className="flex items-center gap-2">
+                Online Payment <CreditCard className="w-4 h-4" />
+              </Label>
+            </div>
           </div>
         </RadioGroup>
       </div>
       <Button disabled={!address} onClick={orderHandler}>
         Make Order
       </Button>
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Online Payment Coming Soon!</DialogTitle>
+            <DialogDescription className="space-y-4 pt-4">
+              <p>
+                We're excited to announce that online payment options will be available soon! We're working hard to bring you a secure and convenient payment experience.
+              </p>
+              <p>
+                For now, you can still enjoy our Cash on Delivery service to place your order.
+              </p>
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setShowDialog(false)}>
+                  Close
+                </Button>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

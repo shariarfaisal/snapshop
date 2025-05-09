@@ -23,4 +23,11 @@ export const ORDER_API = {
     const { data } = await $clientPrivate.get<Order>(`/orders/${id}`);
     return data;
   },
+
+  async updateOrderStatus(orderId: number, status: string) {
+    const { data } = await $clientPrivate.patch<Order>(`/orders/${orderId}/status`, {
+      status,
+    });
+    return data;
+  },
 };

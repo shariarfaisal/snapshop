@@ -60,13 +60,22 @@ const stores: Store[] = [
 ];
 
 export default function Home() {
+  const [selectedStoreId, setSelectedStoreId] = useState<number | undefined>();
+
   const { data, isLoading } = useQuery<AnalyticsData>({
-    queryKey: ["analytics"],
-    queryFn: () => STORE_API.getAnalytics(),
+    queryKey: ["analytics", selectedStoreId],
+    queryFn: () => STORE_API.getAnalytics(selectedStoreId),
+  });
+
+  const { data: userStores } = useQuery({
+    queryKey: ["stores"],
+    queryFn: STORE_API.getStores,
   });
 
   // Handle store filter changes
-  const handleStoreFilter = (storeId: number) => {};
+  const handleStoreFilter = (value: string) => {
+    setSelectedStoreId(value === "all" ? undefined : Number(value));
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -85,24 +94,27 @@ export default function Home() {
     <UserLayout>
       <div className="container mx-auto p-4">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center justify-between space-y-2">
           <h1 className="text-3xl font-bold">Dashboard</h1>
           {/* Store Filter */}
-          <Select
-            onValueChange={(value) => handleStoreFilter(Number(value))}
-            defaultValue="0"
-          >
-            <SelectTrigger className="w-60">
-              <SelectValue placeholder="Filter by Store" />
-            </SelectTrigger>
-            <SelectContent>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id.toString()}>
-                  {store.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {userStores && userStores.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">Filter by Store:</span>
+              <Select onValueChange={handleStoreFilter} defaultValue="all">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select store" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stores</SelectItem>
+                  {userStores.map((store) => (
+                    <SelectItem key={store.id} value={store.id.toString()}>
+                      {store.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Metrics Section */}
@@ -112,7 +124,7 @@ export default function Home() {
               <CardTitle>Total Sales</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">${data.totalSales || 0}</p>
+              <p className="text-2xl font-bold">৳{data.totalSales || 0}</p>
             </CardContent>
           </Card>
           <Card className="shadow-md">
@@ -165,7 +177,7 @@ export default function Home() {
               <CardTitle>Sales Growth</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">${data.salesGrowth}</p>
+              <p className="text-2xl font-bold">৳{data.salesGrowth}</p>
             </CardContent>
           </Card>
         </div>
@@ -182,7 +194,7 @@ export default function Home() {
                   </CardHeader>
                   <CardContent>
                     <p>Quantity Sold: {product._sum.quantity}</p>
-                    <p>Total Sales: ${product._sum.price}</p>
+                    <p>Total Sales: ৳{product._sum.price}</p>
                   </CardContent>
                 </Card>
               ))}

@@ -11,22 +11,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components";
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/store/useAppStore";
 import Link from "next/link";
 import { Search, ShoppingCart } from "lucide-react";
 import { ORDER_API } from "@/services/order";
+import { useToast } from "@/hooks";
+import { Order } from "@/types/order";
 
 export default function OrdersPage() {
   const { stores } = useAppStore();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<{
     page: number;
     limit: number;
@@ -44,8 +48,27 @@ export default function OrdersPage() {
     queryFn: () => ORDER_API.getOrders(filters),
   });
 
+  const { mutate: updateStatus } = useMutation({
+    mutationFn: ({ orderId, status }: { orderId: number; status: string }) =>
+      ORDER_API.updateOrderStatus(orderId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast({
+        title: "Success",
+        description: "Order status updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update order status",
+      });
+    },
+  });
+
   const handleStatusChange = (orderId: number, newStatus: string) => {
-    console.log(orderId, newStatus);
+    updateStatus({ orderId, status: newStatus });
   };
 
   return (
@@ -58,8 +81,8 @@ export default function OrdersPage() {
               <Input
                 value={search}
                 className="w-[200px] rounded-lg px-3"
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === "Enter") {
                     setFilters({ ...filters, search: e.currentTarget.value });
                   }
@@ -137,22 +160,22 @@ export default function OrdersPage() {
                     # {order.id}
                   </TableCell>
                   <TableCell>
-                    <Link href={`/stores/${order.store?.id}`}>
-                      {order?.store?.name}
+                    <Link href={`/stores/${order.storeId}`}>
+                      Store #{order.storeId}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link href={`/customers/${order.customer?.id}`}>
-                      {order.customer?.name}
+                    <Link href={`/customers/${order.customerId}`}>
+                      Customer #{order.customerId}
                     </Link>
                   </TableCell>
 
                   <TableCell>৳{order.totalPrice}</TableCell>
                   <TableCell>
                     <select
-                      value={order.orderStatus}
+                      value={order.status}
                       onChange={(e) =>
-                        handleStatusChange(order.id, e.target.value)
+                        handleStatusChange(Number(order.id), e.target.value)
                       }
                       className="border border-gray-300 rounded-md p-1"
                     >

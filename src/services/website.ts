@@ -5,6 +5,8 @@ import { CartItem } from "@/app/subdomain/[subdomain]/useStore";
 import { Customer } from "@/types/customer";
 import { Store } from "@/types";
 import { getCookie } from "cookies-next";
+import { Order } from "@/types/order";
+import { $clientPublic } from "./client";
 
 const $client = axios.create({
   baseURL: `${BASE_API_URL}/client`,
@@ -21,6 +23,18 @@ $client.interceptors.request.use(
         ""
       )}`;
     }
+    
+    // Add subdomain header for development environment
+    if (typeof window !== "undefined") {
+      const subdomain = window.location.host.split(".")[0];
+      if (subdomain === "localhost:3000") {
+        // For development, use a test subdomain or get it from localStorage
+        config.headers["x-subdomain"] = localStorage.getItem("current-subdomain") || "test-store";
+      } else {
+        config.headers["x-subdomain"] = subdomain;
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -85,7 +99,7 @@ export const WEBSITE_API = {
       message: string;
       token: string;
       user: Customer;
-    }>("/login", payload);
+    }>("/auth/login", payload);
     return data;
   },
   async getStoreDetails() {
@@ -93,7 +107,45 @@ export const WEBSITE_API = {
     return data;
   },
   async makeOrder(payload: { items: CartItem[]; shippingAddress: string }) {
-    const { data } = await $client.post<{ message: string }>("/order", payload);
+    const { data } = await $client.post<{ message: string; id: string }>("/orders", payload);
+    return data;
+  },
+  async getOrders() {
+    const { data } = await $client.get<Order[]>("/orders");
+    return data;
+  },
+  async getOrderById(id: string) {
+    const { data } = await $client.get<Order>(`/orders/${id}`);
+    return data;
+  },
+  async getCustomerInfo() {
+    const { data } = await $client.get<Customer>("/me");
+    return data;
+  },
+  async updateProfile(payload: { name: string; email: string; phone?: string }) {
+    const { data } = await $client.put<Customer>("/me", payload);
+    return data;
+  },
+  async searchProducts(query: string, page = 1, limit = 12) {
+    const { data } = await $client.get<{
+      products: Product[];
+      page: number;
+      limit: number;
+      total: number;
+    }>("/search", {
+      params: { query, page, limit },
+    });
+    return data;
+  },
+  async searchSuggestions(query: string) {
+    const { data } = await $client.get<Array<{
+      id: number;
+      name: string;
+      basePrice: number;
+      media: Array<{ url: string }>;
+    }>>("/search/suggestions", {
+      params: { query },
+    });
     return data;
   },
 };

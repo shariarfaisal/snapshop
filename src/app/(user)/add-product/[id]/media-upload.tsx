@@ -1,6 +1,7 @@
 import { DockIcon, ImageIcon, Minus, VideoIcon } from "lucide-react";
 import { useState } from "react";
-import { Button, Input } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import MEDIA_API from "@/services/media";
 import Image from "next/image";
@@ -98,10 +99,10 @@ const MediaUpload = ({
 
         {file && (
           <div className="w-full flex gap-3 items-center border p-2 rounded-md">
-            <div className="w-10 h-10">
+            <div className="w-[100px] h-[100px]">
               {file.type.startsWith("image") ? (
                 uploadedFile ? (
-                  <div className="relative w-10 h-10">
+                  <div className="relative w-[100px] h-[100px]">
                     <Image
                       src={uploadedFile.url}
                       alt="Uploaded image"
@@ -110,12 +111,12 @@ const MediaUpload = ({
                     />
                   </div>
                 ) : (
-                  <ImageIcon className="w-10 h-10" />
+                  <ImageIcon className="w-[100px] h-[100px]" />
                 )
               ) : file.type.startsWith("video") ? (
-                <VideoIcon className="w-10 h-10" />
+                <VideoIcon className="w-[100px] h-[100px]" />
               ) : (
-                <DockIcon className="w-10 h-10" />
+                <DockIcon className="w-[100px] h-[100px]" />
               )}
             </div>
             <div>

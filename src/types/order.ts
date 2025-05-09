@@ -2,25 +2,27 @@ import { Customer } from "./customer";
 import { Product } from "./product";
 import { Store } from "./store";
 
+export type OrderStatus = "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
+
 export interface Order {
-  id: number;
-  storeID: number;
-  store?: Store;
-  customerID: number;
+  id: string;
+  customerId: string;
+  storeId: string;
+  orderItems: OrderItem[];
   totalPrice: number;
-  orderStatus: string;
   shippingAddress: string;
+  status: OrderStatus;
   createdAt: string;
   updatedAt: string;
-  orderItems?: OrderItem[];
-  customer?: Customer;
 }
 
 export interface OrderItem {
-  id: number;
-  orderID: number;
-  productID: number;
+  id: string;
+  productId: string;
   quantity: number;
   price: number;
-  product?: Product;
+  product: {
+    name: string;
+    media: string[];
+  };
 }

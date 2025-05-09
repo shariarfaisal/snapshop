@@ -24,7 +24,7 @@ export const AUTH_API = {
     return data;
   },
   getMe: async () => {
-    const { data } = await $clientPrivate.get<User>("/me");
+    const { data } = await $clientPrivate.get<User>("/profile");
     return data;
   },
 };

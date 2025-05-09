@@ -23,7 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Label } from "../ui";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { STORE_API } from "@/services/store";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks";
@@ -50,6 +50,7 @@ const formSchema = z.object({
 export const CreateNewStore = () => {
   const { push } = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,6 +66,7 @@ export const CreateNewStore = () => {
     mutationFn: STORE_API.createNewStore,
     onSuccess: (data) => {
       form.reset();
+      queryClient.invalidateQueries({ queryKey: ["stores"] });
       push(`/stores/${data.id}`);
       toast({
         variant: "default",

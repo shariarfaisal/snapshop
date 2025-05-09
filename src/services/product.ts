@@ -34,4 +34,12 @@ export const PRODUCT_API = {
     const { data } = await $clientPrivate.get<Product>(`/products/${id}`);
     return data;
   },
+  async deleteProduct(id: number) {
+    const { data } = await $clientPrivate.delete<{ message: string }>(`/products/${id}`);
+    return data;
+  },
+  async updateProduct(id: number, payloads: Partial<ProductFormValues>) {
+    const { data } = await $clientPrivate.put<Product>(`/products/${id}`, payloads);
+    return data;
+  },
 };

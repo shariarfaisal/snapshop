@@ -14,8 +14,14 @@ export const STORE_API = {
     const { data } = await $clientPrivate.get<Store>(`/stores/${id}`);
     return data;
   },
-  async getAnalytics() {
-    const { data } = await $clientPrivate.get("/analytics");
+  async getAnalytics(storeId?: number) {
+    const { data } = await $clientPrivate.get("/analytics", {
+      params: { storeId },
+    });
+    return data;
+  },
+  async deleteStore(id: number) {
+    const { data } = await $clientPrivate.delete<{ message: string }>(`/stores/${id}`);
     return data;
   },
 };

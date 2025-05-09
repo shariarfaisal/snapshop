@@ -38,7 +38,6 @@ export default function Page() {
 
   return (
     <section className="p-5 md:p-7 xl:p-10">
-      <h1 className="text-2xl font-semibold mb-4">Products</h1>
       {isLoading && <div>Loading...</div>}
       {!isLoading && error && (
         <div className="bg-red-100 text-red-500 p-4 rounded-md mb-4">

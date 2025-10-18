@@ -1,7 +1,10 @@
+"use client"
+
 import { Program } from "@/types/program";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, Trash2, BookOpen } from "lucide-react";
+import { Pencil, Trash2, BookOpen, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 interface ProgramListProps {
   programs: Program[];
@@ -34,10 +37,18 @@ export function ProgramList({ programs, onEdit, onDelete, onManageSubjects }: Pr
         <TableBody>
           {programs.map((program) => (
             <TableRow key={program.id}>
-              <TableCell className="font-medium">{program.title}</TableCell>
+              <TableCell className="font-medium">
+                <Link 
+                  href={`/admin/programs/${program.id}`}
+                  className="hover:underline flex items-center"
+                >
+                  {program.title}
+                  <ExternalLink className="ml-1 h-3 w-3" />
+                </Link>
+              </TableCell>
               <TableCell>{program.code}</TableCell>
               <TableCell>{program.level}</TableCell>
-              <TableCell>{program.duration}</TableCell>
+              <TableCell>{program.duration_year}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button

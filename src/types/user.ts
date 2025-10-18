@@ -11,6 +11,9 @@ export type User = {
   status: UserStatus;
   tenant_id: string;
   campus_id: string | null;
+  role_id: number;
+  role_code: string;
+  role_label: string;
   created_at: string;
   updated_at: string;
 };
@@ -19,7 +22,7 @@ export type CreateUserInput = {
   username: string;
   email: string;
   password?: string;
-  role: UserRole;
+  role_id: number | string;
   campus_id?: string;
   status?: UserStatus;
   locale: string;
@@ -28,6 +31,5 @@ export type CreateUserInput = {
 export type UpdateUserInput = Partial<Omit<CreateUserInput, "email" | "password">>;
 
 export type ResetPasswordInput = {
-  password: string;
-  confirmPassword: string;
+  new_password: string;
 };

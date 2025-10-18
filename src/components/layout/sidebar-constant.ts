@@ -8,6 +8,10 @@ import {
   Building2,
   ClipboardList,
   Bell,
+  Shield,
+  UserCircle,
+  Book,
+  Map,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,9 +40,29 @@ export const sidebarConstant: ISidebarConstant = {
       icon: Users,
     },
     {
+      title: "Students",
+      url: "/admin/students",
+      icon: UserCircle,
+    },
+    {
+      title: "Roles",
+      url: "/admin/roles",
+      icon: Shield,
+    },
+    {
       title: "Programs",
       url: "/admin/programs",
       icon: BookOpen,
+    },
+    {
+      title: "Subjects",
+      url: "/admin/subjects",
+      icon: Book,
+    },
+    {
+      title: "Curriculum",
+      url: "/admin/curriculum",
+      icon: Map,
     },
     {
       title: "Campuses",

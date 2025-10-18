@@ -6,42 +6,49 @@ export const useUser = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: [userService.getAll.name],
-    queryFn: () => userService.getAll(),
+    queryKey: [userService.getAllUser.name],
+    queryFn: () => userService.getAllUser(),
   });
 
   const createUser = useMutation({
-    mutationKey: [userService.create.name],
-    mutationFn: userService.create
+    mutationKey: [userService.createUser.name],
+    mutationFn: userService.createUser
   });
 
   const updateUser = useMutation({
-    mutationKey: [userService.update.name],
+    mutationKey: [userService.updateUser.name],
     mutationFn: ({ id, data }: { id: string, data: UpdateUserInput }) => {
-      return userService.update(id, data);
+      return userService.updateUser(id, data);
     }
   });
 
   const deleteUser = useMutation({
-    mutationKey: [userService.delete.name],
-    mutationFn: userService.delete
+    mutationKey: [userService.deleteUser.name],
+    mutationFn: userService.deleteUser
   });
 
   const getUserById = useMutation({
-    mutationKey: [userService.getById.name],
-    mutationFn: (id: string) => userService.getById(id),
+    mutationKey: [userService.getUserById.name],
+    mutationFn: (id: string) => userService.getUserById(id),
   });
 
-  const resetPassword = useMutation({
-    mutationKey: [userService.resetPassword.name],
+  const resetUserPassword = useMutation({
+    mutationKey: [userService.resetUserPassword.name],
     mutationFn: ({ id, data }: { id: string, data: ResetPasswordInput }) => {
-      return userService.resetPassword(id, data);
+      return userService.resetUserPassword(id, data);
+    }
+  });
+
+  const adminResetUserPassword = useMutation({
+    mutationKey: [userService.adminResetUserPassword.name],
+    mutationFn: ({ id, data }: { id: string, data: ResetPasswordInput }) => {
+      return userService.adminResetUserPassword(id, data);
     }
   });
 
   const deactivateUser = useMutation({
-    mutationKey: [userService.deactivate.name],
-    mutationFn: userService.deactivate
+    mutationKey: [userService.deactivateUser.name],
+    mutationFn: userService.deactivateUser
   });
 
   return {
@@ -52,16 +59,17 @@ export const useUser = () => {
     updateUser,
     deleteUser,
     getUserById,
-    resetPassword,
+    resetUserPassword,
+    adminResetUserPassword,
     deactivateUser,
     invalidateUsers: () => {
       queryClient.invalidateQueries({
-        queryKey: [userService.getAll.name]
+        queryKey: [userService.getAllUser.name]
       });
     },
     invalidateUserById: (id: string) => {
       queryClient.invalidateQueries({
-        queryKey: [userService.getById.name, id]
+        queryKey: [userService.getUserById.name, id]
       });
     }
   };

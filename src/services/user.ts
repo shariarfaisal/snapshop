@@ -5,37 +5,42 @@ import { User, CreateUserInput, UpdateUserInput, ResetPasswordInput } from "@/ty
 const BASE_URL = "/v1/users";
 
 export const userService = {
-  getAll: async () => {
+  getAllUser: async () => {
     const response = await $clientPrivate.get<Paginated<User>>(BASE_URL);
     return response.data;
   },
 
-  getById: async (id: string) => {
+  getUserById: async (id: string) => {
     const response = await $clientPrivate.get<User>(`${BASE_URL}/${id}`);
     return response.data;
   },
 
-  create: async (data: CreateUserInput) => {
+  createUser: async (data: CreateUserInput) => {
     const response = await $clientPrivate.post<User>(BASE_URL, data);
     return response.data;
   },
 
-  update: async (id: string, data: UpdateUserInput) => {
+  updateUser: async (id: string, data: UpdateUserInput) => {
     const response = await $clientPrivate.put<User>(`${BASE_URL}/${id}`, data);
     return response.data;
   },
 
-  delete: async (id: string) => {
+  deleteUser: async (id: string) => {
     const response = await $clientPrivate.delete<void>(`${BASE_URL}/${id}`);
     return response.data;
   },
 
-  resetPassword: async (id: string, data: ResetPasswordInput) => {
+  resetUserPassword: async (id: string, data: ResetPasswordInput) => {
     const response = await $clientPrivate.put<void>(`${BASE_URL}/${id}/reset-password`, data);
     return response.data;
   },
 
-  deactivate: async (id: string) => {
+  adminResetUserPassword: async (id: string, data: ResetPasswordInput) => {
+    const response = await $clientPrivate.put<void>(`${BASE_URL}/${id}/admin-reset-password`, data);
+    return response.data;
+  },
+
+  deactivateUser: async (id: string) => {
     const response = await $clientPrivate.put<User>(`${BASE_URL}/${id}/deactivate`);
     return response.data;
   },

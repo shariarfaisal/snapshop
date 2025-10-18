@@ -1,86 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProgramList } from "../../../../components/programs/program-list";
 import { AddProgramDialog } from "../../../../components/programs/add-program-dialog";
 import { EditProgramDialog } from "../../../../components/programs/edit-program-dialog";
 import { ManageSubjectsDialog } from "../../../../components/programs/manage-subjects-dialog";
-import { useToast } from "@/hooks";
-import { programService } from "@/services/program";
+import { useToast, useProgram } from "@/hooks";
 import { Program } from "@/types/program";
+import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogContent } from "@/components/ui/dialog";
 
 export default function ProgramsPage() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isManageSubjectsDialogOpen, setIsManageSubjectsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const { data: programs, isLoading } = useQuery({
-    queryKey: ["programs"],
-    queryFn: programService.getAll,
-  });
 
-  const createProgramMutation = useMutation({
-    mutationFn: programService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      toast({
-        title: "Success",
-        description: "Program created successfully",
-      });
-      setIsAddDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create program",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateProgramMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      programService.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      toast({
-        title: "Success",
-        description: "Program updated successfully",
-      });
-      setIsEditDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update program",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteProgramMutation = useMutation({
-    mutationFn: (id: string) => programService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      toast({
-        title: "Success",
-        description: "Program deleted successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete program",
-        variant: "destructive",
-      });
-    },
-  });
+  const {
+    programs,
+    isProgramsLoading,
+    createProgram,
+    updateProgram,
+    deleteProgram,
+    invalidatePrograms
+  } = useProgram();
 
   const handleEdit = (program: Program) => {
     setSelectedProgram(program);
@@ -93,12 +41,26 @@ export default function ProgramsPage() {
   };
 
   const handleDelete = (program: Program) => {
-    if (window.confirm("Are you sure you want to delete this program?")) {
-      deleteProgramMutation.mutate(program.id);
-    }
+    deleteProgram.mutate(program.id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Program deleted successfully",
+        });
+        setIsDeleteDialogOpen(false);
+        invalidatePrograms();
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to delete program",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
-  if (isLoading) {
+  if (isProgramsLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
@@ -119,14 +81,34 @@ export default function ProgramsPage() {
       <ProgramList
         programs={programs || []}
         onEdit={handleEdit}
-        onDelete={handleDelete}
+        onDelete={(program) => {
+          setSelectedProgram(program);
+          setIsDeleteDialogOpen(true);
+        }}
         onManageSubjects={handleManageSubjects}
       />
 
       <AddProgramDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        onSubmit={(data) => createProgramMutation.mutate(data)}
+        onSubmit={(data) => 
+          createProgram.mutate(data, {
+            onSuccess: () => {
+              toast({
+                title: "Success",
+                description: "Program created successfully",
+              });
+              setIsAddDialogOpen(false);
+            },
+            onError: () => {
+              toast({
+                title: "Error",
+                description: "Failed to create program",
+                variant: "destructive",
+              });
+            },
+          })
+        }
       />
 
       {selectedProgram && (
@@ -136,7 +118,25 @@ export default function ProgramsPage() {
             onOpenChange={setIsEditDialogOpen}
             program={selectedProgram}
             onSubmit={(data) =>
-              updateProgramMutation.mutate({ id: selectedProgram.id, data })
+              updateProgram.mutate(
+                { id: selectedProgram.id, data },
+                {
+                  onSuccess: () => {
+                    toast({
+                      title: "Success",
+                      description: "Program updated successfully",
+                    });
+                    setIsEditDialogOpen(false);
+                  },
+                  onError: () => {
+                    toast({
+                      title: "Error",
+                      description: "Failed to update program",
+                      variant: "destructive",
+                    });
+                  },
+                }
+              )
             }
           />
 
@@ -145,6 +145,25 @@ export default function ProgramsPage() {
             onOpenChange={setIsManageSubjectsDialogOpen}
             program={selectedProgram}
           />
+
+
+          <Dialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Program</DialogTitle>
+              </DialogHeader>
+              <DialogDescription>
+                Are you sure you want to delete this program?
+              </DialogDescription>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={() => handleDelete(selectedProgram)}>Delete</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

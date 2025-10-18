@@ -4,18 +4,18 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AdmissionList } from "../../../../components/admissions/admission-list";
+import { Applications } from "@/components/admissions/applications";
 import { useToast } from "@/hooks";
-import { admissionService } from "@/services/admission";
 import { Admission } from "@/types/admission";
-import { AddAdmissionDialog } from "@/components/admissions/add-admission-dialog";
 import { ViewAdmissionDrawer } from "@/components/admissions/view-admission-drawer";
+import Link from "next/link";
+import { admissionService } from "@/services/admission";
+import { Application } from "@/types/application";
 
 export default function AdmissionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedAdmission, setSelectedAdmission] = useState<Admission | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedAdmission, setSelectedAdmission] = useState<Application | null>(null);
   const [isViewDrawerOpen, setIsViewDrawerOpen] = useState(false);
   const [filters, setFilters] = useState({
     programId: "",
@@ -25,32 +25,13 @@ export default function AdmissionsPage() {
   });
 
   const { data: admissions, isLoading } = useQuery({
-    queryKey: ["admissions", filters],
-    queryFn: () => admissionService.getAll(),
-  });
-
-  const createAdmissionMutation = useMutation({
-    mutationFn: admissionService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admissions"] });
-      toast({
-        title: "Success",
-        description: "Application created successfully",
-      });
-      setIsAddDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create application",
-        variant: "destructive",
-      });
-    },
+    queryKey: [admissionService.getAllApplications.name, filters],
+    queryFn: () => admissionService.getAllApplications(filters),
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status, notes }: { id: string; status: string; notes?: string }) =>
-      admissionService.updateStatus(id, { status: status as any, notes }),
+      admissionService.updateApplication(id, { status: status as any, notes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admissions"] });
       toast({
@@ -67,12 +48,12 @@ export default function AdmissionsPage() {
     },
   });
 
-  const handleView = (admission: Admission) => {
+  const handleView = (admission: Application) => {
     setSelectedAdmission(admission);
     setIsViewDrawerOpen(true);
   };
 
-  const handleStatusChange = (admission: Admission, status: string, notes?: string) => {
+  const handleStatusChange = (admission: Application, status: string, notes?: string) => {
     if (window.confirm(`Are you sure you want to ${status.toLowerCase()} this application?`)) {
       updateStatusMutation.mutate({ id: admission.id, status, notes });
     }
@@ -90,24 +71,20 @@ export default function AdmissionsPage() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Admissions</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Manual Application
-        </Button>
+        <Link href="/admin/admissions/new-application">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            New Application
+          </Button>
+        </Link>
       </div>
 
-      <AdmissionList
-        admissions={admissions || []}
+      <Applications
+        admissions={admissions?.data || []}
         filters={filters}
         onFilterChange={setFilters}
         onView={handleView}
         onStatusChange={handleStatusChange}
-      />
-
-      <AddAdmissionDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onSubmit={(data) => createAdmissionMutation.mutate(data)}
       />
 
       {selectedAdmission && (

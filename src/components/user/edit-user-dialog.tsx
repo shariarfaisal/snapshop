@@ -26,13 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User,  } from "@/types/user";
+import { User } from "@/types/user";
 import { useEffect } from "react";
+import { useRole } from "@/hooks";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formSchema = z.object({
   username: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["admin", "teacher", "student", "librarian", "accountant", "staff"] as const, {
+  role_id: z.coerce.number({
     required_error: "Role is required",
   }),
   campus_id: z.string().optional(),
@@ -55,11 +57,14 @@ export function EditUserDialog({
   user,
   onSubmit,
 }: EditUserDialogProps) {
+  const { roles, isRolesLoading } = useRole();
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: user.username,
       email: user.email,
+      role_id: user.role_id,
       campus_id: user.campus_id || undefined,
       status: user.status,
       locale: user.locale as "en" | "bn",
@@ -74,11 +79,12 @@ export function EditUserDialog({
     form.reset({
       username: user.username,
       email: user.email,
+      role_id: user.role_id,
       campus_id: user.campus_id || undefined,
       status: user.status,
       locale: user.locale as "en" | "bn",
     });
-  }, [user])
+  }, [user]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,28 +124,31 @@ export function EditUserDialog({
 
             <FormField
               control={form.control}
-              name="role"
+              name="role_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="librarian">Librarian</SelectItem>
-                      <SelectItem value="accountant">Accountant</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {isRolesLoading ? (
+                    <Skeleton className="h-10 w-full rounded-md" />
+                  ) : (
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {roles?.data?.map((role) => (
+                          <SelectItem key={role.id} value={role.id.toString()}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -153,7 +162,7 @@ export function EditUserDialog({
                   <FormLabel>Status</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -179,7 +188,7 @@ export function EditUserDialog({
                   <FormControl>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>

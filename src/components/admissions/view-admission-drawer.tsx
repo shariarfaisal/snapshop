@@ -9,11 +9,12 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Admission, AdmissionStatus } from "@/types/admission";
+import { Application, ApplicationStatus } from "@/types/application";
 import { format } from "date-fns";
 import { Check, X, Clock } from "lucide-react";
 
 interface ViewAdmissionDrawerProps {
-  admission: Admission;
+  admission: Application;
   isOpen: boolean;
   onClose: () => void;
   onApprove?: () => void;
@@ -29,7 +30,8 @@ export function ViewAdmissionDrawer({
   onReject,
   onWaitlist,
 }: ViewAdmissionDrawerProps) {
-  const getStatusColor = (status: AdmissionStatus) => {
+  
+  const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
       case "Submitted":
         return "bg-yellow-100 text-yellow-800";
@@ -60,7 +62,7 @@ export function ViewAdmissionDrawer({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Full Name</p>
-                  <p className="font-medium">{admission.fullName}</p>
+                  <p className="font-medium">{admission.first_name} {admission.last_name}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
@@ -73,7 +75,7 @@ export function ViewAdmissionDrawer({
                 <div>
                   <p className="text-sm text-muted-foreground">Date of Birth</p>
                   <p className="font-medium">
-                    {format(new Date(admission.dateOfBirth), "PPP")}
+                    {format(new Date(admission.date_of_birth), "PPP")}
                   </p>
                 </div>
                 <div>
@@ -82,7 +84,7 @@ export function ViewAdmissionDrawer({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Merit Category</p>
-                  <p className="font-medium">{admission.meritCategory}</p>
+                  <p className="font-medium">{admission.merit_cat_id}</p>
                 </div>
               </div>
             </div>
@@ -93,16 +95,16 @@ export function ViewAdmissionDrawer({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Program</p>
-                  <p className="font-medium">{admission.programName}</p>
+                  <p className="font-medium">{admission.applied_level}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Campus</p>
-                  <p className="font-medium">{admission.campusName}</p>
+                  <p className="font-medium">{admission.campus}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Application Date</p>
                   <p className="font-medium">
-                    {format(new Date(admission.submittedAt), "PPP")}
+                    {format(new Date(admission.created_at), "PPP")}
                   </p>
                 </div>
                 <div>
@@ -148,7 +150,7 @@ export function ViewAdmissionDrawer({
                     className="flex items-center gap-2"
                   >
                     <Clock className="h-4 w-4" />
-                    Waitlist
+                    Shortlist
                   </Button>
                   <Button
                     variant="destructive"
@@ -163,7 +165,7 @@ export function ViewAdmissionDrawer({
                     className="flex items-center gap-2"
                   >
                     <Check className="h-4 w-4" />
-                    Approve
+                    Offer
                   </Button>
                 </>
               )}
@@ -182,7 +184,7 @@ export function ViewAdmissionDrawer({
                     className="flex items-center gap-2"
                   >
                     <Check className="h-4 w-4" />
-                    Approve
+                    Offer
                   </Button>
                 </>
               )}

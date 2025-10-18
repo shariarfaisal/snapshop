@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Program, Subject } from "@/types/program";
@@ -12,7 +14,9 @@ import { programService } from "@/services/program";
 import { useToast } from "@/hooks";
 import { SubjectTable } from "./subject-table";
 import { AddSubjectDialog } from "./add-subject-dialog";
-
+import { useProgram } from "@/hooks/use-program";
+import { useProgramSubjects } from "@/hooks/use-program-subjects";
+import { useSubject } from "@/hooks/use-subject";
 interface ManageSubjectsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,39 +28,9 @@ export function ManageSubjectsDialog({
   onOpenChange,
   program,
 }: ManageSubjectsDialogProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isAddSubjectDialogOpen, setIsAddSubjectDialogOpen] = useState(false);
-
-  const { data: subjects, isLoading } = useQuery({
-    queryKey: ["subjects", program.id],
-    queryFn: () => programService.getSubjects(program.id),
-  });
-
-  const removeSubjectMutation = useMutation({
-    mutationFn: (subjectId: string) =>
-      programService.removeSubject(program.id, subjectId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects", program.id] });
-      toast({
-        title: "Success",
-        description: "Subject removed from program",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to remove subject",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleRemoveSubject = (subject: Subject) => {
-    if (window.confirm("Are you sure you want to remove this subject?")) {
-      removeSubjectMutation.mutate(subject.id);
-    }
-  };
+  const { subjects, isLoading } = useProgramSubjects(program.id, true)
+  const { data: allSubjects } = useSubject({ limit: 1000, page: 1 })
 
   if (isLoading) {
     return (
@@ -88,7 +62,7 @@ export function ManageSubjectsDialog({
             </div>
             <SubjectTable
               subjects={subjects || []}
-              onRemove={handleRemoveSubject}
+              program={program}
             />
           </div>
         </DialogContent>
@@ -98,6 +72,7 @@ export function ManageSubjectsDialog({
         open={isAddSubjectDialogOpen}
         onOpenChange={setIsAddSubjectDialogOpen}
         program={program}
+        allSubjects={allSubjects?.data || []}
       />
     </>
   );

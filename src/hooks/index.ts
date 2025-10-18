@@ -2,3 +2,8 @@ export * from "./use-toast";
 export * from "./use-mobile";
 export * from "./use-campus";
 export * from "./use-user";
+export * from "./use-role";
+export * from "./use-program";
+export * from "./use-course-offering";
+export * from "./use-enrollment";
+export * from "./use-student";

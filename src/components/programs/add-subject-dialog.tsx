@@ -1,95 +1,72 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Program } from "@/types/program";
+"use client";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { programService } from "@/services/program";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks";
-import { useQueryClient } from "@tanstack/react-query";
-
-const subjectFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  code: z.string().min(1, "Code is required"),
-  creditHours: z.number().min(1).max(6),
-  year: z.number().min(1),
-  term: z.number().min(1).max(2),
-  mandatory: z.boolean(),
-});
-
-type SubjectFormValues = z.infer<typeof subjectFormSchema>;
+import { Program, Subject } from "@/types/program";
+import { useProgramSubjects } from "@/hooks/use-program-subjects";
 
 interface AddSubjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   program: Program;
+  allSubjects: Subject[];
 }
 
 export function AddSubjectDialog({
   open,
   onOpenChange,
   program,
+  allSubjects,
 }: AddSubjectDialogProps) {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [year, setYear] = useState(1);
+  const [term, setTerm] = useState(1);
+  const [mandatory, setMandatory] = useState(true);
+  const { addSubject } = useProgramSubjects(program.id, false);
 
-  const form = useForm<SubjectFormValues>({
-    resolver: zodResolver(subjectFormSchema),
-    defaultValues: {
-      name: "",
-      code: "",
-      creditHours: 3,
-      year: 1,
-      term: 1,
-      mandatory: true,
-    },
-  });
-
-  const addSubjectMutation = useMutation({
-    mutationFn: (data: SubjectFormValues) =>
-      programService.addSubject(program.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects", program.id] });
-      toast({
-        title: "Success",
-        description: "Subject added successfully",
-      });
-      onOpenChange(false);
-      form.reset();
-    },
-    onError: (error) => {
+  const handleSubmit = async () => {
+    if (!selectedSubjectId) {
       toast({
         title: "Error",
-        description: "Failed to add subject",
+        description: "Please select a subject",
         variant: "destructive",
       });
-    },
-  });
+      return;
+    }
 
-  const handleSubmit = (data: SubjectFormValues) => {
-    addSubjectMutation.mutate(data);
+    if (program) {
+      addSubject.mutate({ 
+        program_id: program.id,
+        subject_id: Number(selectedSubjectId),
+        year_no: year,
+        term_no: term,
+        mandatory,
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Subject added successfully",
+          });
+  
+          toast({
+            title: "Success",
+            description: "Subject added successfully",
+          });
+    
+          onOpenChange(false);
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to add subject",
+            variant: "destructive",
+          });
+        }
+      })
+    }
   };
 
   return (
@@ -98,138 +75,73 @@ export function AddSubjectDialog({
         <DialogHeader>
           <DialogTitle>Add Subject to {program.title}</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subject Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter subject name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="subject">Subject</Label>
+            <select
+              id="subject"
+              value={selectedSubjectId}
+              onChange={(e) => setSelectedSubjectId(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="">Select a subject</option>
+              {allSubjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name} ({subject.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="year">Year</Label>
+            <select
+              id="year"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="w-full p-2 border rounded-md"
+            >
+              {Array.from({ length: program.duration_year }, (_, i) => i + 1).map((y) => (
+                <option key={y} value={y}>
+                  Year {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="term">Term</Label>
+            <select
+              id="term"
+              value={term}
+              onChange={(e) => setTerm(Number(e.target.value))}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value={1}>Term 1</option>
+              <option value={2}>Term 2</option>
+              <option value={3}>Term 3</option>
+            </select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="mandatory"
+              checked={mandatory}
+              onChange={(e) => setMandatory(e.target.checked)}
             />
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subject Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter subject code" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="creditHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Credit Hours</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={6}
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="year"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Year</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    defaultValue={field.value.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select year" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Array.from({ length: program.duration }, (_, i) => i + 1).map(
-                        (year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            Year {year}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="term"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Term</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    defaultValue={field.value.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select term" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {[1, 2].map((term) => (
-                        <SelectItem key={term} value={term.toString()}>
-                          Term {term}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="mandatory"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Mandatory Subject</FormLabel>
-                  </div>
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">Add Subject</Button>
-            </div>
-          </form>
-        </Form>
+            <Label htmlFor="mandatory">Mandatory subject</Label>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={addSubject.isPending}>
+              {addSubject.isPending ? "Adding..." : "Add Subject"}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -1,67 +1,56 @@
-import { Program, Subject } from "@/types/program";
+import { Program, Subject, ProgramWithSubjects, CurriculumMapEntry } from "@/types/program";
+import { $clientPrivate } from "./client";
 
-const API_URL = "/api/programs";
+const BASE_URL = "/v1/programmes";
 
 export const programService = {
-  getAll: async (): Promise<Program[]> => {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error("Failed to fetch programs");
-    return response.json();
+  getAllPrograms: async (): Promise<Program[]> => {
+    const response = await $clientPrivate.get<{ data: Program[] }>(BASE_URL);
+    return response.data.data;
   },
 
-  getById: async (id: string): Promise<Program> => {
-    const response = await fetch(`${API_URL}/${id}`);
-    if (!response.ok) throw new Error("Failed to fetch program");
-    return response.json();
+  getProgramById: async (id: string): Promise<Program> => {
+    const response = await $clientPrivate.get<Program>(`${BASE_URL}/${id}`);
+    return response.data;
   },
 
-  create: async (data: Omit<Program, "id" | "createdAt" | "updatedAt">): Promise<Program> => {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to create program");
-    return response.json();
+  createProgram: async (data: Omit<Program, "id" | "createdAt" | "updatedAt">): Promise<Program> => {
+    const response = await $clientPrivate.post<Program>(BASE_URL, data);
+    return response.data;
   },
 
-  update: async (id: string, data: Partial<Program>): Promise<Program> => {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to update program");
-    return response.json();
+  updateProgram: async (id: number, data: Partial<Program>): Promise<Program> => {
+    const response = await $clientPrivate.put<Program>(`${BASE_URL}/${id}`, data);
+    return response.data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) throw new Error("Failed to delete program");
+  deleteProgram: async (id: number): Promise<void> => {
+    await $clientPrivate.delete(`${BASE_URL}/${id}`);
   },
 
-  getSubjects: async (programId: string): Promise<Subject[]> => {
-    const response = await fetch(`${API_URL}/${programId}/subjects`);
-    if (!response.ok) throw new Error("Failed to fetch subjects");
-    return response.json();
+  getProgramSubjects: async (programId: number) => {
+    const response = await $clientPrivate.get<CurriculumMapEntry[]>(`${BASE_URL}/${programId}/subjects`);
+    return response.data
   },
 
-  addSubject: async (programId: string, data: Omit<Subject, "id" | "programId" | "createdAt" | "updatedAt">): Promise<Subject> => {
-    const response = await fetch(`${API_URL}/${programId}/subjects`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to add subject");
-    return response.json();
+  addProgramSubject: async ({program_id, ...data}: {
+    program_id: number, 
+    subject_id: number;
+    year_no: number;
+    term_no: number;
+    mandatory: boolean;
+    prerequisite_subject_id?: number;
+  }): Promise<CurriculumMapEntry> => {
+    const response = await $clientPrivate.post<CurriculumMapEntry>(`${BASE_URL}/${program_id}/subjects`, data);
+    return response.data;
   },
 
-  removeSubject: async (programId: string, subjectId: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/${programId}/subjects/${subjectId}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) throw new Error("Failed to remove subject");
+  updateProgramSubject: async (program_id: number, subject_id: number, data: Partial<CurriculumMapEntry>): Promise<CurriculumMapEntry> => {
+    const response = await $clientPrivate.put<CurriculumMapEntry>(`${BASE_URL}/${program_id}/subjects/${subject_id}`, data);
+    return response.data;
+  },
+
+  removeProgramSubject: async (program_id: number, subject_id: number) => {
+    await $clientPrivate.delete(`${BASE_URL}/${program_id}/subjects/${subject_id}`);
   },
 }; 

@@ -1,71 +1,47 @@
-import { Admission, CreateAdmissionInput, UpdateAdmissionStatusInput } from "@/types/admission";
-
-const API_URL = "/api/admissions";
+import { ApplicationCreate, ApplicationUpdate } from '@/types/application';
+import { Application } from '@/types/application';
+import { $clientPrivate } from './client';
 
 export const admissionService = {
-  getAll: async (): Promise<Admission[]> => {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error("Failed to fetch admissions");
-    return response.json();
+  async getAllApplications(params?: {
+    page?: number;
+    limit?: number;
+    term?: string;
+    level?: string;
+    status?: string;
+    merit_cat_id?: string;
+  }) {
+    const response = await $clientPrivate.get<{ data: Application[]; total: number }>('/v1/applications', { params });
+    return response.data;
   },
 
-  getById: async (id: string): Promise<Admission> => {
-    const response = await fetch(`${API_URL}/${id}`);
-    if (!response.ok) throw new Error("Failed to fetch admission");
-    return response.json();
+  async getApplicationById(id: string) {
+    const response = await $clientPrivate.get<Application>(`/v1/applications/${id}`);
+    return response.data;
   },
 
-  create: async (data: CreateAdmissionInput): Promise<Admission> => {
+  async createApplication(data: ApplicationCreate) {
+    const response = await $clientPrivate.post<Application>('/v1/applications', data);
+    return response.data;
+  },
+
+  async updateApplication(id: string, data: ApplicationUpdate) {
+    const response = await $clientPrivate.patch<Application>(`/v1/applications/${id}`, data);
+    return response.data;
+  },
+
+  async uploadApplicationDocument(id: string, file: File, type: string) {
     const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (key === "documents" && value) {
-        (value as File[]).forEach((file) => formData.append("documents", file));
-      } else {
-        formData.append(key, value as string);
-      }
+    formData.append('file', file);
+    formData.append('type', type);
+    const response = await $clientPrivate.post<Application>(`/v1/applications/${id}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
-
-    const response = await fetch(API_URL, {
-      method: "POST",
-      body: formData,
-    });
-    if (!response.ok) throw new Error("Failed to create admission");
-    return response.json();
+    return response.data;
   },
 
-  updateStatus: async (
-    id: string,
-    data: UpdateAdmissionStatusInput
-  ): Promise<Admission> => {
-    const response = await fetch(`${API_URL}/${id}/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to update admission status");
-    return response.json();
-  },
-
-  shortlist: async (id: string, notes?: string): Promise<Admission> => {
-    return admissionService.updateStatus(id, { status: "Shortlisted", notes });
-  },
-
-  offer: async (id: string, notes?: string): Promise<Admission> => {
-    return admissionService.updateStatus(id, { status: "Offered", notes });
-  },
-
-  reject: async (id: string, notes?: string): Promise<Admission> => {
-    return admissionService.updateStatus(id, { status: "Rejected", notes });
-  },
-
-  accept: async (id: string, notes?: string): Promise<Admission> => {
-    return admissionService.updateStatus(id, { status: "Accepted", notes });
-  },
-
-  sendOfferLetter: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/${id}/send-offer`, {
-      method: "POST",
-    });
-    if (!response.ok) throw new Error("Failed to send offer letter");
+  async getApplicationDocuments(id: string) {
+    const response = await $clientPrivate.get<Application['documents']>(`/v1/applications/${id}/documents`);
+    return response.data;
   },
 }; 

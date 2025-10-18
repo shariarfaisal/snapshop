@@ -1,7 +1,8 @@
+"use client"
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ProgramLevel } from "@/types/program";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,7 +31,7 @@ const programFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   code: z.string().min(1, "Code is required"),
   level: z.enum(["School", "Madrasha", "College", "University"] as const),
-  duration: z.number().min(1).max(6),
+  duration_year: z.number().min(1).max(6),
 });
 
 type ProgramFormValues = z.infer<typeof programFormSchema>;
@@ -52,7 +53,7 @@ export function AddProgramDialog({
       title: "",
       code: "",
       level: "School",
-      duration: 1,
+      duration_year: 1,
     },
   });
 
@@ -126,7 +127,7 @@ export function AddProgramDialog({
             />
             <FormField
               control={form.control}
-              name="duration"
+              name="duration_year"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Duration (Years)</FormLabel>

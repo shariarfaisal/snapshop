@@ -11,9 +11,10 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, CheckCircle2, XCircle, Send, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Application, ApplicationStatus } from "@/types/application";
 
 interface AdmissionListProps {
-  admissions: Admission[];
+  admissions: Application[];
   filters: {
     programId: string;
     campusId: string;
@@ -21,11 +22,11 @@ interface AdmissionListProps {
     status: string;
   };
   onFilterChange: (filters: any) => void;
-  onView: (admission: Admission) => void;
-  onStatusChange: (admission: Admission, status: string, notes?: string) => void;
+  onView: (admission: Application) => void;
+  onStatusChange: (admission: Application, status: string, notes?: string) => void;
 }
 
-const statusColors: Record<AdmissionStatus, string> = {
+const statusColors: Record<ApplicationStatus, string> = {
   Submitted: "bg-blue-100 text-blue-800",
   Shortlisted: "bg-purple-100 text-purple-800",
   Offered: "bg-yellow-100 text-yellow-800",
@@ -33,7 +34,7 @@ const statusColors: Record<AdmissionStatus, string> = {
   Accepted: "bg-green-100 text-green-800",
 };
 
-export function AdmissionList({
+export function Applications({
   admissions,
   filters,
   onFilterChange,
@@ -132,16 +133,16 @@ export function AdmissionList({
           <TableBody>
             {admissions.map((admission) => (
               <TableRow key={admission.id}>
-                <TableCell className="font-medium">{admission.fullName}</TableCell>
-                <TableCell>{admission.programName}</TableCell>
-                <TableCell>{admission.meritCategory}</TableCell>
+                <TableCell className="font-medium">{admission.first_name} {admission.last_name}</TableCell>
+                <TableCell>{admission.applied_level}</TableCell>
+                <TableCell>{admission.merit_cat_id}</TableCell>
                 <TableCell>
                   <Badge className={statusColors[admission.status]}>
                     {admission.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {new Date(admission.submittedAt).toLocaleDateString()}
+                  {new Date(admission.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

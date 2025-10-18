@@ -44,7 +44,7 @@ const NavUser = () => {
               <User className="w-5 h-5" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{user.name}</p>
+              <p className="text-sm font-medium">{user.username}</p>
               <p className="text-xs text-gray-500">{user.email}</p>
             </div>
           </div>
@@ -109,7 +109,7 @@ const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
         {open && <SidebarTrigger className="-ml-1" />}
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="w-full !p-0 overflow-hidden">
+        <SidebarGroup className="w-full !p-0 overflow-y-auto">
           <SidebarMenu className={cn("p-3", open ? "px-3.5" : "px-2")}>
             {sidebarConstant.items.map((item, index) => (
               <SidebarMenuItem key={index} className="p-0">

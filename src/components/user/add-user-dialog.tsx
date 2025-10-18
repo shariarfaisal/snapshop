@@ -27,16 +27,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUser, useToast } from "@/hooks";
+import { useUser, useToast, useRole } from "@/hooks";
 import { isAxiosError } from "axios";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   username: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters").optional(),
-  role: z.enum(["admin", "teacher", "student", "librarian", "accountant", "staff"] as const, {
-    required_error: "Role is required",
-  }),
+  role_id: z.string(),
   campus_id: z.string().optional(),
   status: z.enum(["Active", "Inactive"] as const).default("Active"),
   locale: z.string().default("en"),
@@ -55,16 +54,16 @@ export function AddUserDialog({
   onOpenChange,
   children,
 }: AddUserDialogProps) {
+  const { roles } = useRole();
   const { createUser, invalidateUsers } = useUser();
   const { toast } = useToast();
-  
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
       email: "",
       password: "",
-      role: undefined,
       campus_id: undefined,
       status: "Active",
       locale: "en", 
@@ -72,7 +71,7 @@ export function AddUserDialog({
   });
 
   const handleSubmit = (data: FormValues) => {
-    createUser.mutate(data, {
+    createUser.mutate({...data, role_id: parseInt(data.role_id)}, {
       onSuccess: () => {
         invalidateUsers();
         onOpenChange(false);
@@ -95,6 +94,7 @@ export function AddUserDialog({
     });
   };
 
+  console.log(roles)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
@@ -152,13 +152,13 @@ export function AddUserDialog({
 
             <FormField
               control={form.control}
-              name="role"
+              name="role_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    defaultValue={field.value?.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -166,12 +166,13 @@ export function AddUserDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="librarian">Librarian</SelectItem>
-                      <SelectItem value="accountant">Accountant</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
+                      {
+                        roles?.data?.map((role) => (
+                          <SelectItem key={role.id} value={role.id.toString()}>
+                            {role.label}
+                          </SelectItem>
+                        ))
+                      }
                     </SelectContent>
                   </Select>
                   <FormMessage />

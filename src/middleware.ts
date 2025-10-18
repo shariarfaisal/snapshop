@@ -23,7 +23,7 @@ function handleProtectedRoute(request: NextRequest) {
   const url = request.nextUrl.clone();
   const isAuthError = url.searchParams.get("auth_error");
 
-  const publicRoutes = ["/login", "/signup"];
+  const publicRoutes = ["/", "/login", "/signup"];
 
   if (!authCookie && !publicRoutes.includes(url.pathname)) {
     // If there's no auth cookie and the user is not on the login page, redirect to login

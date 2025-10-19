@@ -1,5 +1,8 @@
 "use client";
-import { SidebarTrigger, useSidebar } from "@/components";
+import LogoComponent from "@/components/common/logo";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { UserAvatar } from "@/components/user/user-avatar";
+import { Bell } from "lucide-react";
 
 export const LayoutHeader = () => {
   const { open } = useSidebar();
@@ -9,8 +12,12 @@ export const LayoutHeader = () => {
       <div className="flex items-center justify-between ">
         <div className="flex items-center gap-4 ">
           {!open && <SidebarTrigger className="-ml-1" />}
+          <LogoComponent size="sm" />
         </div>
-        <div className="flex items-center gap-4"></div>
+        <div className="flex items-center gap-4">
+          <Bell size={20} />
+          <UserAvatar />
+        </div>
       </div>
     </header>
   );

@@ -2,17 +2,9 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { LayoutHeader } from "@/components/layout/header";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
 
 
 const UserLayout = ({ children }: { children: React.ReactNode }) => {
-  const { getProfile } = useAuth();
-  
-  useEffect(() => {
-    getProfile();
-  }, []);
-
   return (
     <SidebarProvider>
       <AppSidebar></AppSidebar>

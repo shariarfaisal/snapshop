@@ -25,21 +25,21 @@ function handleProtectedRoute(request: NextRequest) {
 
   const publicRoutes = ["/", "/login", "/signup"];
 
-  if (!authCookie && !publicRoutes.includes(url.pathname)) {
-    // If there's no auth cookie and the user is not on the login page, redirect to login
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  } else if (
-    authCookie &&
-    ["/login", "/signup"].includes(url.pathname) &&
-    !isAuthError
-  ) {
-    // If there is an auth cookie and the user is on the login page, redirect to home
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  } else if (authCookie && isAuthError) {
-    cookies.delete("x-auth-token");
-  }
+  // if (!authCookie && !publicRoutes.includes(url.pathname)) {
+  //   // If there's no auth cookie and the user is not on the login page, redirect to login
+  //   url.pathname = "/login";
+  //   return NextResponse.redirect(url);
+  // } else if (
+  //   authCookie &&
+  //   ["/login", "/signup"].includes(url.pathname) &&
+  //   !isAuthError
+  // ) {
+  //   // If there is an auth cookie and the user is on the login page, redirect to home
+  //   url.pathname = "/";
+  //   return NextResponse.redirect(url);
+  // } else if (authCookie && isAuthError) {
+  //   cookies.delete("x-auth-token");
+  // }
 
   // Otherwise, allow the request to continue
   return NextResponse.next();

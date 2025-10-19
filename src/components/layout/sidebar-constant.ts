@@ -31,7 +31,7 @@ export const sidebarConstant: ISidebarConstant = {
   items: [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/admin",
       icon: GraduationCap,
     },
     {

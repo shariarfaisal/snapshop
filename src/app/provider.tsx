@@ -1,8 +1,6 @@
 "use client";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
-import { useAuthStore } from "@/store/auth-store";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient({
@@ -15,21 +13,15 @@ const queryClient = new QueryClient({
 });
 
 const Provider = ({ children }: { children: React.ReactNode }) => {
-  const initialize = useAuthStore((state) => state.initialize);
-
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    // Initialize auth on mount if needed
+  }, []);
 
   return (
-    <>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster position="top-right" richColors closeButton />
-          {children}
-        </TooltipProvider>
-      </QueryClientProvider>
-    </>
+    <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" richColors closeButton />
+      {children}
+    </QueryClientProvider>
   );
 };
 

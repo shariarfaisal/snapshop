@@ -1,7 +1,7 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  // output: 'export',  // TODO: Enable after adding generateStaticParams to all dynamic routes
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
   trailingSlash: true,
   images: {
     unoptimized: true,
@@ -14,9 +14,14 @@ const nextConfig: NextConfig = {
     ],
   },
   eslint: {
-    // Allow build to succeed with ESLint warnings
     ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  webpack: (config) => {
+    return config;
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

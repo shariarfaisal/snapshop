@@ -86,18 +86,20 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/draft-js": "^0.11.18",
-    "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/node": "^20.17.17",
+    "@types/react": "^19.0.8",
     "@types/react-dom": "^19",
     "@types/recharts": "^1.8.29",
+    "autoprefixer": "^10.4.21",
     "css-loader": "^7.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.1.0",
     "jsdom": "^27.0.1",
-    "postcss": "^8",
+    "postcss": "^8.5.6",
     "style-loader": "^4.0.0",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5",
+    "tailwindcss": "^3.4.18",
+    "typescript": "^5.7.3",
     "vitest": "^4.0.3"
-  }
+  },
+  "packageManager": "pnpm@10.4.0+sha512.6b849d0787d97f8f4e1f03a9b8ff8f038e79e153d6f11ae539ae7c435ff9e796df6a862c991502695c7f9e8fac8aeafc1ac5a8dab47e36148d183832d886dd52"
 }

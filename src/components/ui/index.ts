@@ -53,3 +53,4 @@ export * from "./popconfirm";
 export * from "./popover";
 export * from "./progress";
 
+export * from "./breadcrumb"

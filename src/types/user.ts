@@ -7,6 +7,8 @@ export type User = {
   id: string;
   username: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   locale: string;
   status: UserStatus;
   tenant_id: string;

@@ -44,7 +44,7 @@ const NavUser = () => {
               <User className="w-5 h-5" />
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium">{user.username}</p>
+              <p className="text-sm font-medium">{(user as any).name || (user as any).username || "User"}</p>
               <p className="text-xs text-gray-500">{user.email}</p>
             </div>
           </div>

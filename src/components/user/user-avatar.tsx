@@ -24,14 +24,14 @@ export const UserAvatar = () => {
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-2">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={user.avatarUrl} />
+          <AvatarImage src={(user as any).avatar} />
           <AvatarFallback>
-            {user.firstName?.[0]}
-            {user.lastName?.[0]}
+            {(user as any).firstName?.[0]}
+            {(user as any).lastName?.[0]}
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-col items-start">
-          <span className="font-medium text-sm">{user.firstName} {user.lastName}</span>
+          <span className="font-medium text-sm">{(user as any).firstName} {(user as any).lastName}</span>
         </div>
         <ChevronsUpDown size={16} className="text-gray-500" />
       </DropdownMenuTrigger>

@@ -31,7 +31,7 @@ export function DeactivateUserAlert({
         <AlertDialogHeader>
           <AlertDialogTitle>Deactivate User</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to deactivate {user.name}? This action cannot be
+            Are you sure you want to deactivate {(user as any).name || "this user"}? This action cannot be
             undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

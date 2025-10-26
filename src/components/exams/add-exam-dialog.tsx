@@ -117,10 +117,14 @@ export function AddExamDialog({
   });
 
   const onSubmit = (data: ExamFormValues) => {
+    const apiData = {
+      ...data,
+      examDate: format(data.examDate, 'yyyy-MM-dd'),
+    };
     if (exam) {
-      updateExamMutation.mutate({ id: exam.id, data });
+      updateExamMutation.mutate({ id: exam.id, data: apiData });
     } else {
-      createExamMutation.mutate(data);
+      createExamMutation.mutate(apiData as CreateExamInput);
     }
   };
 

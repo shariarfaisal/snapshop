@@ -129,7 +129,7 @@ export function StudentForm({
     const programId = form.getValues("programId");
     const admissionDate = new Date(form.getValues("admissionDate"));
     const year = admissionDate.getFullYear().toString().slice(-2);
-    const program = programs?.find(p => p.id === programId);
+    const program = programs?.find(p => p.id === parseInt(programId));
     
     if (!program) return;
     
@@ -145,7 +145,7 @@ export function StudentForm({
     if (!form.getValues("programId")) return [];
     
     const programId = form.getValues("programId");
-    const program = programs?.find(p => p.id === programId);
+    const program = programs?.find(p => p.id === parseInt(programId));
     
     if (!program) return [];
     

@@ -1,4 +1,4 @@
-import { User, UserStatus } from "./user";
+import { User } from "./user";
 
 export type StudentStatus = "Active" | "Inactive" | "Graduated" | "Suspended" | "Withdrawn";
 
@@ -55,7 +55,7 @@ export interface StudentGuardian {
 }
 
 export interface CreateStudentProfileInput {
-  userId: string;
+  userId?: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
@@ -77,18 +77,18 @@ export interface CreateStudentProfileInput {
   emergencyPhone: string;
 }
 
-export interface UpdateStudentProfileInput extends Partial<CreateStudentProfileInput> {}
+export type UpdateStudentProfileInput = Partial<CreateStudentProfileInput>;
 
 export interface CreateStudentMedicalInput {
   studentId: string;
   bloodGroup: BloodGroup;
-  allergies: string;
-  chronicDisease: string;
-  medications: string;
-  notes: string;
+  allergies?: string;
+  chronicDisease?: string;
+  medications?: string;
+  notes?: string;
 }
 
-export interface UpdateStudentMedicalInput extends Partial<CreateStudentMedicalInput> {}
+export type UpdateStudentMedicalInput = Partial<CreateStudentMedicalInput>;
 
 export interface CreateStudentGuardianInput {
   studentId: string;
@@ -100,4 +100,4 @@ export interface CreateStudentGuardianInput {
   isPrimary: boolean;
 }
 
-export interface UpdateStudentGuardianInput extends Partial<CreateStudentGuardianInput> {} 
+export type UpdateStudentGuardianInput = Partial<CreateStudentGuardianInput>; 

@@ -1,36 +1,40 @@
-import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/store/auth-store";
 import { useRouter } from "next/navigation";
-import { deleteCookie } from "cookies-next";
-import { AUTH_API } from "@/services";
+import { useCallback } from "react";
 
+/**
+ * Custom hook for authentication
+ */
 export const useAuth = () => {
-  const { user, setUser } = useAppStore();
   const router = useRouter();
+  const authStore = useAuthStore();
 
-  const logout = async () => {
-    try {
-      // Clear the user from store
-      setUser(null);
+  const login = useCallback(
+    async (email: string, password: string, rememberMe?: boolean) => {
+      try {
+        await authStore.login(email, password, rememberMe);
+        router.push("/dashboard");
+      } catch (error) {
+        throw error;
+      }
+    },
+    [authStore, router]
+  );
 
-      // Clear the auth token cookie
-      deleteCookie("x-auth-token", { path: "/" });
-
-      // Redirect to login page
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-
-  const getProfile = async () => {
-    const data = await AUTH_API.getProfile();
-    setUser(data);
-  };
+  const logout = useCallback(async () => {
+    await authStore.logout();
+    router.push("/login");
+  }, [authStore, router]);
 
   return {
-    user,
+    user: authStore.user,
+    token: authStore.token,
+    isAuthenticated: authStore.isAuthenticated,
+    isLoading: authStore.isLoading,
+    error: authStore.error,
+    login,
     logout,
-    getProfile,
+    hasRole: authStore.hasRole,
+    hasPermission: authStore.hasPermission,
   };
 };

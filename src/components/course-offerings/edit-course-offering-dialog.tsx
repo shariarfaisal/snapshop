@@ -86,8 +86,8 @@ export function EditCourseOfferingDialog({
   });
   
   // Get subjects for the selected program
-  const { data: selectedProgram } = useProgram().getProgramWithSubjects(selectedProgramId);
-  const subjects = selectedProgram?.subjects || [];
+  const { data: selectedProgram } = useProgram().getProgramById(selectedProgramId) as any;
+  const subjects: any[] = (selectedProgram as any)?.subjects || [];
 
   const handleProgramChange = (programId: string) => {
     setSelectedProgramId(programId);
@@ -146,7 +146,7 @@ export function EditCourseOfferingDialog({
                       </FormControl>
                       <SelectContent>
                         {programs?.map((program) => (
-                          <SelectItem key={program.id} value={program.id}>
+                          <SelectItem key={program.id} value={String(program.id)}>
                             {program.title}
                           </SelectItem>
                         ))}

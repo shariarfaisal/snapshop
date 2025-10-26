@@ -1,7 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import PropTypes from "prop-types";
 
 const PublicNavbar = ({
     showApplyButton = true,
@@ -82,12 +81,6 @@ const PublicNavbar = ({
             </div>
         </nav>
     );
-};
-
-PublicNavbar.propTypes = {
-    showApplyButton: PropTypes.bool,
-    variant: PropTypes.oneOf(["transparent", "solid"]),
-    className: PropTypes.string,
 };
 
 export default PublicNavbar;

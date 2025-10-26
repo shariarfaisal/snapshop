@@ -1,4 +1,4 @@
-import { Program, Subject, ProgramWithSubjects, CurriculumMapEntry } from "@/types/program";
+import { Program, CurriculumMapEntry } from "@/types/program";
 import { $clientPrivate } from "./client";
 
 const BASE_URL = "/v1/programmes";

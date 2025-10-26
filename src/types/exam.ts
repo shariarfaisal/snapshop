@@ -38,7 +38,7 @@ export interface CreateExamInput {
   weight: number;
 }
 
-export interface UpdateExamInput extends Partial<CreateExamInput> {}
+export type UpdateExamInput = Partial<CreateExamInput>;
 
 export interface UpdateGradeInput {
   marks: number;

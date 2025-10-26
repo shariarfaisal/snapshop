@@ -2,7 +2,6 @@ import { $clientPrivate } from "./client";
 import type {
   Notification,
   NotificationDetails,
-  NotificationDelivery,
   UserNotification,
 } from "@/types/notification";
 

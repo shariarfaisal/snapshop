@@ -44,4 +44,5 @@ export interface ApplicationCreate {
 
 export interface ApplicationUpdate {
   status?: ApplicationStatus;
+  notes?: string;
 } 

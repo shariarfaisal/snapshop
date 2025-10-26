@@ -67,7 +67,7 @@ export function FeePlanDialog({
 
   const { data: programs } = useQuery({
     queryKey: ["programs"],
-    queryFn: () => programService.getAll(),
+    queryFn: () => programService.getAllPrograms(),
   });
 
   const { data: existingPlan } = useQuery({
@@ -208,7 +208,7 @@ export function FeePlanDialog({
                     </FormControl>
                     <SelectContent>
                       {programs?.map((program) => (
-                        <SelectItem key={program.id} value={program.id}>
+                        <SelectItem key={program.id} value={String(program.id)}>
                           {program.title}
                         </SelectItem>
                       ))}

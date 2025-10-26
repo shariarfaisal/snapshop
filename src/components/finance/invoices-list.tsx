@@ -50,7 +50,7 @@ export function InvoicesList() {
 
   const { data: programs } = useQuery({
     queryKey: ["programs"],
-    queryFn: () => programService.getAll(),
+    queryFn: () => programService.getAllPrograms(),
   });
 
   const { data: campuses } = useQuery({
@@ -124,8 +124,8 @@ export function InvoicesList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">All</SelectItem>
-            {campuses?.map((campus) => (
-              <SelectItem key={campus.id} value={campus.id}>
+            {campuses?.data?.map((campus) => (
+              <SelectItem key={campus.id} value={String(campus.id)}>
                 {campus.name}
               </SelectItem>
             ))}
@@ -144,7 +144,7 @@ export function InvoicesList() {
           <SelectContent>
             <SelectItem value="">All</SelectItem>
             {programs?.map((program) => (
-              <SelectItem key={program.id} value={program.id}>
+              <SelectItem key={program.id} value={String(program.id)}>
                 {program.title}
               </SelectItem>
             ))}

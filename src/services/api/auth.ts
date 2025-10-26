@@ -1,0 +1,118 @@
+import { api } from "@/lib/api-client";
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+  remember_me?: boolean;
+}
+
+export interface LoginResponse {
+  token: string;
+  refresh_token?: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    avatar?: string;
+    roles: { id: string; name: string }[];
+    institute_id?: string;
+    institute_name?: string;
+  };
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+  phone?: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  token: string;
+  refresh_token: string;
+}
+
+export const authService = {
+  /**
+   * Login user
+   */
+  login: async (credentials: LoginRequest): Promise<LoginResponse> => {
+    return api.post<LoginResponse>("/api/auth/login", credentials);
+  },
+
+  /**
+   * Register new user (if public registration is enabled)
+   */
+  register: async (data: RegisterRequest): Promise<LoginResponse> => {
+    return api.post<LoginResponse>("/api/auth/register", data);
+  },
+
+  /**
+   * Request password reset
+   */
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<{ message: string }> => {
+    return api.post<{ message: string }>("/api/auth/forgot-password", data);
+  },
+
+  /**
+   * Reset password with token
+   */
+  resetPassword: async (data: ResetPasswordRequest): Promise<{ message: string }> => {
+    return api.post<{ message: string }>("/api/auth/reset-password", data);
+  },
+
+  /**
+   * Refresh auth token
+   */
+  refreshToken: async (refreshToken: string): Promise<RefreshTokenResponse> => {
+    return api.post<RefreshTokenResponse>("/api/auth/refresh", { refresh_token: refreshToken });
+  },
+
+  /**
+   * Logout (if backend needs to invalidate token)
+   */
+  logout: async (): Promise<{ message: string }> => {
+    return api.post<{ message: string }>("/api/auth/logout");
+  },
+
+  /**
+   * Get current user profile
+   */
+  getProfile: async () => {
+    return api.get("/api/auth/me");
+  },
+
+  /**
+   * Update profile
+   */
+  updateProfile: async (data: any) => {
+    return api.put("/api/auth/profile", data);
+  },
+
+  /**
+   * Change password
+   */
+  changePassword: async (data: {
+    current_password: string;
+    new_password: string;
+    new_password_confirmation: string;
+  }) => {
+    return api.post("/api/auth/change-password", data);
+  },
+};

@@ -80,7 +80,7 @@ export interface CreateFeePlanInput {
   items: Omit<FeeItem, "id">[];
 }
 
-export interface UpdateFeePlanInput extends Partial<CreateFeePlanInput> {}
+export type UpdateFeePlanInput = Partial<CreateFeePlanInput>;
 
 export interface CreatePaymentInput {
   amount: number;

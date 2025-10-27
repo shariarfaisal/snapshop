@@ -1,23 +1,33 @@
 import { api } from "@/lib/api-client";
 
 export interface LoginRequest {
-  email: string;
+  login: string; // Can be email or username
   password: string;
   remember_me?: boolean;
 }
 
 export interface LoginResponse {
   token: string;
+  token_type?: string;
   refresh_token?: string;
   user: {
     id: string;
-    name: string;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
     email: string;
     phone?: string;
     avatar?: string;
-    roles: { id: string; name: string }[];
+    username?: string;
     institute_id?: string;
-    institute_name?: string;
+    roles?: { id: string; name: string }[];
+    institute?: {
+      id: string;
+      name: string;
+      email: string;
+      logo?: string;
+      primary_color?: string;
+    };
   };
 }
 

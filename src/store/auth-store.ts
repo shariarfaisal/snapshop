@@ -4,13 +4,22 @@ import { authService, LoginResponse } from "@/services/api/auth";
 
 export interface User {
   id: string;
-  name: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
   email: string;
   phone?: string;
   avatar?: string;
-  roles: { id: string; name: string }[];
+  username?: string;
   institute_id?: string;
-  institute_name?: string;
+  roles?: { id: string; name: string }[];
+  institute?: {
+    id: string;
+    name: string;
+    email: string;
+    logo?: string;
+    primary_color?: string;
+  };
 }
 
 export interface AuthStore {
@@ -175,7 +184,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   hasRole: (role: string) => {
     const { user } = get();
     if (!user) return false;
-    return user.roles.some((r) => r.name.toLowerCase() === role.toLowerCase());
+    return (user.roles || []).some((r) => r.name.toLowerCase() === role.toLowerCase());
   },
 
   // Check if user has permission
@@ -185,5 +194,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (!user) return false;
     // TODO: Implement permission checking based on roles
     return true;
+  },
+
+  // Get display name
+  getDisplayName: () => {
+    const { user } = get();
+    if (!user) return "Guest";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.name || user.email;
+  },
+
+  // Get institute name
+  getInstituteName: () => {
+    const { user } = get();
+    return user?.institute?.name || "Institute";
   },
 }));

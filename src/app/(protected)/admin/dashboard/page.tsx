@@ -1,11 +1,75 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, UserCheck, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Users, GraduationCap, UserCheck, DollarSign, TrendingUp, TrendingDown, AlertCircle, Loader2 } from "lucide-react";
+import { dashboardService, AdminDashboardData } from "@/services/api/dashboard";
 
 export default function AdminDashboard() {
-  // Mock data - will be replaced with real API calls
-  const stats = [
+  const { getDisplayName, getInstituteName } = useAuthStore();
+  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await dashboardService.getAdminDashboard();
+        setDashboardData(data);
+      } catch (err: any) {
+        console.error("Failed to fetch dashboard data:", err);
+        setError(err?.response?.data?.message || "Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Build stats from API data or use defaults
+  const stats = dashboardData?.statistics ? [
+    {
+      title: "Total Students",
+      value: dashboardData.statistics.total_students,
+      change: "+12.5%",
+      trend: "up",
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: "Total Teachers",
+      value: dashboardData.statistics.total_teachers,
+      change: "+3.2%",
+      trend: "up",
+      icon: UserCheck,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: "Active Classes",
+      value: dashboardData.statistics.total_classes,
+      change: "+5.1%",
+      trend: "up",
+      icon: GraduationCap,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: "Active Students",
+      value: dashboardData.statistics.active_students,
+      change: "+8.3%",
+      trend: "up",
+      icon: DollarSign,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+  ] : [
     {
       title: "Total Students",
       value: "2,845",
@@ -51,12 +115,36 @@ export default function AdminDashboard() {
     { type: "attendance", message: "Daily attendance marked for all classes", time: "1 day ago" },
   ];
 
+  // Attendance data from API or defaults
+  const attendanceStats = dashboardData?.attendance || {
+    today_total: 2845,
+    today_present: 2456,
+    today_absent: 245,
+    today_percentage: 86.3,
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6 flex flex-col items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
+        <p className="text-gray-500 mt-1">Welcome {getDisplayName()}! Here's what's happening in {getInstituteName()}.</p>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -149,23 +237,23 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-700 font-medium">Present</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">2,456</p>
-              <p className="text-xs text-green-600 mt-1">86.3% of students</p>
+              <p className="text-2xl font-bold text-green-900 mt-1">{attendanceStats.today_present}</p>
+              <p className="text-xs text-green-600 mt-1">{attendanceStats.today_percentage}% of students</p>
             </div>
             <div className="p-4 bg-red-50 rounded-lg">
               <p className="text-sm text-red-700 font-medium">Absent</p>
-              <p className="text-2xl font-bold text-red-900 mt-1">245</p>
-              <p className="text-xs text-red-600 mt-1">8.6% of students</p>
+              <p className="text-2xl font-bold text-red-900 mt-1">{attendanceStats.today_absent}</p>
+              <p className="text-xs text-red-600 mt-1">Total marked</p>
             </div>
             <div className="p-4 bg-yellow-50 rounded-lg">
-              <p className="text-sm text-yellow-700 font-medium">Late</p>
-              <p className="text-2xl font-bold text-yellow-900 mt-1">89</p>
-              <p className="text-xs text-yellow-600 mt-1">3.1% of students</p>
+              <p className="text-sm text-yellow-700 font-medium">Total Records</p>
+              <p className="text-2xl font-bold text-yellow-900 mt-1">{attendanceStats.today_total}</p>
+              <p className="text-xs text-yellow-600 mt-1">Today</p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700 font-medium">On Leave</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">55</p>
-              <p className="text-xs text-blue-600 mt-1">1.9% of students</p>
+              <p className="text-sm text-blue-700 font-medium">Institute</p>
+              <p className="text-2xl font-bold text-blue-900 mt-1">{getInstituteName().split(" ")[0]}</p>
+              <p className="text-xs text-blue-600 mt-1">Current institute</p>
             </div>
           </div>
         </CardContent>

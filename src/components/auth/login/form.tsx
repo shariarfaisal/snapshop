@@ -26,8 +26,8 @@ import { setCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
-  username: z.string().min(1, {
-    message: "Username is required",
+  login: z.string().min(1, {
+    message: "Email or username is required",
   }),
   password: z.string().min(8, {
     message: "Password must be at least 8 characters",
@@ -40,20 +40,35 @@ export const LoginForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
-      password: "",
+      login: "admin@demo.com",
+      password: "admin@123",
     },
   });
   const { mutate, isPending } = useMutation({
-    mutationFn: AUTH_API.login,
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error("Login failed");
+      }
+      return response.json();
+    },
     onSuccess: (data) => {
       form.reset();
-      console.log(data);
-      setCookie("x-auth-token", data.token, {
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: "/",
-      });
-      push("/");
+      console.log("Login successful:", data);
+      if (data.token) {
+        setCookie("x-auth-token", data.token, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          path: "/",
+        });
+        toast.success("Login successful!");
+        push("/admin/dashboard");
+      }
     },
     onError: (error) => {
       if (isAxiosError(error)) {
@@ -81,14 +96,14 @@ export const LoginForm = () => {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField
             control={form.control}
-            name="username"
+            name="login"
             render={({ field }) => (
               <FormItem className="mb-0">
                 <FormControl>
                   <Input
                     className="rounded-md h-10"
                     type="text"
-                    placeholder="Username"
+                    placeholder="Email or Username"
                     {...field}
                   />
                 </FormControl>

@@ -25,7 +25,9 @@ export default function ExamDetailPage() {
     try {
       setLoading(true);
       const response = await examService.getById(examId);
-      setExam(response.data);
+      // Handle both direct response and nested response
+      const examData = response?.data || response;
+      setExam(examData);
     } catch (error) {
       console.error("Failed to fetch exam:", error);
     } finally {
@@ -74,6 +76,12 @@ export default function ExamDetailPage() {
             <p className="text-muted-foreground mt-1">Code: {exam.code}</p>
           )}
         </div>
+        <Button variant="outline" asChild>
+          <Link href={`/admin/exams/edit/${exam.id}`}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Exam
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -82,8 +90,14 @@ export default function ExamDetailPage() {
             <CardTitle>Exam Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {(exam as any).exam_type && (
+              <div>
+                <span className="text-sm text-gray-600">Exam Type:</span>
+                <p className="font-medium capitalize">{(exam as any).exam_type.replace(/_/g, ' ')}</p>
+              </div>
+            )}
             <div>
-              <span className="text-sm text-gray-600">Term:</span>
+              <span className="text-sm text-gray-600">Academic Term:</span>
               <p className="font-medium capitalize">{exam.term}</p>
             </div>
             <div>

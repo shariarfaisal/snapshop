@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api-client';
 import { Department, DepartmentFilters, DepartmentFormData } from '@/types/department';
 
 export const useDepartments = (filters?: DepartmentFilters) => {
@@ -19,7 +19,7 @@ export const useDepartments = (filters?: DepartmentFilters) => {
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.per_page) params.append('per_page', filters.per_page.toString());
 
-      const response = await api.get(`/departments?${params.toString()}`);
+      const response = await apiClient.get(`/api/departments?${params.toString()}`);
       
       if (response.data.success) {
         const data = response.data.data;
@@ -44,7 +44,7 @@ export const useDepartments = (filters?: DepartmentFilters) => {
   }, [filters?.search, filters?.status, filters?.page, filters?.per_page]);
 
   const createDepartment = async (data: DepartmentFormData) => {
-    const response = await api.post('/departments', data);
+    const response = await apiClient.post('/api/departments', data);
     if (response.data.success) {
       await fetchDepartments();
       return response.data.data;
@@ -53,7 +53,7 @@ export const useDepartments = (filters?: DepartmentFilters) => {
   };
 
   const updateDepartment = async (id: number, data: Partial<DepartmentFormData>) => {
-    const response = await api.put(`/departments/${id}`, data);
+    const response = await apiClient.put(`/api/departments/${id}`, data);
     if (response.data.success) {
       await fetchDepartments();
       return response.data.data;
@@ -62,7 +62,7 @@ export const useDepartments = (filters?: DepartmentFilters) => {
   };
 
   const deleteDepartment = async (id: number) => {
-    const response = await api.delete(`/departments/${id}`);
+    const response = await apiClient.delete(`/api/departments/${id}`);
     if (response.data.success) {
       await fetchDepartments();
       return true;

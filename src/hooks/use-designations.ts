@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api-client';
 import { Designation, DesignationFilters, DesignationFormData } from '@/types/designation';
 
 export const useDesignations = (filters?: DesignationFilters) => {
@@ -20,7 +20,7 @@ export const useDesignations = (filters?: DesignationFilters) => {
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.per_page) params.append('per_page', filters.per_page.toString());
 
-      const response = await api.get(`/designations?${params.toString()}`);
+      const response = await apiClient.get(`/api/designations?${params.toString()}`);
       
       if (response.data.success) {
         const data = response.data.data;
@@ -45,7 +45,7 @@ export const useDesignations = (filters?: DesignationFilters) => {
   }, [filters?.search, filters?.status, filters?.department_id, filters?.page, filters?.per_page]);
 
   const createDesignation = async (data: DesignationFormData) => {
-    const response = await api.post('/designations', data);
+    const response = await apiClient.post('/api/designations', data);
     if (response.data.success) {
       await fetchDesignations();
       return response.data.data;
@@ -54,7 +54,7 @@ export const useDesignations = (filters?: DesignationFilters) => {
   };
 
   const updateDesignation = async (id: number, data: Partial<DesignationFormData>) => {
-    const response = await api.put(`/designations/${id}`, data);
+    const response = await apiClient.put(`/api/designations/${id}`, data);
     if (response.data.success) {
       await fetchDesignations();
       return response.data.data;
@@ -63,7 +63,7 @@ export const useDesignations = (filters?: DesignationFilters) => {
   };
 
   const deleteDesignation = async (id: number) => {
-    const response = await api.delete(`/designations/${id}`);
+    const response = await apiClient.delete(`/api/designations/${id}`);
     if (response.data.success) {
       await fetchDesignations();
       return true;

@@ -1,15 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks";
-import { subjectService } from "@/services/subject";
-import { CreateSubjectInput } from "@/types/program";
-import { Plus } from "lucide-react";
-import Link from "next/link";
+import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,143 +15,189 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { useSubject } from "@/hooks/use-subject";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSubjects } from "@/hooks/use-subjects";
+import { CreateSubjectInput } from "@/types/subject";
 
 const subjectSchema = z.object({
-  code: z.string().min(2, "Code must be at least 2 characters"),
   name: z.string().min(3, "Name must be at least 3 characters"),
-  credit: z.number().min(0.5, "Credit must be at least 0.5").max(10, "Credit cannot exceed 10"),
+  code: z.string().optional(),
+  description: z.string().optional(),
+  type: z.enum(["core", "elective", "optional"]),
+  credit_hours: z.number().min(1, "Credit hours must be at least 1"),
 });
 
 type SubjectFormValues = z.infer<typeof subjectSchema>;
 
-export const CreateSubjectDialog = () => {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const { createSubject, invalidateSubjects } = useSubject();
+interface CreateSubjectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+export const CreateSubjectDialog = ({
+  open,
+  onOpenChange,
+  onSuccess,
+}: CreateSubjectDialogProps) => {
+  const { createSubject, isCreating } = useSubjects();
 
   const form = useForm<SubjectFormValues>({
     resolver: zodResolver(subjectSchema),
     defaultValues: {
-      code: "",
       name: "",
-      credit: 3,
+      code: "",
+      description: "",
+      type: "core",
+      credit_hours: 3,
     },
   });
 
   const onSubmit = async (data: SubjectFormValues) => {
-    setIsSubmitting(true);
     try {
-      createSubject.mutate(data, {
-        onSuccess: () => {
-            invalidateSubjects();
-            toast({
-              title: "Success",
-              description: `Subject "${data.name}" created successfully`,
-          });
-          form.reset();
-          setIsOpen(false);
-        },
-        onError: (error) => {
-          console.error("Error creating subject:", error);
-          toast({
-            title: "Error",
-            description: "Failed to create subject",
-          });
-        },
-      });
+      await createSubject(data as CreateSubjectInput);
+      form.reset();
+      onOpenChange(false);
+      onSuccess?.();
     } catch (error) {
       console.error("Error creating subject:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create subject",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>
-        <Plus className="mr-2 h-4 w-4" />
-        Add Subject
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add Subject</DialogTitle>
+          <DialogDescription>
+            Create a new subject for your institute
+          </DialogDescription>
         </DialogHeader>
-        <DialogDescription>
-          Add a new subject to the system
-        </DialogDescription>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subject Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Introduction to Programming" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subject Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="CS101" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="credit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Credit Hours</FormLabel>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject Name *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Mathematics" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., MATH101" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject Type *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0.5" 
-                        max="10" 
-                        step="0.5" 
-                        {...field}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Subject"}
-                </Button>
-              </div>
-            </form>
-          </Form>
+                    <SelectContent>
+                      <SelectItem value="core">Core</SelectItem>
+                      <SelectItem value="elective">Elective</SelectItem>
+                      <SelectItem value="optional">Optional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="credit_hours"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Credit Hours *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(parseInt(e.target.value))
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Subject description..."
+                      className="resize-none"
+                      rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isCreating}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? "Creating..." : "Create Subject"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

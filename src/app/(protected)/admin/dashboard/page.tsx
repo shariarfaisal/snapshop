@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, GraduationCap, UserCheck, DollarSign, TrendingUp, TrendingDown, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Users,
+  GraduationCap,
+  UserCheck,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { dashboardService, AdminDashboardData } from "@/services/api/dashboard";
 
 export default function AdminDashboard() {
@@ -32,81 +41,83 @@ export default function AdminDashboard() {
   }, []);
 
   // Build stats from API data or use defaults
-  const stats = dashboardData?.statistics ? [
-    {
-      title: "Total Students",
-      value: dashboardData.statistics.total_students,
-      change: "+12.5%",
-      trend: "up",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: "Total Teachers",
-      value: dashboardData.statistics.total_teachers,
-      change: "+3.2%",
-      trend: "up",
-      icon: UserCheck,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: "Active Classes",
-      value: dashboardData.statistics.total_classes,
-      change: "+5.1%",
-      trend: "up",
-      icon: GraduationCap,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-    {
-      title: "Active Students",
-      value: dashboardData.statistics.active_students,
-      change: "+8.3%",
-      trend: "up",
-      icon: DollarSign,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
-  ] : [
-    {
-      title: "Total Students",
-      value: "2,845",
-      change: "+12.5%",
-      trend: "up",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: "Total Teachers",
-      value: "142",
-      change: "+3.2%",
-      trend: "up",
-      icon: UserCheck,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: "Active Classes",
-      value: "68",
-      change: "+5.1%",
-      trend: "up",
-      icon: GraduationCap,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-    {
-      title: "Revenue (Monthly)",
-      value: "$125,450",
-      change: "+8.3%",
-      trend: "up",
-      icon: DollarSign,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
-  ];
+  const stats = dashboardData?.statistics
+    ? [
+        {
+          title: "Total Students",
+          value: dashboardData.statistics.total_students,
+          change: "+12.5%",
+          trend: "up",
+          icon: Users,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+        },
+        {
+          title: "Total Teachers",
+          value: dashboardData.statistics.total_teachers,
+          change: "+3.2%",
+          trend: "up",
+          icon: UserCheck,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+        },
+        {
+          title: "Active Classes",
+          value: dashboardData.statistics.total_classes,
+          change: "+5.1%",
+          trend: "up",
+          icon: GraduationCap,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+        },
+        {
+          title: "Active Students",
+          value: dashboardData.statistics.active_students,
+          change: "+8.3%",
+          trend: "up",
+          icon: DollarSign,
+          color: "text-orange-600",
+          bgColor: "bg-orange-50",
+        },
+      ]
+    : [
+        {
+          title: "Total Students",
+          value: "2,845",
+          change: "+12.5%",
+          trend: "up",
+          icon: Users,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+        },
+        {
+          title: "Total Teachers",
+          value: "142",
+          change: "+3.2%",
+          trend: "up",
+          icon: UserCheck,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+        },
+        {
+          title: "Active Classes",
+          value: "68",
+          change: "+5.1%",
+          trend: "up",
+          icon: GraduationCap,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+        },
+        {
+          title: "Revenue (Monthly)",
+          value: "$125,450",
+          change: "+8.3%",
+          trend: "up",
+          icon: DollarSign,
+          color: "text-orange-600",
+          bgColor: "bg-orange-50",
+        },
+      ];
 
   const recentActivities = [
     { type: "admission", message: "New admission application from John Doe", time: "2 hours ago" },
@@ -136,7 +147,9 @@ export default function AdminDashboard() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome {getDisplayName()}! Here's what's happening in {getInstituteName()}.</p>
+        <p className="text-gray-500 mt-1">
+          Welcome {getDisplayName()}! Here's what's happening in {getInstituteName()}.
+        </p>
       </div>
 
       {error && (
@@ -161,7 +174,11 @@ export default function AdminDashboard() {
                     ) : (
                       <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
                     )}
-                    <span className={`text-sm font-medium ${stat.trend === "up" ? "text-green-600" : "text-red-600"}`}>
+                    <span
+                      className={`text-sm font-medium ${
+                        stat.trend === "up" ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
                       {stat.change}
                     </span>
                     <span className="text-sm text-gray-500 ml-1">vs last month</span>
@@ -185,7 +202,10 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="space-y-4">
               {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3 pb-4 border-b last:border-0 last:pb-0">
+                <div
+                  key={index}
+                  className="flex items-start space-x-3 pb-4 border-b last:border-0 last:pb-0"
+                >
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{activity.message}</p>
                     <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
@@ -237,8 +257,12 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-700 font-medium">Present</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">{attendanceStats.today_present}</p>
-              <p className="text-xs text-green-600 mt-1">{attendanceStats.today_percentage}% of students</p>
+              <p className="text-2xl font-bold text-green-900 mt-1">
+                {attendanceStats.today_present}
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                {attendanceStats.today_percentage}% of students
+              </p>
             </div>
             <div className="p-4 bg-red-50 rounded-lg">
               <p className="text-sm text-red-700 font-medium">Absent</p>
@@ -247,12 +271,16 @@ export default function AdminDashboard() {
             </div>
             <div className="p-4 bg-yellow-50 rounded-lg">
               <p className="text-sm text-yellow-700 font-medium">Total Records</p>
-              <p className="text-2xl font-bold text-yellow-900 mt-1">{attendanceStats.today_total}</p>
+              <p className="text-2xl font-bold text-yellow-900 mt-1">
+                {attendanceStats.today_total}
+              </p>
               <p className="text-xs text-yellow-600 mt-1">Today</p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-700 font-medium">Institute</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">{getInstituteName().split(" ")[0]}</p>
+              <p className="text-2xl font-bold text-blue-900 mt-1">
+                {getInstituteName().split(" ")[0]}
+              </p>
               <p className="text-xs text-blue-600 mt-1">Current institute</p>
             </div>
           </div>

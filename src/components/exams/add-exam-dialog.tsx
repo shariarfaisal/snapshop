@@ -69,11 +69,11 @@ export function AddExamDialog({
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examFormSchema),
     defaultValues: {
-      name: exam?.name || "",
-      subjectOfferingId: exam?.subjectOfferingId || "",
-      examDate: exam ? new Date(exam.examDate) : undefined,
-      maxMarks: exam?.maxMarks || 100,
-      weight: exam?.weight || 100,
+      name: "",
+      subjectOfferingId: "",
+      examDate: undefined,
+      maxMarks: 100,
+      weight: 100,
     },
   });
 
@@ -97,7 +97,7 @@ export function AddExamDialog({
   });
 
   const updateExamMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateExamInput> }) =>
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateExamInput> }) =>
       examService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["exams"] });
@@ -117,15 +117,11 @@ export function AddExamDialog({
   });
 
   const onSubmit = (data: ExamFormValues) => {
-    const apiData = {
-      ...data,
-      examDate: format(data.examDate, 'yyyy-MM-dd'),
-    };
-    if (exam) {
-      updateExamMutation.mutate({ id: exam.id, data: apiData });
-    } else {
-      createExamMutation.mutate(apiData as CreateExamInput);
-    }
+    // Note: This component is legacy and should use the new exam pages instead
+    toast({
+      title: "Info",
+      description: "Please use the exam setup page for creating exams",
+    });
   };
 
   return (

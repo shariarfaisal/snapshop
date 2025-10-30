@@ -1,78 +1,126 @@
-import { Exam, Grade, CreateExamInput, UpdateExamInput, UpdateGradeInput, GradeModerationInput } from "@/types/exam";
-
-const API_URL = "/api/exams";
+import { api } from "@/lib/api-client";
+import {
+  Exam,
+  ExamSubject,
+  Mark,
+  GradeScale,
+  CreateExamInput,
+  UpdateExamInput,
+  CreateExamSubjectInput,
+  CreateMarkInput,
+  BulkCreateMarksInput,
+  CreateGradeScaleInput
+} from "@/types/exam";
 
 export const examService = {
-  getAll: async (): Promise<Exam[]> => {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error("Failed to fetch exams");
-    return response.json();
+  // Exams
+  getAll: async (filters?: Record<string, any>): Promise<Exam[]> => {
+    const params = filters ? { params: filters } : undefined;
+    return api.get<Exam[]>("/exams", params);
   },
 
-  getById: async (id: string): Promise<Exam> => {
-    const response = await fetch(`${API_URL}/${id}`);
-    if (!response.ok) throw new Error("Failed to fetch exam");
-    return response.json();
+  getById: async (id: number): Promise<Exam> => {
+    return api.get<Exam>(`/exams/${id}`);
   },
 
   create: async (data: CreateExamInput): Promise<Exam> => {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to create exam");
-    return response.json();
+    return api.post<Exam>("/exams", data);
   },
 
-  update: async (id: string, data: UpdateExamInput): Promise<Exam> => {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to update exam");
-    return response.json();
+  update: async (id: number, data: UpdateExamInput): Promise<Exam> => {
+    return api.put<Exam>(`/exams/${id}`, data);
   },
 
-  delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) throw new Error("Failed to delete exam");
+  delete: async (id: number): Promise<void> => {
+    return api.delete<void>(`/exams/${id}`);
   },
 
-  getGrades: async (examId: string): Promise<Grade[]> => {
-    const response = await fetch(`${API_URL}/${examId}/grades`);
-    if (!response.ok) throw new Error("Failed to fetch grades");
-    return response.json();
+  getSubjects: async (examId: number): Promise<ExamSubject[]> => {
+    return api.get<ExamSubject[]>(`/exams/${examId}/subjects`);
   },
 
-  updateGrades: async (examId: string, data: Record<string, UpdateGradeInput>): Promise<Grade[]> => {
-    const response = await fetch(`${API_URL}/${examId}/grades`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to update grades");
-    return response.json();
+  addSubject: async (examId: number, data: CreateExamSubjectInput): Promise<ExamSubject> => {
+    return api.post<ExamSubject>(`/exams/${examId}/subjects`, data);
   },
 
-  moderateGrade: async (gradeId: string, data: GradeModerationInput): Promise<Grade> => {
-    const response = await fetch(`/api/grades/${gradeId}/moderate`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error("Failed to moderate grade");
-    return response.json();
+  updateSubject: async (examId: number, subjectId: number, data: Partial<CreateExamSubjectInput>): Promise<ExamSubject> => {
+    return api.put<ExamSubject>(`/exams/${examId}/subjects/${subjectId}`, data);
   },
 
-  finalizeGrade: async (gradeId: string): Promise<Grade> => {
-    const response = await fetch(`/api/grades/${gradeId}/finalize`, {
-      method: "PUT",
-    });
-    if (!response.ok) throw new Error("Failed to finalize grade");
-    return response.json();
+  removeSubject: async (examId: number, subjectId: number): Promise<void> => {
+    return api.delete<void>(`/exams/${examId}/subjects/${subjectId}`);
   },
-}; 
+
+  getSchedule: async (examId: number): Promise<ExamSubject[]> => {
+    return api.get<ExamSubject[]>(`/exams/${examId}/schedule`);
+  },
+
+  publishResults: async (examId: number): Promise<Exam> => {
+    return api.post<Exam>(`/exams/${examId}/publish-results`);
+  },
+
+  getResults: async (examId: number): Promise<any[]> => {
+    return api.get<any[]>(`/exams/${examId}/results`);
+  },
+};
+
+export const markService = {
+  getAll: async (filters?: Record<string, any>): Promise<Mark[]> => {
+    const params = filters ? { params: filters } : undefined;
+    return api.get<Mark[]>("/marks", params);
+  },
+
+  getById: async (id: number): Promise<Mark> => {
+    return api.get<Mark>(`/marks/${id}`);
+  },
+
+  create: async (data: CreateMarkInput): Promise<Mark> => {
+    return api.post<Mark>("/marks", data);
+  },
+
+  bulkCreate: async (data: BulkCreateMarksInput): Promise<Mark[]> => {
+    return api.post<Mark[]>("/marks/bulk", data);
+  },
+
+  update: async (id: number, data: Partial<CreateMarkInput>): Promise<Mark> => {
+    return api.put<Mark>(`/marks/${id}`, data);
+  },
+
+  delete: async (id: number): Promise<void> => {
+    return api.delete<void>(`/marks/${id}`);
+  },
+
+  byExam: async (examId: number): Promise<Mark[]> => {
+    return api.get<Mark[]>(`/marks/exam/${examId}`);
+  },
+
+  byExamSubject: async (examId: number, subjectId: number): Promise<Mark[]> => {
+    return api.get<Mark[]>(`/marks/exam/${examId}/subject/${subjectId}`);
+  },
+
+  studentExam: async (studentId: number, examId: number): Promise<Mark[]> => {
+    return api.get<Mark[]>(`/marks/student/${studentId}/exam/${examId}`);
+  },
+};
+
+export const gradeScaleService = {
+  getAll: async (): Promise<GradeScale[]> => {
+    return api.get<GradeScale[]>("/grade-scales");
+  },
+
+  getById: async (id: number): Promise<GradeScale> => {
+    return api.get<GradeScale>(`/grade-scales/${id}`);
+  },
+
+  create: async (data: CreateGradeScaleInput): Promise<GradeScale> => {
+    return api.post<GradeScale>("/grade-scales", data);
+  },
+
+  update: async (id: number, data: Partial<CreateGradeScaleInput>): Promise<GradeScale> => {
+    return api.put<GradeScale>(`/grade-scales/${id}`, data);
+  },
+
+  delete: async (id: number): Promise<void> => {
+    return api.delete<void>(`/grade-scales/${id}`);
+  },
+};

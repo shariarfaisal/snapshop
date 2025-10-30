@@ -5,21 +5,21 @@ const privateRoutes = ["/admin", "/accountant", "/teacher", "/student", "/parent
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const token = request.cookies.get("auth_token");
+  const token = request.cookies.get("x-auth-token");
 
   // If no token and trying to access private route, redirect to login
   if (!token && privateRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // If token exists and trying to access public auth routes, redirect to dashboard
+  // If token exists and trying to access public auth routes, redirect to admin dashboard
   if (token && publicRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next|public|api|static|\..*).*)"],
+  matcher: ["/((?!_next|public|api|static|..*).*)"],
 };

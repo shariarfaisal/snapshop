@@ -44,12 +44,12 @@ const createApiClient = (): AxiosInstance => {
           const refreshToken = getCookie("refresh_token");
           if (!refreshToken) {
             // No refresh token, redirect to login
-            window.location.href = "/login";
-            return Promise.reject(error);
+            // window.location.href = "/auth/login";
+            // return Promise.reject(error);
           }
 
           // Attempt refresh
-          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refresh_token: refreshToken,
           });
 
@@ -63,8 +63,8 @@ const createApiClient = (): AxiosInstance => {
           return client(config);
         } catch (refreshError) {
           // Refresh failed, redirect to login
-          window.location.href = "/login";
-          return Promise.reject(refreshError);
+          // window.location.href = "/login";
+          // return Promise.reject(refreshError);
         }
       }
 
@@ -77,32 +77,38 @@ const createApiClient = (): AxiosInstance => {
 
 export const apiClient = createApiClient();
 
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 /**
  * Type-safe API request helper
  */
 export const api = {
-  get: async <T>(url: string, config?: any) => {
-    const response = await apiClient.get<T>(url, config);
-    return response.data;
+  get: async <T>(url: string, config?: any): Promise<T> => {
+    const response = await apiClient.get<ApiResponse<T>>(url, config);
+    return response.data.data;
   },
 
-  post: async <T>(url: string, data?: any, config?: any) => {
-    const response = await apiClient.post<T>(url, data, config);
-    return response.data;
+  post: async <T>(url: string, data?: any, config?: any): Promise<T> => {
+    const response = await apiClient.post<ApiResponse<T>>(url, data, config);
+    return response.data.data;
   },
 
-  put: async <T>(url: string, data?: any, config?: any) => {
-    const response = await apiClient.put<T>(url, data, config);
-    return response.data;
+  put: async <T>(url: string, data?: any, config?: any): Promise<T> => {
+    const response = await apiClient.put<ApiResponse<T>>(url, data, config);
+    return response.data.data;
   },
 
-  patch: async <T>(url: string, data?: any, config?: any) => {
-    const response = await apiClient.patch<T>(url, data, config);
-    return response.data;
+  patch: async <T>(url: string, data?: any, config?: any): Promise<T> => {
+    const response = await apiClient.patch<ApiResponse<T>>(url, data, config);
+    return response.data.data;
   },
 
-  delete: async <T>(url: string, config?: any) => {
-    const response = await apiClient.delete<T>(url, config);
-    return response.data;
+  delete: async <T = void>(url: string, config?: any): Promise<T> => {
+    const response = await apiClient.delete<ApiResponse<T>>(url, config);
+    return response.data.data;
   },
 };

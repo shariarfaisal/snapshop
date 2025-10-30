@@ -27,11 +27,11 @@ import { AddExamDialog } from "./add-exam-dialog";
 import { ManageGradesDrawer } from "./manage-grades-drawer";
 
 const statusColors: Record<ExamStatus, string> = {
-  Draft: "bg-gray-100 text-gray-800",
-  Scheduled: "bg-blue-100 text-blue-800",
-  Completed: "bg-yellow-100 text-yellow-800",
-  Graded: "bg-purple-100 text-purple-800",
-  Finalized: "bg-green-100 text-green-800",
+  draft: "bg-gray-100 text-gray-800",
+  scheduled: "bg-blue-100 text-blue-800",
+  ongoing: "bg-yellow-100 text-yellow-800",
+  completed: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
 };
 
 export function ExamList() {
@@ -171,7 +171,7 @@ export function ExamList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {exams.map((exam) => (
+            {exams.map((exam: Exam) => (
               <TableRow key={exam.id}>
                 <TableCell className="font-medium">{exam.name}</TableCell>
                 <TableCell>{exam.subjectName}</TableCell>

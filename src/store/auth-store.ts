@@ -3,21 +3,23 @@ import { setCookie, getCookie, deleteCookie } from "cookies-next";
 import { authService, LoginResponse } from "@/services/api/auth";
 
 export interface User {
-  id: string;
+  id: number | string;
   firstName?: string;
   lastName?: string;
   name?: string;
   email: string;
-  phone?: string;
-  avatar?: string;
+  phone?: string | null;
+  avatar?: string | null;
   username?: string;
-  institute_id?: string;
+  institute_id?: number | string;
+  roleId?: number | string;
+  status?: string;
   roles?: { id: string; name: string }[];
   institute?: {
-    id: string;
+    id: number | string;
     name: string;
     email: string;
-    logo?: string;
+    logo?: string | null;
     primary_color?: string;
   };
 }
@@ -70,15 +72,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authService.login({
-        email,
+        login: email, // Backend expects 'login' field, not 'email'
         password,
         remember_me: rememberMe,
       });
 
+      console.log('Login response:', response); // Debug log
+
+      // Validate response has required fields
+      if (!response || !response.token || !response.user) {
+        throw new Error('Invalid response from server');
+      }
+
       // Store tokens
       setCookie("auth_token", response.token, {
         maxAge: rememberMe ? 60 * 60 * 24 * 30 : undefined,
-        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       });
@@ -86,7 +94,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (response.refresh_token) {
         setCookie("refresh_token", response.refresh_token, {
           maxAge: 60 * 60 * 24 * 7, // 7 days
-          httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
         });
@@ -102,8 +109,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       return response;
     } catch (error: unknown) {
-      const apiError = error as { response?: { data?: { message?: string } } };
-      const errorMessage = apiError?.response?.data?.message || "Login failed";
+      console.error('Login error:', error); // Debug log
+      const apiError = error as { response?: { data?: { message?: string } }; message?: string };
+      const errorMessage = apiError?.response?.data?.message || apiError?.message || "Login failed";
       set({ error: errorMessage, isLoading: false });
       throw error;
     }

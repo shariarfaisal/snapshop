@@ -18,12 +18,9 @@ $clientPrivate.defaults.headers.common["x-app-id"] = process.env.NEXT_PUBLIC_APP
 
 $clientPrivate.interceptors.request.use(
   async (config) => {
-    const authToken = await getCookie("x-auth-token");
+    const authToken = await getCookie("auth_token");
     if (authToken) {
-      config.headers["Authorization"] = `Bearer ${authToken.replace(
-        "Bearer ",
-        ""
-      )}`;
+      config.headers["Authorization"] = `Bearer ${authToken.replace("Bearer ", "")}`;
     }
     return config;
   },
@@ -34,12 +31,12 @@ $clientPrivate.interceptors.request.use(
 
 $clientPrivate.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      deleteCookie("x-auth-token");
-
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      // Check if we're already on the login page to prevent redirect loops
+      if (typeof window !== 'undefined' && window.location.pathname !== "/auth/login") {
+        await deleteCookie("auth_token");
+        window.location.href = "/auth/login";
       }
     }
     return Promise.reject(error);

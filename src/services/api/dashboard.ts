@@ -62,14 +62,14 @@ export interface StudentDashboardData {
 
 export const dashboardService = {
   getAdminDashboard: async (): Promise<AdminDashboardData> => {
-    return api.get<AdminDashboardData>("/api/dashboard/admin");
+    return api.get<AdminDashboardData>("/dashboard/admin");
   },
 
   getTeacherDashboard: async (): Promise<TeacherDashboardData> => {
-    return api.get<TeacherDashboardData>("/api/dashboard/teacher");
+    return api.get<TeacherDashboardData>("/dashboard/teacher");
   },
 
   getStudentDashboard: async (): Promise<StudentDashboardData> => {
-    return api.get<StudentDashboardData>("/api/dashboard/student");
+    return api.get<StudentDashboardData>("/dashboard/student");
   },
 };

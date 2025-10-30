@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, Building, Users, Bell, Shield } from "lucide-react";
+import { Settings as SettingsIcon, Building, Users, Bell, Shield, Building2, Briefcase } from "lucide-react";
+import Link from "next/link";
 
 export default function SettingsPage() {
   return (
@@ -42,21 +43,25 @@ export default function SettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-green-600" />
-              <CardTitle>User Management</CardTitle>
+              <CardTitle>Organization Structure</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button variant="outline" className="w-full justify-start">
-              <Users className="mr-2 h-4 w-4" />
-              Manage Roles & Permissions
-            </Button>
+            <Link href="/admin/settings/departments">
+              <Button variant="outline" className="w-full justify-start">
+                <Building2 className="mr-2 h-4 w-4" />
+                Manage Departments
+              </Button>
+            </Link>
+            <Link href="/admin/settings/designations">
+              <Button variant="outline" className="w-full justify-start">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Manage Designations
+              </Button>
+            </Link>
             <Button variant="outline" className="w-full justify-start">
               <Shield className="mr-2 h-4 w-4" />
-              Security Settings
-            </Button>
-            <Button variant="outline" className="w-full justify-start">
-              <Bell className="mr-2 h-4 w-4" />
-              Notification Preferences
+              Roles & Permissions
             </Button>
           </CardContent>
         </Card>

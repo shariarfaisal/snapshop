@@ -1,35 +1,74 @@
-import { Subject, CreateSubjectInput, UpdateSubjectInput } from "@/types/program";
+import { 
+  Subject, 
+  CreateSubjectInput, 
+  UpdateSubjectInput, 
+  SubjectFilters,
+  SubjectStatistics 
+} from "@/types/subject";
 import { $clientPrivate } from "./client";
-import { UseSubjectProps } from "@/hooks/use-subject";
 
-const BASE_URL = "/v1/subjects";
+const BASE_URL = "/subjects";
+
+export interface SubjectResponse {
+  success: boolean;
+  data: Subject[];
+  meta?: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+  };
+  total?: number;
+  message: string;
+}
+
+export interface SingleSubjectResponse {
+  success: boolean;
+  data: Subject;
+  message: string;
+}
+
+export interface StatisticsResponse {
+  success: boolean;
+  data: SubjectStatistics;
+  message: string;
+}
 
 export const subjectService = {
-  getAllSubjects: async (params?: UseSubjectProps) => {
-    const response = await $clientPrivate.get<{ data: Subject[], total: number }>(
-      `${BASE_URL}`, {
-        params
-      }
-    );
+  getAll: async (filters?: SubjectFilters): Promise<SubjectResponse> => {
+    const response = await $clientPrivate.get<SubjectResponse>(BASE_URL, {
+      params: filters
+    });
     return response.data;
   },
 
-  getSubjectById: async (id: string): Promise<Subject> => {
-    const response = await $clientPrivate.get<Subject>(`${BASE_URL}/${id}`);
+  getById: async (id: number): Promise<SingleSubjectResponse> => {
+    const response = await $clientPrivate.get<SingleSubjectResponse>(`${BASE_URL}/${id}`);
     return response.data;
   },
 
-  createSubject: async (data: CreateSubjectInput): Promise<Subject> => {
-    const response = await $clientPrivate.post<Subject>(BASE_URL, data);
+  create: async (data: CreateSubjectInput): Promise<SingleSubjectResponse> => {
+    const response = await $clientPrivate.post<SingleSubjectResponse>(BASE_URL, data);
     return response.data;
   },
 
-  updateSubject: async (id: string, data: UpdateSubjectInput): Promise<Subject> => {
-    const response = await $clientPrivate.put<Subject>(`${BASE_URL}/${id}`, data);
+  update: async (id: number, data: UpdateSubjectInput): Promise<SingleSubjectResponse> => {
+    const response = await $clientPrivate.put<SingleSubjectResponse>(`${BASE_URL}/${id}`, data);
     return response.data;
   },
 
-  deleteSubject: async (id: string): Promise<void> => {
-    await $clientPrivate.delete(`${BASE_URL}/${id}`);
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const response = await $clientPrivate.delete<{ success: boolean; message: string }>(`${BASE_URL}/${id}`);
+    return response.data;
+  },
+
+  bulkDelete: async (ids: number[]): Promise<{ success: boolean; message: string; deleted: number; failed: number; errors: string[] }> => {
+    const response = await $clientPrivate.post<{ success: boolean; message: string; deleted: number; failed: number; errors: string[] }>(`${BASE_URL}/bulk-delete`, { ids });
+    return response.data;
+  },
+
+  getStatistics: async (): Promise<StatisticsResponse> => {
+    const response = await $clientPrivate.get<StatisticsResponse>(`${BASE_URL}/statistics`);
+    return response.data;
   }
 }; 

@@ -328,7 +328,7 @@ export default function InvoicesPage() {
                 <SelectContent>
                   {students.map((s) => (
                     <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.user?.name || s.id}
+                      {s.user?.name} (ID: {s.id})
                     </SelectItem>
                   ))}
                 </SelectContent>

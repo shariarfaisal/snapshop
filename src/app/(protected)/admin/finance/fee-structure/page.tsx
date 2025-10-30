@@ -89,12 +89,12 @@ export default function FeeStructurePage() {
     try {
       const [classesData, yearsData, feeHeadsData] = await Promise.all([
         schoolClassService.getAll(),
-        fetch("/api/academic-years").then((r) => r.json()).catch(() => ({ data: { data: [] } })),
+        fetch("http://127.0.0.1:8000/api/academic-years").then((r) => r.json()).catch(() => ({ data: [] })),
         financeService.getAllFeeHeads({ is_active: true, per_page: 100 }, 1),
       ]);
       
       setClasses(classesData.data || []);
-      setAcademicYears(yearsData.data?.data || []);
+      setAcademicYears(yearsData.data || []);
       setFeeHeads(feeHeadsData.data || []);
     } catch (error) {
       console.error("Failed to fetch initial data:", error);

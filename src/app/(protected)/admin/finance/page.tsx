@@ -1,9 +1,46 @@
 "use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, Users, FileText } from "lucide-react";
+import { DollarSign, TrendingUp, FileText, AlertCircle, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { financeService } from "@/services/finance";
+import { toast } from "sonner";
 
 export default function FinancePage() {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [recentPayments, setRecentPayments] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [invoiceStats, paymentsData] = await Promise.all([
+        financeService.getInvoiceStatistics(),
+        financeService.getAllPayments({ per_page: 5 }, 1),
+      ]);
+      setStats(invoiceStats);
+      setRecentPayments(paymentsData.data || []);
+    } catch (error: any) {
+      toast.error("Failed to fetch finance data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -16,29 +53,28 @@ export default function FinancePage() {
           <CardContent className="pt-6">
             <DollarSign className="h-8 w-8 text-green-600 mb-2" />
             <p className="text-sm text-gray-600">Total Revenue</p>
-            <p className="text-2xl font-bold">$125,450</p>
-            <p className="text-xs text-green-600 mt-1">+8.3% vs last month</p>
+            <p className="text-2xl font-bold">${stats?.total_amount?.toFixed(2) || "0.00"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <FileText className="h-8 w-8 text-blue-600 mb-2" />
             <p className="text-sm text-gray-600">Pending Invoices</p>
-            <p className="text-2xl font-bold">245</p>
+            <p className="text-2xl font-bold">{stats?.pending_invoices || 0}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <TrendingUp className="h-8 w-8 text-orange-600 mb-2" />
             <p className="text-sm text-gray-600">Collection Rate</p>
-            <p className="text-2xl font-bold">89.5%</p>
+            <p className="text-2xl font-bold">{stats?.collection_rate?.toFixed(1) || "0.0"}%</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <Users className="h-8 w-8 text-purple-600 mb-2" />
-            <p className="text-sm text-gray-600">Defaulters</p>
-            <p className="text-2xl font-bold">42</p>
+            <AlertCircle className="h-8 w-8 text-red-600 mb-2" />
+            <p className="text-sm text-gray-600">Overdue Invoices</p>
+            <p className="text-2xl font-bold">{stats?.overdue_invoices || 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -49,39 +85,75 @@ export default function FinancePage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start">
-              <FileText className="mr-2 h-4 w-4" />
-              Generate Invoice
+            <Button className="w-full justify-start" asChild>
+              <Link href="/admin/finance/invoices">
+                <FileText className="mr-2 h-4 w-4" />
+                Manage Invoices
+              </Link>
             </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <DollarSign className="mr-2 h-4 w-4" />
-              Record Payment
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link href="/admin/finance/payments">
+                <DollarSign className="mr-2 h-4 w-4" />
+                Record Payment
+              </Link>
             </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <TrendingUp className="mr-2 h-4 w-4" />
-              View Reports
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link href="/admin/finance/reports">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                View Reports
+              </Link>
+            </Button>
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link href="/admin/finance/fee-structure">
+                <FileText className="mr-2 h-4 w-4" />
+                Fee Structure
+              </Link>
             </Button>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
+            <CardTitle>Recent Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[1,2,3].map(i => (
-                <div key={i} className="flex justify-between items-center p-3 border-b">
-                  <div>
-                    <p className="font-medium">Student Name</p>
-                    <p className="text-sm text-gray-500">INV-2024-{i.toString().padStart(3, '0')}</p>
+            {recentPayments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No recent payments</p>
+            ) : (
+              <div className="space-y-3">
+                {recentPayments.map((payment) => (
+                  <div key={payment.id} className="flex justify-between items-center p-3 border-b">
+                    <div>
+                      <p className="font-medium">{payment.student?.user?.name || payment.invoice?.student?.user?.name || "N/A"}</p>
+                      <p className="text-sm text-gray-500">{payment.payment_number}</p>
+                    </div>
+                    <span className="font-bold text-green-600">${Number(payment.amount).toFixed(2)}</span>
                   </div>
-                  <span className="font-bold text-green-600">$1,250</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {stats && stats.overdue_invoices > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-6 w-6 text-red-600 mt-1" />
+              <div>
+                <h3 className="font-semibold text-red-900">Overdue Invoices Alert</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  There are {stats.overdue_invoices} overdue invoices totaling ${stats.due_amount?.toFixed(2) || "0.00"}. 
+                  Please follow up with the concerned students/guardians.
+                </p>
+                <Button variant="outline" className="mt-3" size="sm" asChild>
+                  <Link href="/admin/finance/invoices">View Overdue Invoices</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

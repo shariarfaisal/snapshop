@@ -19,7 +19,7 @@ export const useDepartments = (filters?: DepartmentFilters) => {
       if (filters?.page) params.append('page', filters.page.toString());
       if (filters?.per_page) params.append('per_page', filters.per_page.toString());
 
-      const response = await apiClient.get(`/api/departments?${params.toString()}`);
+      const response = await apiClient.get(`/departments?${params.toString()}`);
       
       const data = response.data;
       if (data.success) {
@@ -44,19 +44,19 @@ export const useDepartments = (filters?: DepartmentFilters) => {
   }, [filters?.search, filters?.status, filters?.page, filters?.per_page]);
 
   const createDepartment = async (data: DepartmentFormData) => {
-    const response = await apiClient.post('/api/departments', data);
+    const response = await apiClient.post('/departments', data);
     await fetchDepartments();
     return response.data.data;
   };
 
   const updateDepartment = async (id: number, data: Partial<DepartmentFormData>) => {
-    const response = await apiClient.put(`/api/departments/${id}`, data);
+    const response = await apiClient.put(`/departments/${id}`, data);
     await fetchDepartments();
     return response.data.data;
   };
 
   const deleteDepartment = async (id: number) => {
-    await apiClient.delete(`/api/departments/${id}`);
+    await apiClient.delete(`/departments/${id}`);
     await fetchDepartments();
     return true;
   };

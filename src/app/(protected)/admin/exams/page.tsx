@@ -23,13 +23,16 @@ export default function ExamsPage() {
   const fetchExams = async () => {
     try {
       setLoading(true);
-      const exams = await examService.getAll();
-      setExams(exams);
+      const response = await examService.getAll();
+      
+      // Handle both array and paginated response
+      const examsData = Array.isArray(response) ? response : (response as any)?.data || [];
+      setExams(examsData);
 
       setStats({
-        total: exams.length,
-        scheduled: exams.filter(e => e.status === "scheduled" || e.status === "ongoing").length,
-        completed: exams.filter(e => e.status === "completed").length,
+        total: examsData.length,
+        scheduled: examsData.filter(e => e.status === "scheduled" || e.status === "ongoing").length,
+        completed: examsData.filter(e => e.status === "completed").length,
       });
     } catch (error) {
       console.error("Failed to fetch exams:", error);

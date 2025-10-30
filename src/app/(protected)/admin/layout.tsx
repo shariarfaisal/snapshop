@@ -42,8 +42,7 @@ const navigation = [
     icon: FileText,
     children: [
       { name: "Exams", href: "/admin/exams" },
-      { name: "Marks Entry", href: "/admin/exams/marks" },
-      { name: "Results", href: "/admin/exams/results" },
+      { name: "Marks Entry", href: "/admin/exams/results" },
     ],
   },
   {

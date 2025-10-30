@@ -92,7 +92,10 @@ export default function CreateExamForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="exam_type">Exam Type *</Label>
+              <Label htmlFor="exam_type">
+                Exam Type * 
+                <span className="text-xs text-gray-500 ml-2">(What type of assessment)</span>
+              </Label>
               <Select 
                 value={formData.exam_type} 
                 onValueChange={(value) => setFormData({ ...formData, exam_type: value })}
@@ -116,13 +119,16 @@ export default function CreateExamForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="term">Term *</Label>
+              <Label htmlFor="term">
+                Academic Term * 
+                <span className="text-xs text-gray-500 ml-2">(Which term/semester)</span>
+              </Label>
               <Select 
                 value={formData.term} 
                 onValueChange={(value) => setFormData({ ...formData, term: value as ExamTerm })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select term" />
+                  <SelectValue placeholder="Select academic term" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="first">First Term</SelectItem>

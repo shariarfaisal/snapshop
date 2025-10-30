@@ -57,14 +57,14 @@ export default function ExamSchedulePage() {
 
   const fetchClassesAndSubjects = async () => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
       const token = localStorage.getItem("auth_token");
       
       const [classRes, subjectRes] = await Promise.all([
-        fetch(`${API_BASE}/classes`, {
+        fetch(`${API_URL}/school-classes`, {
           headers: { "Authorization": `Bearer ${token}` }
         }),
-        fetch(`${API_BASE}/subjects`, {
+        fetch(`${API_URL}/subjects`, {
           headers: { "Authorization": `Bearer ${token}` }
         })
       ]);
@@ -72,8 +72,14 @@ export default function ExamSchedulePage() {
       const classData = await classRes.json();
       const subjectData = await subjectRes.json();
       
-      setClasses(classData.data || []);
-      setSubjects(subjectData.data || []);
+      // Handle both array and paginated responses
+      const classesArray = Array.isArray(classData) ? classData : 
+                          (classData.data ? (Array.isArray(classData.data) ? classData.data : classData.data.data || []) : []);
+      const subjectsArray = Array.isArray(subjectData) ? subjectData : 
+                           (subjectData.data ? (Array.isArray(subjectData.data) ? subjectData.data : subjectData.data.data || []) : []);
+      
+      setClasses(classesArray);
+      setSubjects(subjectsArray);
     } catch (error) {
       console.error("Failed to fetch classes/subjects:", error);
     }

@@ -22,15 +22,15 @@ export const useDesignations = (filters?: DesignationFilters) => {
 
       const response = await apiClient.get(`/api/designations?${params.toString()}`);
       
-      if (response.data.success) {
-        const data = response.data.data;
-        if (Array.isArray(data)) {
-          setDesignations(data);
-        } else if (data.data) {
+      const data = response.data;
+      if (data.success) {
+        if (Array.isArray(data.data)) {
           setDesignations(data.data);
-          setMeta(data);
+        } else if (data.data.data) {
+          setDesignations(data.data.data);
+          setMeta(data.data);
         } else {
-          setDesignations(data);
+          setDesignations(data.data);
         }
       }
     } catch (err: any) {
@@ -46,29 +46,20 @@ export const useDesignations = (filters?: DesignationFilters) => {
 
   const createDesignation = async (data: DesignationFormData) => {
     const response = await apiClient.post('/api/designations', data);
-    if (response.data.success) {
-      await fetchDesignations();
-      return response.data.data;
-    }
-    throw new Error(response.data.message || 'Failed to create designation');
+    await fetchDesignations();
+    return response.data.data;
   };
 
   const updateDesignation = async (id: number, data: Partial<DesignationFormData>) => {
     const response = await apiClient.put(`/api/designations/${id}`, data);
-    if (response.data.success) {
-      await fetchDesignations();
-      return response.data.data;
-    }
-    throw new Error(response.data.message || 'Failed to update designation');
+    await fetchDesignations();
+    return response.data.data;
   };
 
   const deleteDesignation = async (id: number) => {
-    const response = await apiClient.delete(`/api/designations/${id}`);
-    if (response.data.success) {
-      await fetchDesignations();
-      return true;
-    }
-    throw new Error(response.data.message || 'Failed to delete designation');
+    await apiClient.delete(`/api/designations/${id}`);
+    await fetchDesignations();
+    return true;
   };
 
   return {

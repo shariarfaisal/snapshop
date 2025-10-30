@@ -21,15 +21,15 @@ export const useDepartments = (filters?: DepartmentFilters) => {
 
       const response = await apiClient.get(`/api/departments?${params.toString()}`);
       
-      if (response.data.success) {
-        const data = response.data.data;
-        if (Array.isArray(data)) {
-          setDepartments(data);
-        } else if (data.data) {
+      const data = response.data;
+      if (data.success) {
+        if (Array.isArray(data.data)) {
           setDepartments(data.data);
-          setMeta(data);
+        } else if (data.data.data) {
+          setDepartments(data.data.data);
+          setMeta(data.data);
         } else {
-          setDepartments(data);
+          setDepartments(data.data);
         }
       }
     } catch (err: any) {
@@ -45,29 +45,20 @@ export const useDepartments = (filters?: DepartmentFilters) => {
 
   const createDepartment = async (data: DepartmentFormData) => {
     const response = await apiClient.post('/api/departments', data);
-    if (response.data.success) {
-      await fetchDepartments();
-      return response.data.data;
-    }
-    throw new Error(response.data.message || 'Failed to create department');
+    await fetchDepartments();
+    return response.data.data;
   };
 
   const updateDepartment = async (id: number, data: Partial<DepartmentFormData>) => {
     const response = await apiClient.put(`/api/departments/${id}`, data);
-    if (response.data.success) {
-      await fetchDepartments();
-      return response.data.data;
-    }
-    throw new Error(response.data.message || 'Failed to update department');
+    await fetchDepartments();
+    return response.data.data;
   };
 
   const deleteDepartment = async (id: number) => {
-    const response = await apiClient.delete(`/api/departments/${id}`);
-    if (response.data.success) {
-      await fetchDepartments();
-      return true;
-    }
-    throw new Error(response.data.message || 'Failed to delete department');
+    await apiClient.delete(`/api/departments/${id}`);
+    await fetchDepartments();
+    return true;
   };
 
   return {

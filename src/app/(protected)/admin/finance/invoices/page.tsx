@@ -246,7 +246,19 @@ export default function InvoicesPage() {
                   {invoices.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                      <TableCell>{invoice.student?.user?.name || "-"}</TableCell>
+                      <TableCell>
+                        {invoice.student?.user?.name || "-"}
+                        {invoice.student?.roll_number && (
+                          <div className="text-xs text-muted-foreground">
+                            Roll: {invoice.student.roll_number}
+                          </div>
+                        )}
+                        {invoice.student?.school_class?.name && (
+                          <div className="text-xs text-muted-foreground">
+                            {invoice.student.school_class.name}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>{format(new Date(invoice.invoice_date), "MMM dd, yyyy")}</TableCell>
                       <TableCell>{format(new Date(invoice.due_date), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="text-right">${Number(invoice.net_amount).toFixed(2)}</TableCell>
@@ -326,11 +338,16 @@ export default function InvoicesPage() {
                   <SelectValue placeholder="Select student" />
                 </SelectTrigger>
                 <SelectContent>
-                  {students.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.user?.name} (ID: {s.id})
-                    </SelectItem>
-                  ))}
+                  {students.map((s) => {
+                    const className = s.school_class?.name || 'N/A';
+                    const rollNo = s.roll_number || 'N/A';
+                    const studentName = s.user?.name || 'Unknown';
+                    return (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {studentName} • Roll: {rollNo} • Class: {className}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -457,11 +474,18 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Student</Label>
-                  <p className="text-sm mt-1">{selectedInvoice.student?.user?.name || "-"}</p>
+                  <div className="text-sm mt-1">
+                    <p className="font-medium">{selectedInvoice.student?.user?.name || "-"}</p>
+                    {selectedInvoice.student?.roll_number && (
+                      <p className="text-xs text-muted-foreground">
+                        Roll: {selectedInvoice.student.roll_number}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label>Class</Label>
-                  <p className="text-sm mt-1">{selectedInvoice.fee_structure?.school_class?.name || "-"}</p>
+                  <p className="text-sm mt-1">{selectedInvoice.student?.school_class?.name || selectedInvoice.fee_structure?.school_class?.name || "-"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

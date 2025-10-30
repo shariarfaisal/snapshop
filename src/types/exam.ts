@@ -105,6 +105,7 @@ export interface CreateExamInput {
   name: string;
   code?: string;
   term: ExamTerm;
+  exam_type: string;
   academic_year_id: number;
   start_date: string;
   end_date: string;

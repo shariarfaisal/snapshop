@@ -17,6 +17,7 @@ export default function CreateExamForm() {
     name: "",
     code: "",
     term: "first",
+    exam_type: "term",
     academic_year_id: 0,
     start_date: "",
     end_date: "",
@@ -88,6 +89,30 @@ export default function CreateExamForm() {
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 placeholder="e.g., MTE-2024"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="exam_type">Exam Type *</Label>
+              <Select 
+                value={formData.exam_type} 
+                onValueChange={(value) => setFormData({ ...formData, exam_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select exam type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="term">Term Exam</SelectItem>
+                  <SelectItem value="midterm">Mid-Term Exam</SelectItem>
+                  <SelectItem value="final">Final Exam</SelectItem>
+                  <SelectItem value="monthly">Monthly Test</SelectItem>
+                  <SelectItem value="weekly">Weekly Test</SelectItem>
+                  <SelectItem value="quiz">Quiz</SelectItem>
+                  <SelectItem value="practical">Practical Exam</SelectItem>
+                  <SelectItem value="assignment">Assignment</SelectItem>
+                  <SelectItem value="project">Project</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

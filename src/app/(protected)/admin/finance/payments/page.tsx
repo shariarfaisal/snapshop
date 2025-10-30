@@ -1,0 +1,412 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Search, Eye, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { financeService } from "@/services/finance";
+import { Payment, CreatePaymentInput, PaymentMethod } from "@/types/finance";
+import { format } from "date-fns";
+
+export default function PaymentsPage() {
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [methodFilter, setMethodFilter] = useState("all");
+
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState<CreatePaymentInput>({
+    invoice_id: 0,
+    amount: 0,
+    payment_method: "cash",
+    payment_date: new Date().toISOString().split('T')[0],
+  });
+
+  useEffect(() => {
+    fetchPayments();
+  }, [currentPage, searchQuery, methodFilter]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      const data = await financeService.getAllInvoices({ status: "pending", per_page: 100 }, 1);
+      setInvoices(data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch invoices");
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const data = await financeService.getAllPayments(
+        {
+          search: searchQuery || undefined,
+          payment_method: methodFilter !== "all" ? (methodFilter as PaymentMethod) : undefined,
+          per_page: 15,
+        },
+        currentPage
+      );
+      setPayments(data.data);
+      setTotalPages(data.last_page);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to fetch payments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = () => {
+    setFormData({
+      invoice_id: 0,
+      amount: 0,
+      payment_method: "cash",
+      payment_date: new Date().toISOString().split('T')[0],
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleInvoiceSelect = (invoiceId: string) => {
+    const invoice = invoices.find(inv => inv.id.toString() === invoiceId);
+    if (invoice) {
+      setFormData({
+        ...formData,
+        invoice_id: invoice.id,
+        amount: Number(invoice.due_amount),
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.invoice_id || !formData.amount || !formData.payment_method) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await financeService.createPayment(formData);
+      toast.success("Payment recorded successfully");
+      setIsDialogOpen(false);
+      fetchPayments();
+      fetchInvoices();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Operation failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleViewDetails = async (payment: Payment) => {
+    try {
+      const details = await financeService.getPaymentById(payment.id);
+      setSelectedPayment(details);
+      setIsDetailsDialogOpen(true);
+    } catch (error: any) {
+      toast.error("Failed to load details");
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Payments</h1>
+          <p className="text-muted-foreground mt-1">Record and manage payments</p>
+        </div>
+        <Button onClick={handleCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Record Payment
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search payments..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-10"
+              />
+            </div>
+            <Select value={methodFilter} onValueChange={setMethodFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Methods</SelectItem>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="cheque">Cheque</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="upi">UPI</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : payments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No payments found</div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Payment #</TableHead>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-medium">{payment.payment_number}</TableCell>
+                      <TableCell>{payment.invoice?.invoice_number || "-"}</TableCell>
+                      <TableCell>{payment.student?.user?.name || payment.invoice?.student?.user?.name || "-"}</TableCell>
+                      <TableCell>{format(new Date(payment.payment_date), "MMM dd, yyyy")}</TableCell>
+                      <TableCell className="text-right">${Number(payment.amount).toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{payment.payment_method.replace("_", " ")}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={payment.status === "completed" ? "default" : "secondary"}>
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleViewDetails(payment)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>Record a payment against an invoice</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Invoice *</Label>
+              <Select
+                value={formData.invoice_id.toString()}
+                onValueChange={handleInvoiceSelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select invoice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {invoices.map((inv) => (
+                    <SelectItem key={inv.id} value={inv.id.toString()}>
+                      {inv.invoice_number} - {inv.student?.user?.name} (Due: ${Number(inv.due_amount).toFixed(2)})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Amount *</Label>
+              <Input
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Payment Method *</Label>
+              <Select
+                value={formData.payment_method}
+                onValueChange={(v: PaymentMethod) => setFormData({ ...formData, payment_method: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="upi">UPI</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Payment Date *</Label>
+              <Input
+                type="date"
+                value={formData.payment_date}
+                onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Transaction ID</Label>
+              <Input
+                value={formData.transaction_id || ""}
+                onChange={(e) => setFormData({ ...formData, transaction_id: e.target.value })}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Remarks</Label>
+              <Textarea
+                value={formData.remarks || ""}
+                onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                placeholder="Optional notes"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Record Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Payment Number</Label>
+                  <p className="text-sm mt-1">{selectedPayment.payment_number}</p>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <div className="mt-1">
+                    <Badge variant={selectedPayment.status === "completed" ? "default" : "secondary"}>
+                      {selectedPayment.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Invoice Number</Label>
+                  <p className="text-sm mt-1">{selectedPayment.invoice?.invoice_number || "-"}</p>
+                </div>
+                <div>
+                  <Label>Student</Label>
+                  <p className="text-sm mt-1">{selectedPayment.student?.user?.name || selectedPayment.invoice?.student?.user?.name || "-"}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Payment Date</Label>
+                  <p className="text-sm mt-1">{format(new Date(selectedPayment.payment_date), "MMM dd, yyyy")}</p>
+                </div>
+                <div>
+                  <Label>Amount</Label>
+                  <p className="text-sm mt-1 font-bold">${Number(selectedPayment.amount).toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Payment Method</Label>
+                  <p className="text-sm mt-1">{selectedPayment.payment_method.replace("_", " ")}</p>
+                </div>
+                <div>
+                  <Label>Transaction ID</Label>
+                  <p className="text-sm mt-1">{selectedPayment.transaction_id || "-"}</p>
+                </div>
+              </div>
+              {selectedPayment.remarks && (
+                <div>
+                  <Label>Remarks</Label>
+                  <p className="text-sm mt-1">{selectedPayment.remarks}</p>
+                </div>
+              )}
+              <div>
+                <Label>Collected By</Label>
+                <p className="text-sm mt-1">{selectedPayment.collected_by_user?.name || "-"}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

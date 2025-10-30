@@ -8,9 +8,9 @@ import type {
   Designation,
 } from "@/types/teacher";
 
-const TEACHERS_ENDPOINT = "/api/teachers";
-const DEPARTMENTS_ENDPOINT = "/api/departments";
-const DESIGNATIONS_ENDPOINT = "/api/designations";
+const TEACHERS_ENDPOINT = "/teachers";
+const DEPARTMENTS_ENDPOINT = "/departments";
+const DESIGNATIONS_ENDPOINT = "/designations";
 
 export const teacherService = {
   // Get all teachers with filters

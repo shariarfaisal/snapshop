@@ -1,17 +1,23 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash2, Save, X } from "lucide-react";
-import { gradeScaleService } from "@/services/exam";
 import { GradeScale, CreateGradeScaleInput } from "@/types/exam";
+import { useGradeScales, useCreateGradeScale, useUpdateGradeScale, useDeleteGradeScale } from "@/hooks/use-exams";
+import { toast } from "sonner";
 
 export default function GradeScalesPage() {
-  const [grades, setGrades] = useState<GradeScale[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<CreateGradeScaleInput>({
@@ -23,37 +29,44 @@ export default function GradeScalesPage() {
     description: "",
   });
 
-  useEffect(() => {
-    fetchGrades();
-  }, []);
+  // Hooks
+  const { data: gradesData, isLoading: loading } = useGradeScales();
+  const createGradeMutation = useCreateGradeScale();
+  const updateGradeMutation = useUpdateGradeScale();
+  const deleteGradeMutation = useDeleteGradeScale();
 
-  const fetchGrades = async () => {
-    try {
-      setLoading(true);
-      const response = await gradeScaleService.getAll();
-      setGrades(response.data);
-    } catch (error) {
-      console.error("Failed to fetch grade scales:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handle API response format
+  const grades = Array.isArray(gradesData) ? gradesData : (gradesData?.data || []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      if (editingId) {
-        await gradeScaleService.update(editingId, formData);
-        setEditingId(null);
-      } else {
-        await gradeScaleService.create(formData);
-        setShowAddForm(false);
-      }
-      fetchGrades();
-      resetForm();
-    } catch (error) {
-      console.error("Failed to save grade scale:", error);
-      alert("Failed to save grade scale");
+
+    if (editingId) {
+      updateGradeMutation.mutate(
+        { id: editingId, data: formData },
+        {
+          onSuccess: () => {
+            toast.success("Grade scale updated successfully");
+            setEditingId(null);
+            setShowAddForm(false);
+            resetForm();
+          },
+          onError: () => {
+            toast.error("Failed to update grade scale");
+          },
+        }
+      );
+    } else {
+      createGradeMutation.mutate(formData, {
+        onSuccess: () => {
+          toast.success("Grade scale created successfully");
+          setShowAddForm(false);
+          resetForm();
+        },
+        onError: () => {
+          toast.error("Failed to create grade scale");
+        },
+      });
     }
   };
 
@@ -70,15 +83,17 @@ export default function GradeScalesPage() {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this grade scale?")) return;
-    
-    try {
-      await gradeScaleService.delete(id);
-      fetchGrades();
-    } catch (error) {
-      console.error("Failed to delete grade scale:", error);
-    }
+
+    deleteGradeMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success("Grade scale deleted successfully");
+      },
+      onError: () => {
+        toast.error("Failed to delete grade scale");
+      },
+    });
   };
 
   const resetForm = () => {
@@ -148,7 +163,9 @@ export default function GradeScalesPage() {
                     type="number"
                     step="0.01"
                     value={formData.min_percentage}
-                    onChange={(e) => setFormData({ ...formData, min_percentage: parseFloat(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, min_percentage: parseFloat(e.target.value) })
+                    }
                     required
                   />
                 </div>
@@ -160,7 +177,9 @@ export default function GradeScalesPage() {
                     type="number"
                     step="0.01"
                     value={formData.max_percentage}
-                    onChange={(e) => setFormData({ ...formData, max_percentage: parseFloat(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_percentage: parseFloat(e.target.value) })
+                    }
                     required
                   />
                 </div>
@@ -172,7 +191,9 @@ export default function GradeScalesPage() {
                     type="number"
                     step="0.01"
                     value={formData.grade_point}
-                    onChange={(e) => setFormData({ ...formData, grade_point: parseFloat(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, grade_point: parseFloat(e.target.value) })
+                    }
                   />
                 </div>
 
@@ -243,18 +264,10 @@ export default function GradeScalesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(grade)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(grade)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(grade.id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(grade.id)}>
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>

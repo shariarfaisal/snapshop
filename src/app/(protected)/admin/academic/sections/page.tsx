@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,23 +39,23 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react";
-import { sectionService } from "@/services/section";
-import { schoolClassService } from "@/services/schoolClass";
-import { Section, CreateSectionInput, UpdateSectionInput, SchoolClass } from "@/types/section";
+import { Section, CreateSectionInput, UpdateSectionInput } from "@/types/section";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useSections,
+  useCreateSection,
+  useUpdateSection,
+  useDeleteSection,
+} from "@/hooks/use-sections";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
 
 export default function SectionsPage() {
   const { toast } = useToast();
-  const [sections, setSections] = useState<Section[]>([]);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingClasses, setLoadingClasses] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [deletingSection, setDeletingSection] = useState<Section | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState<CreateSectionInput>({
     schoolClassId: 0,
@@ -65,75 +65,46 @@ export default function SectionsPage() {
   });
 
   // Filter state
-  const [filters, setFilters] = useState({
-    search: "",
-    schoolClassId: undefined as number | undefined,
-    status: undefined as boolean | undefined,
-    page: 1,
-    perPage: 10,
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [classFilter, setClassFilter] = useState<string>("all-classes");
+  const [statusFilter, setStatusFilter] = useState<string>("all-status");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Pagination state
-  const [pagination, setPagination] = useState({
+  // Build filters
+  const sectionFilters = {
+    search: searchQuery || undefined,
+    schoolClassId: classFilter !== "all-classes" ? parseInt(classFilter) : undefined,
+    status: statusFilter === "all-status" ? undefined : statusFilter === "true",
+    page: currentPage,
+    perPage: 10,
+  };
+
+  const classFilters = {
+    status: true,
+    perPage: 100,
+  };
+
+  // Hooks
+  const { data: sectionsData, isLoading: loading } = useSections(sectionFilters);
+  const { data: classesData, isLoading: loadingClasses } = useSchoolClasses(classFilters);
+  const createSectionMutation = useCreateSection();
+  const updateSectionMutation = useUpdateSection();
+  const deleteSectionMutation = useDeleteSection();
+
+  // Derived data
+  const sections = sectionsData?.data || [];
+  const classes = classesData?.data || [];
+  const pagination = sectionsData?.pagination || {
     total: 0,
     currentPage: 1,
     lastPage: 1,
     perPage: 10,
-  });
-
-  // Fetch classes
-  const fetchClasses = async () => {
-    try {
-      setLoadingClasses(true);
-      const response = await schoolClassService.getAll({ status: true, perPage: 100 });
-      console.log("Classes response:", response);
-      console.log("Classes data:", response.data);
-      setClasses(response.data || []);
-    } catch (error: any) {
-      console.error("Failed to fetch classes:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load classes",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingClasses(false);
-    }
   };
-
-  // Fetch sections
-  const fetchSections = async () => {
-    try {
-      setLoading(true);
-      const response = await sectionService.getAll(filters);
-      setSections(response.data);
-      setPagination(response.pagination);
-    } catch (error: any) {
-      // Don't show error toast if it's a 401 (user will be redirected to login)
-      if (error.response?.status !== 401) {
-        toast({
-          title: "Error",
-          description: error.response?.data?.message || "Failed to fetch sections",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSections();
-  }, [filters]);
-
-  useEffect(() => {
-    fetchClasses();
-  }, []);
 
   // Handle create/update
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.schoolClassId || !formData.name || !formData.maxCapacity) {
       toast({
         title: "Validation Error",
@@ -143,34 +114,45 @@ export default function SectionsPage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      
-      if (editingSection) {
-        await sectionService.update(editingSection.id, formData as UpdateSectionInput);
-        toast({
-          title: "Success",
-          description: "Section updated successfully",
-        });
-      } else {
-        await sectionService.create(formData);
-        toast({
-          title: "Success",
-          description: "Section created successfully",
-        });
-      }
-      
-      setOpenDialog(false);
-      resetForm();
-      fetchSections();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to save section",
-        variant: "destructive",
+    if (editingSection) {
+      updateSectionMutation.mutate(
+        { id: editingSection.id, data: formData as UpdateSectionInput },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Section updated successfully",
+            });
+            setOpenDialog(false);
+            resetForm();
+          },
+          onError: (error: any) => {
+            toast({
+              title: "Error",
+              description: error.response?.data?.message || "Failed to update section",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    } else {
+      createSectionMutation.mutate(formData, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Section created successfully",
+          });
+          setOpenDialog(false);
+          resetForm();
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.response?.data?.message || "Failed to create section",
+            variant: "destructive",
+          });
+        },
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -178,25 +160,23 @@ export default function SectionsPage() {
   const handleDelete = async () => {
     if (!deletingSection) return;
 
-    try {
-      setSubmitting(true);
-      await sectionService.delete(deletingSection.id);
-      toast({
-        title: "Success",
-        description: "Section deleted successfully",
-      });
-      setOpenDeleteDialog(false);
-      setDeletingSection(null);
-      fetchSections();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to delete section",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    deleteSectionMutation.mutate(deletingSection.id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Section deleted successfully",
+        });
+        setOpenDeleteDialog(false);
+        setDeletingSection(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to delete section",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   // Reset form
@@ -252,30 +232,49 @@ export default function SectionsPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search sections..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </div>
             <Select
-              value={filters.status?.toString()}
-              onValueChange={(value) =>
-                setFilters({
-                  ...filters,
-                  status: value === "all" ? undefined : value === "true",
-                  page: 1,
-                })
-              }
+              value={classFilter}
+              onValueChange={(value) => {
+                setClassFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-classes">All Classes</SelectItem>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id.toString()}>
+                    {cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setCurrentPage(1);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all-status">All Status</SelectItem>
                 <SelectItem value="true">Active</SelectItem>
                 <SelectItem value="false">Inactive</SelectItem>
               </SelectContent>
@@ -369,16 +368,16 @@ export default function SectionsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pagination.currentPage === 1}
-                    onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   >
                     Previous
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pagination.currentPage === pagination.lastPage}
-                    onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+                    disabled={currentPage === pagination.lastPage}
+                    onClick={() => setCurrentPage((p) => Math.min(pagination.lastPage, p + 1))}
                   >
                     Next
                   </Button>
@@ -497,12 +496,12 @@ export default function SectionsPage() {
                   setOpenDialog(false);
                   resetForm();
                 }}
-                disabled={submitting}
+                disabled={createSectionMutation.isPending || updateSectionMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={createSectionMutation.isPending || updateSectionMutation.isPending}>
+                {(createSectionMutation.isPending || updateSectionMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingSection ? "Update" : "Create"}
               </Button>
             </DialogFooter>
@@ -521,15 +520,15 @@ export default function SectionsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingSection(null)}>
+            <AlertDialogCancel onClick={() => setDeletingSection(null)} disabled={deleteSectionMutation.isPending}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"
-              disabled={submitting}
+              disabled={deleteSectionMutation.isPending}
             >
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {deleteSectionMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

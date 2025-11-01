@@ -11,7 +11,7 @@ export default function LessonPlansPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Lesson Plans</h1>
@@ -39,9 +39,7 @@ export default function LessonPlansPage() {
         <Card>
           <CardHeader>
             <CardTitle>Coming Soon</CardTitle>
-            <CardDescription>
-              This feature is under development
-            </CardDescription>
+            <CardDescription>This feature is under development</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">

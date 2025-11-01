@@ -22,13 +22,13 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { attendanceService } from "@/services/api/attendance";
 import { AttendanceStatus, BulkAttendanceRequest } from "@/types/attendance";
-import { schoolClassService } from "@/services/schoolClass";
-import { sectionService } from "@/services/section";
-import { studentService } from "@/services/student";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useBulkCreateAttendance } from "@/hooks/use-attendance";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
+import { useSections } from "@/hooks/use-sections";
+import { useStudents } from "@/hooks/use-student";
 
 interface StudentAttendanceState {
   student_id: number;
@@ -48,70 +48,31 @@ export default function MarkAttendancePage() {
   const [period, setPeriod] = useState(1);
   const [students, setStudents] = useState<StudentAttendanceState[]>([]);
 
-  // Data state
-  const [classes, setClasses] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    loadClasses();
-  }, []);
-
-  useEffect(() => {
-    if (classId) {
-      loadSections(classId);
-    } else {
-      setSections([]);
-      setSectionId(null);
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    if (classId) {
-      loadStudents();
-    }
-  }, [classId, sectionId]);
-
-  const loadClasses = async () => {
-    try {
-      const classesData = await schoolClassService.getAll();
-      setClasses(classesData.data || classesData);
-    } catch (error) {
-      console.error("Failed to load classes", error);
-      toast.error("Failed to load classes");
-    }
+  // Hooks
+  const { data: classesData } = useSchoolClasses({ per_page: "all" });
+  const { data: sectionsData } = useSections(classId ? { classId } : undefined);
+  const studentFilters: any = {
+    class_id: classId,
+    status: "active",
+    per_page: 1000,
+    ...(sectionId && { section_id: sectionId }),
   };
+  const { data: studentsData, isLoading: loadingStudents } = useStudents(
+    classId ? studentFilters : undefined,
+    1
+  );
+  const bulkAttendanceMutation = useBulkCreateAttendance();
 
-  const loadSections = async (classIdParam: number) => {
-    try {
-      const sectionsData = await sectionService.getAll({ classId: classIdParam });
-      setSections(sectionsData.data || sectionsData);
-    } catch (error) {
-      console.error("Failed to load sections", error);
-    }
-  };
+  // Handle API response formats
+  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
+  const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
 
-  const loadStudents = async () => {
-    if (!classId) return;
-
-    try {
-      setLoadingStudents(true);
-      const filters: any = {
-        class_id: classId,
-        status: "active",
-        per_page: 1000, // Load all active students
-      };
-
-      if (sectionId) {
-        filters.section_id = sectionId;
-      }
-
-      const response = await studentService.getAll(filters, 1);
-      const studentData = response.data;
-
+  // Build students state when data loads
+  useEffect(() => {
+    if (studentsData) {
+      const studentData = studentsData.data || [];
       setStudents(
-        studentData.map((student) => ({
+        studentData.map((student: any) => ({
           student_id: student.id,
           name: `${student.user.firstName} ${student.user.lastName}`,
           rollNumber: student.rollNumber,
@@ -119,13 +80,8 @@ export default function MarkAttendancePage() {
           remarks: "",
         }))
       );
-    } catch (error) {
-      console.error("Failed to load students", error);
-      toast.error("Failed to load students");
-    } finally {
-      setLoadingStudents(false);
     }
-  };
+  }, [studentsData]);
 
   const handleStatusChange = (studentId: number, status: AttendanceStatus) => {
     setStudents((prev) =>
@@ -149,7 +105,7 @@ export default function MarkAttendancePage() {
     toast.success("Marked all students as absent");
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     // Validation
     if (!classId) {
       toast.error("Please select a class");
@@ -166,29 +122,27 @@ export default function MarkAttendancePage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
+    const data: BulkAttendanceRequest = {
+      class_id: classId,
+      section_id: sectionId || undefined,
+      date,
+      period,
+      students: students.map((s) => ({
+        student_id: s.student_id,
+        status: s.status,
+        remarks: s.remarks || undefined,
+      })),
+    };
 
-      const data: BulkAttendanceRequest = {
-        class_id: classId,
-        section_id: sectionId || undefined,
-        date,
-        period,
-        students: students.map((s) => ({
-          student_id: s.student_id,
-          status: s.status,
-          remarks: s.remarks || undefined,
-        })),
-      };
-
-      await attendanceService.bulk(data);
-      toast.success("Attendance marked successfully!");
-      router.push("/teacher/attendance");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to mark attendance");
-    } finally {
-      setSubmitting(false);
-    }
+    bulkAttendanceMutation.mutate(data, {
+      onSuccess: () => {
+        toast.success("Attendance marked successfully!");
+        router.push("/teacher/attendance");
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to mark attendance");
+      },
+    });
   };
 
   const getStatusCount = (status: AttendanceStatus) => {
@@ -220,8 +174,8 @@ export default function MarkAttendancePage() {
           <h1 className="text-3xl font-bold text-gray-900">Mark Attendance</h1>
           <p className="text-gray-500 mt-1">Record student attendance for your class</p>
         </div>
-        <Button onClick={handleSubmit} disabled={submitting || students.length === 0}>
-          {submitting ? (
+        <Button onClick={handleSubmit} disabled={bulkAttendanceMutation.isPending || students.length === 0}>
+          {bulkAttendanceMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Submitting...
@@ -443,8 +397,8 @@ export default function MarkAttendancePage() {
           <Button variant="outline" onClick={() => router.push("/teacher/attendance")}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? (
+          <Button onClick={handleSubmit} disabled={bulkAttendanceMutation.isPending}>
+            {bulkAttendanceMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...

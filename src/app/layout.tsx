@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import NextTopLoader from "nextjs-toploader";
 import Provider from "./provider";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "TaleemOne",
-  description: "TaleemOne",
+  title: "E-Campus - Education Management System",
+  description: "Professional education management system for modern institutions",
 };
 
 export default function RootLayout({
@@ -15,17 +22,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`antialiased`}>
+      <body className={`${inter.variable} antialiased font-sans`}>
         <NextTopLoader
-          color="#2299DD"
+          color="#475569"
           initialPosition={0.08}
           crawlSpeed={200}
-          height={3}
+          height={2}
           crawl={true}
-          showSpinner={true}
+          showSpinner={false}
           easing="ease"
           speed={200}
-          shadow="0 0 10px #2299DD,0 0 5px #2299DD"
+          shadow="none"
         />
         <Provider>{children}</Provider>
       </body>

@@ -1,48 +1,40 @@
 "use client";
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Edit, CheckCircle, FileText } from "lucide-react";
-import { examService } from "@/services/exam";
 import { Exam } from "@/types/exam";
 import Link from "next/link";
+import { useExam, usePublishExamResults } from "@/hooks/use-exams";
+import { toast } from "sonner";
 
 export default function ExamDetailPage() {
   const params = useParams();
   const router = useRouter();
   const examId = parseInt(params.id as string);
-  
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchExam();
-  }, [examId]);
+  // Hooks
+  const { data: examData, isLoading: loading } = useExam(examId);
+  const publishMutation = usePublishExamResults();
 
-  const fetchExam = async () => {
-    try {
-      setLoading(true);
-      const response = await examService.getById(examId);
-      // Handle both direct response and nested response
-      const examData = response?.data || response;
-      setExam(examData);
-    } catch (error) {
-      console.error("Failed to fetch exam:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handle API response format
+  const exam = examData?.data || examData;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "draft": return "bg-gray-100 text-gray-800";
-      case "scheduled": return "bg-blue-100 text-blue-800";
-      case "ongoing": return "bg-yellow-100 text-yellow-800";
-      case "completed": return "bg-green-100 text-green-800";
-      case "cancelled": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "draft":
+        return "bg-gray-100 text-gray-800";
+      case "scheduled":
+        return "bg-blue-100 text-blue-800";
+      case "ongoing":
+        return "bg-yellow-100 text-yellow-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -50,7 +42,7 @@ export default function ExamDetailPage() {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
@@ -63,7 +55,7 @@ export default function ExamDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/admin/exams">
@@ -72,9 +64,7 @@ export default function ExamDetailPage() {
         </Button>
         <div className="flex-1">
           <h1 className="text-3xl font-bold">{exam.name}</h1>
-          {exam.code && (
-            <p className="text-muted-foreground mt-1">Code: {exam.code}</p>
-          )}
+          {exam.code && <p className="text-muted-foreground mt-1">Code: {exam.code}</p>}
         </div>
         <Button variant="outline" asChild>
           <Link href={`/admin/exams/edit/${exam.id}`}>
@@ -93,7 +83,9 @@ export default function ExamDetailPage() {
             {(exam as any).exam_type && (
               <div>
                 <span className="text-sm text-gray-600">Exam Type:</span>
-                <p className="font-medium capitalize">{(exam as any).exam_type.replace(/_/g, ' ')}</p>
+                <p className="font-medium capitalize">
+                  {(exam as any).exam_type.replace(/_/g, " ")}
+                </p>
               </div>
             )}
             <div>
@@ -115,9 +107,7 @@ export default function ExamDetailPage() {
             <div>
               <span className="text-sm text-gray-600">Status:</span>
               <div className="mt-1">
-                <Badge className={getStatusColor(exam.status)}>
-                  {exam.status}
-                </Badge>
+                <Badge className={getStatusColor(exam.status)}>{exam.status}</Badge>
               </div>
             </div>
           </CardContent>
@@ -137,9 +127,7 @@ export default function ExamDetailPage() {
                     Published
                   </Badge>
                 ) : (
-                  <Badge className="bg-gray-100 text-gray-800">
-                    Pending
-                  </Badge>
+                  <Badge className="bg-gray-100 text-gray-800">Pending</Badge>
                 )}
               </div>
             </div>
@@ -177,20 +165,22 @@ export default function ExamDetailPage() {
           {!exam.results_published && (
             <Button
               variant="outline"
-              onClick={async () => {
+              onClick={() => {
                 if (confirm("Publish results for this exam?")) {
-                  try {
-                    await examService.publishResults(exam.id);
-                    fetchExam();
-                    alert("Results published successfully!");
-                  } catch (error) {
-                    alert("Failed to publish results");
-                  }
+                  publishMutation.mutate(exam.id, {
+                    onSuccess: () => {
+                      toast.success("Results published successfully!");
+                    },
+                    onError: () => {
+                      toast.error("Failed to publish results");
+                    },
+                  });
                 }
               }}
+              disabled={publishMutation.isPending}
             >
               <CheckCircle className="mr-2 h-4 w-4" />
-              Publish Results
+              {publishMutation.isPending ? "Publishing..." : "Publish Results"}
             </Button>
           )}
         </CardContent>
@@ -211,9 +201,8 @@ export default function ExamDetailPage() {
                   <div>
                     <p className="font-medium">{subject.subject?.name || "N/A"}</p>
                     <p className="text-sm text-gray-600">
-                      Class: {subject.school_class?.name || "N/A"} | 
-                      Max Marks: {subject.max_marks} | 
-                      Pass Marks: {subject.pass_marks}
+                      Class: {subject.school_class?.name || "N/A"} | Max Marks: {subject.max_marks}{" "}
+                      | Pass Marks: {subject.pass_marks}
                     </p>
                     {subject.exam_date && (
                       <p className="text-sm text-gray-500">

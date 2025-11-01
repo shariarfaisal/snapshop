@@ -1,18 +1,25 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { examService } from "@/services/exam";
+import { Loader2 } from "lucide-react";
 import { CreateExamInput, ExamTerm, ExamStatus } from "@/types/exam";
+import { useCreateExam } from "@/hooks/use-exams";
+import { useAcademicYears } from "@/hooks/use-academic-years";
+import { toast } from "sonner";
 
 export default function CreateExamForm() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [academicYears, setAcademicYears] = useState<any[]>([]);
+
+  // Hooks
+  const { data: academicYears = [], isLoading: loadingYears } = useAcademicYears();
+  const createExamMutation = useCreateExam();
+
+  // Form state - set default academic year when data loads
   const [formData, setFormData] = useState<CreateExamInput>({
     name: "",
     code: "",
@@ -24,42 +31,29 @@ export default function CreateExamForm() {
     status: "draft"
   });
 
-  useEffect(() => {
-    fetchAcademicYears();
-  }, []);
+  // Set default academic year when years load
+  if (academicYears.length > 0 && formData.academic_year_id === 0) {
+    const currentYear = academicYears.find((y: any) => y.is_current);
+    setFormData(prev => ({ ...prev, academic_year_id: currentYear?.id || academicYears[0].id }));
+  }
 
-  const fetchAcademicYears = async () => {
-    try {
-      const { academicYearService } = await import("@/services/api/academic-year");
-      const years = await academicYearService.getAll();
-      setAcademicYears(years || []);
-      if (years && years.length > 0) {
-        const currentYear = years.find((y: any) => y.is_current);
-        setFormData(prev => ({ ...prev, academic_year_id: currentYear?.id || years[0].id }));
-      }
-    } catch (error) {
-      console.error("Failed to fetch academic years:", error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.academic_year_id) {
-      alert("Please select an academic year");
+      toast.error("Please select an academic year");
       return;
     }
 
-    try {
-      setLoading(true);
-      const exam = await examService.create(formData);
-      router.push(`/admin/exams/schedule/${exam.id}`);
-    } catch (error) {
-      console.error("Failed to create exam:", error);
-      alert("Failed to create exam. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    createExamMutation.mutate(formData, {
+      onSuccess: (exam) => {
+        toast.success("Exam created successfully");
+        router.push(`/admin/exams/schedule/${exam.id}`);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to create exam");
+      },
+    });
   };
 
   return (
@@ -209,8 +203,9 @@ export default function CreateExamForm() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Exam"}
+            <Button type="submit" disabled={createExamMutation.isPending}>
+              {createExamMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {createExamMutation.isPending ? "Creating..." : "Create Exam"}
             </Button>
           </div>
         </form>

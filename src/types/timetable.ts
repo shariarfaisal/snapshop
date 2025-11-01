@@ -12,7 +12,7 @@ export interface Timetable {
   period_number: number;
   start_time: string; // "HH:MM" format
   end_time: string; // "HH:MM" format
-  room_number?: string | null;
+  room_id?: number | null;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;
@@ -42,6 +42,12 @@ export interface Timetable {
       email: string;
     };
   };
+  room?: {
+    id: number;
+    room_number: string;
+    room_name: string;
+    capacity: number;
+  };
   academicYear?: {
     id: number;
     name: string;
@@ -61,7 +67,7 @@ export interface CreateTimetableInput {
   period_number: number;
   start_time: string; // "HH:MM"
   end_time: string; // "HH:MM"
-  room_number?: string;
+  room_id?: number;
 }
 
 export interface UpdateTimetableInput {
@@ -74,7 +80,7 @@ export interface UpdateTimetableInput {
   period_number?: number;
   start_time?: string;
   end_time?: string;
-  room_number?: string;
+  room_id?: number;
 }
 
 export interface TimetableFilters {
@@ -84,7 +90,7 @@ export interface TimetableFilters {
   subject_id?: number;
   academic_year_id?: number;
   day_of_week?: DayOfWeek;
-  room_number?: string;
+  room_id?: number;
   page?: number;
   per_page?: number | 'all';
 }
@@ -117,7 +123,11 @@ export interface TimetableSlot {
     id: number;
     name: string;
   };
-  room_number?: string;
+  room?: {
+    id: number;
+    room_number: string;
+    room_name: string;
+  };
 }
 
 export interface ClassTimetable {
@@ -137,7 +147,7 @@ export interface BulkTimetableEntry {
   period_number: number;
   start_time: string;
   end_time: string;
-  room_number?: string;
+  room_id?: number;
 }
 
 export interface BulkCreateResponse {

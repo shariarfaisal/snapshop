@@ -34,22 +34,55 @@ export default function UsersPage() {
 
   // Mock data
   const users = [
-    { id: 1, name: "John Smith", email: "john@example.com", role: "Teacher", status: "Active", phone: "+1234567890" },
-    { id: 2, name: "Sarah Johnson", email: "sarah@example.com", role: "Student", status: "Active", phone: "+1234567891" },
-    { id: 3, name: "Mike Brown", email: "mike@example.com", role: "Accountant", status: "Active", phone: "+1234567892" },
-    { id: 4, name: "Emily Davis", email: "emily@example.com", role: "Teacher", status: "Inactive", phone: "+1234567893" },
-    { id: 5, name: "David Wilson", email: "david@example.com", role: "Student", status: "Active", phone: "+1234567894" },
+    {
+      id: 1,
+      name: "John Smith",
+      email: "john@example.com",
+      role: "Teacher",
+      status: "Active",
+      phone: "+1234567890",
+    },
+    {
+      id: 2,
+      name: "Sarah Johnson",
+      email: "sarah@example.com",
+      role: "Student",
+      status: "Active",
+      phone: "+1234567891",
+    },
+    {
+      id: 3,
+      name: "Mike Brown",
+      email: "mike@example.com",
+      role: "Accountant",
+      status: "Active",
+      phone: "+1234567892",
+    },
+    {
+      id: 4,
+      name: "Emily Davis",
+      email: "emily@example.com",
+      role: "Teacher",
+      status: "Inactive",
+      phone: "+1234567893",
+    },
+    {
+      id: 5,
+      name: "David Wilson",
+      email: "david@example.com",
+      role: "Student",
+      status: "Active",
+      phone: "+1234567894",
+    },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage all users in the system
-          </p>
+          <p className="text-muted-foreground mt-1">Manage all users in the system</p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">

@@ -15,10 +15,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CheckCircle, XCircle, Clock, AlertCircle, Calendar, TrendingUp } from "lucide-react";
-import { attendanceService } from "@/services/api/attendance";
 import { AttendanceRecord, AttendanceStatus } from "@/types/attendance";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useStudentAttendance } from "@/hooks/use-attendance";
 
 // Helper function to get status badge
 const getStatusBadge = (status: AttendanceStatus) => {
@@ -27,16 +27,15 @@ const getStatusBadge = (status: AttendanceStatus) => {
     absent: { label: "Absent", className: "bg-red-100 text-red-800 hover:bg-red-100" },
     late: { label: "Late", className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
     half_day: { label: "Half Day", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
-    sick_leave: { label: "Sick Leave", className: "bg-purple-100 text-purple-800 hover:bg-purple-100" },
+    sick_leave: {
+      label: "Sick Leave",
+      className: "bg-purple-100 text-purple-800 hover:bg-purple-100",
+    },
     other_leave: { label: "Other Leave", className: "bg-gray-100 text-gray-800 hover:bg-gray-100" },
   };
 
   const config = statusConfig[status] || statusConfig.absent;
-  return (
-    <Badge className={config.className}>
-      {config.label}
-    </Badge>
-  );
+  return <Badge className={config.className}>{config.label}</Badge>;
 };
 
 // Helper function to get status icon
@@ -59,39 +58,27 @@ const getStatusIcon = (status: AttendanceStatus) => {
 };
 
 export default function StudentAttendancePage() {
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [studentId, setStudentId] = useState<number | null>(null);
 
-  // Calculate statistics
-  const statistics = {
-    total: attendance.length,
-    present: attendance.filter((a) => a.status === "present").length,
-    absent: attendance.filter((a) => a.status === "absent").length,
-    late: attendance.filter((a) => a.status === "late").length,
-    half_day: attendance.filter((a) => a.status === "half_day").length,
-    sick_leave: attendance.filter((a) => a.status === "sick_leave").length,
-    other_leave: attendance.filter((a) => a.status === "other_leave").length,
-  };
+  // Set default date range (last 30 days)
+  useEffect(() => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
 
-  // Calculate attendance percentage (present + late + half_day count as attended)
-  const attended = statistics.present + statistics.late + (statistics.half_day * 0.5);
-  const attendancePercentage = statistics.total > 0
-    ? ((attended / statistics.total) * 100).toFixed(1)
-    : "0.0";
+    setToDate(format(today, "yyyy-MM-dd"));
+    setFromDate(format(thirtyDaysAgo, "yyyy-MM-dd"));
+  }, []);
 
   // Fetch student ID from auth context/localStorage
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        // Get user data from localStorage (set during login)
         const userStr = localStorage.getItem("user");
         if (userStr) {
           const user = JSON.parse(userStr);
-          // Assuming the student ID is stored in user object
-          // The exact structure depends on your auth implementation
           if (user.id) {
             setStudentId(user.id);
           }
@@ -105,62 +92,41 @@ export default function StudentAttendancePage() {
     fetchStudentData();
   }, []);
 
-  // Fetch attendance data
-  const fetchAttendance = async () => {
-    if (!studentId) return;
+  // Build filters
+  const filters: any = {};
+  if (fromDate) filters.from_date = fromDate;
+  if (toDate) filters.to_date = toDate;
 
-    try {
-      setLoading(true);
-      const filters: any = {};
+  // Hooks
+  const { data: attendanceData, isLoading: loading } = useStudentAttendance(studentId, filters);
 
-      if (fromDate) filters.from_date = fromDate;
-      if (toDate) filters.to_date = toDate;
+  // Handle API response format
+  const attendance = Array.isArray(attendanceData) ? attendanceData : [];
 
-      const data = await attendanceService.getStudentAttendance(studentId, filters);
-      setAttendance(data);
-    } catch (error: any) {
-      console.error("Error fetching attendance:", error);
-      toast.error(error.response?.data?.message || "Failed to load attendance records");
-    } finally {
-      setLoading(false);
-    }
+  // Calculate statistics
+  const statistics = {
+    total: attendance.length,
+    present: attendance.filter((a) => a.status === "present").length,
+    absent: attendance.filter((a) => a.status === "absent").length,
+    late: attendance.filter((a) => a.status === "late").length,
+    half_day: attendance.filter((a) => a.status === "half_day").length,
+    sick_leave: attendance.filter((a) => a.status === "sick_leave").length,
+    other_leave: attendance.filter((a) => a.status === "other_leave").length,
   };
 
-  // Initial fetch when studentId is available
-  useEffect(() => {
-    if (studentId) {
-      fetchAttendance();
-    }
-  }, [studentId]);
-
-  // Handle filter
-  const handleFilter = () => {
-    fetchAttendance();
-  };
+  // Calculate attendance percentage
+  const attended = statistics.present + statistics.late + statistics.half_day * 0.5;
+  const attendancePercentage =
+    statistics.total > 0 ? ((attended / statistics.total) * 100).toFixed(1) : "0.0";
 
   // Handle clear filters
   const handleClearFilters = () => {
     setFromDate("");
     setToDate("");
-    setTimeout(() => {
-      if (studentId) {
-        fetchAttendance();
-      }
-    }, 100);
   };
 
-  // Set default date range (last 30 days)
-  useEffect(() => {
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    setToDate(format(today, "yyyy-MM-dd"));
-    setFromDate(format(thirtyDaysAgo, "yyyy-MM-dd"));
-  }, []);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">My Attendance</h1>
@@ -304,12 +270,9 @@ export default function StudentAttendancePage() {
               />
             </div>
 
-            <div className="flex items-end gap-2">
-              <Button onClick={handleFilter} className="flex-1">
-                Apply Filters
-              </Button>
+            <div className="flex items-end">
               <Button onClick={handleClearFilters} variant="outline">
-                Clear
+                Clear Filters
               </Button>
             </div>
           </div>
@@ -321,7 +284,13 @@ export default function StudentAttendancePage() {
         <CardHeader>
           <CardTitle>Attendance History</CardTitle>
           <CardDescription>
-            Your attendance records {fromDate && toDate && `from ${format(new Date(fromDate), "MMM dd, yyyy")} to ${format(new Date(toDate), "MMM dd, yyyy")}`}
+            Your attendance records{" "}
+            {fromDate &&
+              toDate &&
+              `from ${format(new Date(fromDate), "MMM dd, yyyy")} to ${format(
+                new Date(toDate),
+                "MMM dd, yyyy"
+              )}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -356,16 +325,12 @@ export default function StudentAttendancePage() {
                       <TableCell className="font-medium">
                         {format(new Date(record.date), "MMM dd, yyyy")}
                       </TableCell>
-                      <TableCell>
-                        {format(new Date(record.date), "EEEE")}
-                      </TableCell>
+                      <TableCell>{format(new Date(record.date), "EEEE")}</TableCell>
                       <TableCell>{getStatusBadge(record.status)}</TableCell>
                       <TableCell>{record.period || "-"}</TableCell>
                       <TableCell>{record.schoolClass?.name || "-"}</TableCell>
                       <TableCell>{record.section?.name || "-"}</TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {record.remarks || "-"}
-                      </TableCell>
+                      <TableCell className="max-w-xs truncate">{record.remarks || "-"}</TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {format(new Date(record.marked_at), "MMM dd, hh:mm a")}
                       </TableCell>

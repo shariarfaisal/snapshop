@@ -12,30 +12,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Plus, Search, Eye, Trash2, ChevronLeft, ChevronRight, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { financeService } from "@/services/finance";
-import { studentService } from "@/services/student";
-import { schoolClassService } from "@/services/schoolClass";
 import { Invoice, CreateInvoiceInput, InvoiceStatus } from "@/types/finance";
 import { format } from "date-fns";
+import {
+  useInvoices,
+  useInvoice,
+  useCreateInvoice,
+  useDeleteInvoice,
+  useBulkGenerateInvoices,
+  useFeeStructures,
+} from "@/hooks/use-finance";
+import { useStudents } from "@/hooks/use-student";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const [students, setStudents] = useState<any[]>([]);
-  const [feeStructures, setFeeStructures] = useState<any[]>([]);
-  const [classes, setClasses] = useState<any[]>([]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<CreateInvoiceInput>({
     student_id: 0,
@@ -48,48 +47,28 @@ export default function InvoicesPage() {
     due_date: "",
   });
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [currentPage, searchQuery, statusFilter]);
-
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
-
-  const fetchInitialData = async () => {
-    try {
-      const [studentsData, structuresData, classesData] = await Promise.all([
-        studentService.getAll({ per_page: 100 }, 1),
-        financeService.getAllFeeStructures({ per_page: 100 }, 1),
-        schoolClassService.getAll(),
-      ]);
-      setStudents(studentsData.data || []);
-      setFeeStructures(structuresData.data || []);
-      setClasses(classesData.data || []);
-    } catch (error) {
-      console.error("Failed to fetch initial data:", error);
-    }
+  // Build filters
+  const filters = {
+    search: searchQuery || undefined,
+    status: statusFilter !== "all" ? (statusFilter as InvoiceStatus) : undefined,
+    per_page: 15,
   };
 
-  const fetchInvoices = async () => {
-    try {
-      setLoading(true);
-      const data = await financeService.getAllInvoices(
-        {
-          search: searchQuery || undefined,
-          status: statusFilter !== "all" ? (statusFilter as InvoiceStatus) : undefined,
-          per_page: 15,
-        },
-        currentPage
-      );
-      setInvoices(data.data);
-      setTotalPages(data.last_page);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to fetch invoices");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Hooks
+  const { data: invoicesData, isLoading: loading } = useInvoices(filters, currentPage);
+  const { data: studentsData } = useStudents({ per_page: 100 }, 1);
+  const { data: feeStructuresData } = useFeeStructures({ per_page: 100 }, 1);
+  const { data: classesData } = useSchoolClasses();
+  const createInvoiceMutation = useCreateInvoice();
+  const deleteInvoiceMutation = useDeleteInvoice();
+  const bulkGenerateInvoicesMutation = useBulkGenerateInvoices();
+
+  // Derived data
+  const invoices = invoicesData?.data || [];
+  const totalPages = invoicesData?.last_page || 1;
+  const students = studentsData?.data || [];
+  const feeStructures = feeStructuresData?.data || [];
+  const classes = classesData?.data || classesData || [];
 
   const handleCreate = () => {
     setFormData({ student_id: 0, due_date: "" });
@@ -102,17 +81,15 @@ export default function InvoicesPage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      await financeService.createInvoice(formData);
-      toast.success("Invoice created successfully");
-      setIsDialogOpen(false);
-      fetchInvoices();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Operation failed");
-    } finally {
-      setSubmitting(false);
-    }
+    createInvoiceMutation.mutate(formData, {
+      onSuccess: () => {
+        toast.success("Invoice created successfully");
+        setIsDialogOpen(false);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Operation failed");
+      },
+    });
   };
 
   const handleBulkGenerate = async () => {
@@ -121,43 +98,35 @@ export default function InvoicesPage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      const result = await financeService.bulkGenerateInvoices(bulkFormData);
-      toast.success(`Generated ${result.length} invoices successfully`);
-      setIsBulkDialogOpen(false);
-      fetchInvoices();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Operation failed");
-    } finally {
-      setSubmitting(false);
-    }
+    bulkGenerateInvoicesMutation.mutate(bulkFormData, {
+      onSuccess: (result) => {
+        toast.success(`Generated ${result.length} invoices successfully`);
+        setIsBulkDialogOpen(false);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Operation failed");
+      },
+    });
   };
 
   const handleViewDetails = async (invoice: Invoice) => {
-    try {
-      const details = await financeService.getInvoiceById(invoice.id);
-      setSelectedInvoice(details);
-      setIsDetailsDialogOpen(true);
-    } catch (error: any) {
-      toast.error("Failed to load details");
-    }
+    setSelectedInvoice(invoice);
+    setIsDetailsDialogOpen(true);
   };
 
   const handleDelete = async () => {
     if (!selectedInvoice) return;
 
-    try {
-      setSubmitting(true);
-      await financeService.deleteInvoice(selectedInvoice.id);
-      toast.success("Invoice deleted successfully");
-      setDeleteDialogOpen(false);
-      fetchInvoices();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete");
-    } finally {
-      setSubmitting(false);
-    }
+    deleteInvoiceMutation.mutate(selectedInvoice.id, {
+      onSuccess: () => {
+        toast.success("Invoice deleted successfully");
+        setDeleteDialogOpen(false);
+        setSelectedInvoice(null);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to delete");
+      },
+    });
   };
 
   const getStatusBadge = (status: InvoiceStatus) => {
@@ -379,11 +348,11 @@ export default function InvoicesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createInvoiceMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSubmit} disabled={createInvoiceMutation.isPending}>
+              {createInvoiceMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create
             </Button>
           </DialogFooter>
@@ -443,11 +412,11 @@ export default function InvoicesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBulkDialogOpen(false)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setIsBulkDialogOpen(false)} disabled={bulkGenerateInvoicesMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleBulkGenerate} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleBulkGenerate} disabled={bulkGenerateInvoicesMutation.isPending}>
+              {bulkGenerateInvoicesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Generate
             </Button>
           </DialogFooter>
@@ -551,9 +520,9 @@ export default function InvoicesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <AlertDialogCancel disabled={deleteInvoiceMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteInvoiceMutation.isPending}>
+              {deleteInvoiceMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

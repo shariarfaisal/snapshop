@@ -33,6 +33,10 @@ import { CreateTimetableInput, DAY_LABELS, DAYS_OF_WEEK, Timetable } from "@/typ
 import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCheckConflicts } from "@/hooks/use-timetable";
+import { teacherService } from "@/services/teacher";
+import { roomService } from "@/services/api/room";
+import type { Teacher } from "@/types/teacher";
+import type { Room } from "@/types/room";
 
 const timetableSchema = z.object({
   class_id: z.number({ required_error: "Class is required" }).min(1, "Class is required"),
@@ -46,7 +50,7 @@ const timetableSchema = z.object({
   period_number: z.number({ required_error: "Period number is required" }).min(1).max(10),
   start_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
   end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
-  room_number: z.string().optional(),
+  room_id: z.number().optional(),
 });
 
 interface TimetableDialogProps {
@@ -72,11 +76,15 @@ export function TimetableDialog({
   classes = [],
   sections = [],
   subjects = [],
-  teachers = [],
+  teachers: initialTeachers = [],
   academicYears = [],
   isSubmitting = false,
 }: TimetableDialogProps) {
   const [conflictWarnings, setConflictWarnings] = useState<string[]>([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
+  const [allRooms, setAllRooms] = useState<Room[]>([]);
   const { checkConflicts, isChecking } = useCheckConflicts();
 
   const form = useForm<CreateTimetableInput>({
@@ -92,15 +100,46 @@ export function TimetableDialog({
           period_number: editData.period_number,
           start_time: editData.start_time,
           end_time: editData.end_time,
-          room_number: editData.room_number || "",
+          room_id: editData.room_id || undefined,
         }
       : {
           period_number: 1,
           start_time: "09:00",
           end_time: "10:00",
-          room_number: "",
         },
   });
+
+  // Fetch teachers and rooms on dialog open
+  useEffect(() => {
+    if (open) {
+      loadTeachers();
+      loadRooms();
+    }
+  }, [open]);
+
+  const loadTeachers = async () => {
+    try {
+      setLoadingTeachers(true);
+      const data = await teacherService.getTeachers({ per_page: 100 });
+      setAllTeachers(data.data || []);
+    } catch (error) {
+      console.error("Failed to load teachers", error);
+    } finally {
+      setLoadingTeachers(false);
+    }
+  };
+
+  const loadRooms = async () => {
+    try {
+      setLoadingRooms(true);
+      const data = await roomService.getAllActive();
+      setAllRooms(data || []);
+    } catch (error) {
+      console.error("Failed to load rooms", error);
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
 
   // Reset form when dialog opens/closes or editData changes
   useEffect(() => {
@@ -116,7 +155,7 @@ export function TimetableDialog({
           period_number: editData.period_number,
           start_time: editData.start_time,
           end_time: editData.end_time,
-          room_number: editData.room_number || "",
+          room_id: editData.room_id || undefined,
         });
       } else {
         // Set default academic year to current one
@@ -126,7 +165,6 @@ export function TimetableDialog({
           period_number: 1,
           start_time: "09:00",
           end_time: "10:00",
-          room_number: "",
         });
       }
       setConflictWarnings([]);
@@ -145,78 +183,114 @@ export function TimetableDialog({
         value.section_id &&
         value.subject_id &&
         value.teacher_id &&
-        value.academic_year_id &&
         value.day_of_week &&
+        value.period_number &&
         value.start_time &&
         value.end_time
       ) {
         try {
-          const result = await checkConflicts({
-            ...value as CreateTimetableInput,
-            exclude_id: editData?.id,
+          const conflicts = await checkConflicts({
+            class_id: value.class_id,
+            section_id: value.section_id,
+            teacher_id: value.teacher_id,
+            day_of_week: value.day_of_week,
+            period_number: value.period_number,
+            timetable_id: editData?.id,
           });
-          setConflictWarnings(result.data.conflicts || []);
+          setConflictWarnings(conflicts || []);
         } catch (error) {
-          // Silently fail conflict check
+          console.error("Error checking conflicts:", error);
         }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [form, checkConflicts, editData]);
+  }, [form, checkConflicts, editData?.id]);
 
-  const handleSubmit = async (data: CreateTimetableInput) => {
+  async function handleSubmit(data: CreateTimetableInput) {
     try {
       await onSubmit(data);
-      onSuccess();
       onOpenChange(false);
+      onSuccess();
     } catch (error) {
-      // Error is handled by the mutation
+      console.error("Error submitting timetable:", error);
     }
-  };
+  }
+
+  const teachersToDisplay = initialTeachers.length > 0 ? initialTeachers : allTeachers;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editData ? "Edit Timetable Entry" : "Add Timetable Entry"}</DialogTitle>
-          <DialogDescription>
-            {editData
-              ? "Update the timetable entry details below."
-              : "Fill in the details to create a new timetable entry."}
-          </DialogDescription>
-        </DialogHeader>
-
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {/* Academic Year */}
-            <FormField
-              control={form.control}
-              name="academic_year_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Academic Year *</FormLabel>
-                  <Select
-                    value={field.value?.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select academic year" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {academicYears.map((year) => (
-                        <SelectItem key={year.id} value={year.id.toString()}>
-                          {year.name} {year.is_current && "(Current)"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <DialogHeader>
+              <DialogTitle>{editData ? "Edit" : "Add"} Timetable Entry</DialogTitle>
+              <DialogDescription>
+                {editData
+                  ? "Update the timetable entry for this class."
+                  : "Create a new timetable entry for your class."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Subject and Academic Year */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="subject_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subject *</FormLabel>
+                    <Select
+                      value={field.value?.toString()}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subjects.map((subject) => (
+                          <SelectItem key={subject.id} value={subject.id.toString()}>
+                            {subject.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="academic_year_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Academic Year *</FormLabel>
+                    <Select
+                      value={field.value?.toString()}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select academic year" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {academicYears.map((year) => (
+                          <SelectItem key={year.id} value={year.id.toString()}>
+                            {year.name} {year.is_current && "(Current)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* Class and Section */}
             <div className="grid grid-cols-2 gap-4">
@@ -230,7 +304,7 @@ export function TimetableDialog({
                       value={field.value?.toString()}
                       onValueChange={(value) => {
                         field.onChange(parseInt(value));
-                        form.setValue("section_id", 0 as any); // Reset section
+                        form.setValue("section_id", 0 as any);
                       }}
                     >
                       <FormControl>
@@ -281,36 +355,8 @@ export function TimetableDialog({
               />
             </div>
 
-            {/* Subject and Teacher */}
+            {/* Teacher and Room */}
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="subject_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subject *</FormLabel>
-                    <Select
-                      value={field.value?.toString()}
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subjects.map((subject) => (
-                          <SelectItem key={subject.id} value={subject.id.toString()}>
-                            {subject.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="teacher_id"
@@ -323,15 +369,44 @@ export function TimetableDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select teacher" />
+                          <SelectValue placeholder={loadingTeachers ? "Loading..." : "Select teacher"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {teachers.map((teacher) => (
+                        {teachersToDisplay.map((teacher) => (
                           <SelectItem key={teacher.id} value={teacher.id.toString()}>
                             {teacher.user
                               ? `${teacher.user.firstName} ${teacher.user.lastName}`
                               : `Teacher #${teacher.id}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="room_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Room</FormLabel>
+                    <Select
+                      value={field.value?.toString() || "none"}
+                      onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingRooms ? "Loading..." : "Select room (optional)"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {allRooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id.toString()}>
+                            {room.room_number} - {room.room_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -391,8 +466,8 @@ export function TimetableDialog({
               />
             </div>
 
-            {/* Time and Room */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Time */}
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="start_time"
@@ -415,20 +490,6 @@ export function TimetableDialog({
                     <FormLabel>End Time *</FormLabel>
                     <FormControl>
                       <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="room_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Room</FormLabel>
-                    <FormControl>
-                      <Input placeholder="101" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

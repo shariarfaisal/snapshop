@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +17,10 @@ import { TimetableDialog } from "@/components/timetable/timetable-dialog";
 import { CreateTimetableInput, DAY_LABELS, DAYS_OF_WEEK, Timetable } from "@/types/timetable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-
-// Mock data - Replace with real API calls
-import { schoolClassService } from "@/services/schoolClass";
-import { sectionService } from "@/services/section";
-import { subjectService } from "@/services/subject";
-import { academicYearService } from "@/services/api/academic-year";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
+import { useSections } from "@/hooks/use-sections";
+import { useSubjects } from "@/hooks/use-subjects";
+import { useAcademicYears } from "@/hooks/use-academic-years";
 
 export default function TimetablePage() {
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
@@ -30,13 +29,19 @@ export default function TimetablePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTimetable, setEditingTimetable] = useState<Timetable | null>(null);
 
-  // Fetch dropdown data
-  const [classes, setClasses] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
-  const [academicYears, setAcademicYears] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  // Hooks for dropdown data
+  const { data: classesData, isLoading: isLoadingClasses } = useSchoolClasses({ per_page: 'all' });
+  const { data: sectionsData, isLoading: isLoadingSections } = useSections({ per_page: 'all' });
+  const { subjects, isLoading: isLoadingSubjects } = useSubjects({ per_page: 'all' });
+  const { data: academicYearsData, isLoading: isLoadingYears } = useAcademicYears();
+
+  // Handle API response formats
+  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
+  const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
+  const academicYears = Array.isArray(academicYearsData) ? academicYearsData : (academicYearsData?.data || []);
+  const teachers: any[] = []; // TODO: Load teachers from API
+
+  const isLoadingData = isLoadingClasses || isLoadingSections || isLoadingSubjects || isLoadingYears;
 
   // Fetch timetable data
   const {
@@ -52,42 +57,17 @@ export default function TimetablePage() {
   const { createTimetable, updateTimetable, deleteTimetable, isCreating, isUpdating, isDeleting } =
     useTimetables();
 
-  // Load initial data
+  // Set default academic year to current when data loads
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoadingData(true);
-
-        // Load classes, sections, subjects, teachers, academic years
-        const [classesRes, sectionsRes, subjectsRes, yearsRes] = await Promise.all([
-          schoolClassService.getAll({ per_page: 'all' }),
-          sectionService.getAll({ per_page: 'all' }),
-          subjectService.getAll({ per_page: 'all' }),
-          academicYearService.getAll(),
-        ]);
-
-        setClasses(classesRes.data || []);
-        setSections(sectionsRes.data || []);
-        setSubjects(subjectsRes.data || []);
-        setAcademicYears(yearsRes || []);
-
-        // Set default academic year to current
-        const currentYear = yearsRes?.find((y: any) => y.is_current);
-        if (currentYear) {
-          setSelectedAcademicYearId(currentYear.id);
-        }
-
-        // TODO: Load teachers from API
-        setTeachers([]);
-      } catch (error) {
-        toast.error("Failed to load initial data");
-      } finally {
-        setIsLoadingData(false);
+    if (academicYears.length > 0 && selectedAcademicYearId === null) {
+      const currentYear = academicYears.find((y: any) => y.is_current);
+      if (currentYear) {
+        setSelectedAcademicYearId(currentYear.id);
+      } else {
+        setSelectedAcademicYearId(academicYears[0].id);
       }
-    };
-
-    loadData();
-  }, []);
+    }
+  }, [academicYears, selectedAcademicYearId]);
 
   // Filter sections based on selected class
   const filteredSections = sections.filter(
@@ -261,10 +241,17 @@ export default function TimetablePage() {
           <h1 className="text-3xl font-bold text-gray-900">Timetable Management</h1>
           <p className="text-gray-500 mt-1">Manage class schedules and periods</p>
         </div>
+        <div className="flex gap-2">
+        <Link href="/admin/academic/rooms">
+          <Button variant="outline">
+            Manage Rooms
+          </Button>
+        </Link>
         <Button onClick={handleCreate} disabled={!selectedClassId || !selectedSectionId}>
           <Plus className="mr-2 h-4 w-4" />
           Add Period
         </Button>
+      </div>
       </div>
 
       {/* Statistics Cards */}

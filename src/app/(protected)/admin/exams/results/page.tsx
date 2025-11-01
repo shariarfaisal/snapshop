@@ -1,59 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { FileText, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { examService } from "@/services/exam";
-import { Exam } from "@/types/exam";
+import { useExams, useExamSubjects } from "@/hooks/use-exams";
 
 export default function MarksEntryPage() {
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [selectedExam, setSelectedExam] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [examSubjects, setExamSubjects] = useState<any[]>([]);
+  const [selectedExamId, setSelectedExamId] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchExams();
-  }, []);
+  // Hooks
+  const { data: examsData, isLoading: loading } = useExams();
+  const { data: examSubjects = [] } = useExamSubjects(selectedExamId);
 
-  useEffect(() => {
-    if (selectedExam) {
-      fetchExamSubjects(parseInt(selectedExam));
-    }
-  }, [selectedExam]);
+  // Derived data
+  const exams = Array.isArray(examsData) ? examsData : (examsData?.data || []);
 
-  const fetchExams = async () => {
-    try {
-      setLoading(true);
-      const response = await examService.getAll();
-      const examsData = Array.isArray(response) ? response : (response as any)?.data || [];
-      setExams(examsData);
-      
-      // Auto-select first exam if available
-      if (examsData.length > 0) {
-        setSelectedExam(examsData[0].id.toString());
-      }
-    } catch (error) {
-      console.error("Failed to fetch exams:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchExamSubjects = async (examId: number) => {
-    try {
-      const subjects = await examService.getSubjects(examId);
-      setExamSubjects(Array.isArray(subjects) ? subjects : []);
-    } catch (error) {
-      console.error("Failed to fetch exam subjects:", error);
-      setExamSubjects([]);
-    }
-  };
+  // Set first exam as default when exams load
+  if (exams.length > 0 && selectedExamId === null) {
+    setSelectedExamId(exams[0].id);
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -94,7 +64,10 @@ export default function MarksEntryPage() {
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <label className="text-sm font-medium mb-2 block">Exam</label>
-              <Select value={selectedExam} onValueChange={setSelectedExam}>
+              <Select
+                value={selectedExamId?.toString() || ""}
+                onValueChange={(value) => setSelectedExamId(parseInt(value))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select an exam" />
                 </SelectTrigger>
@@ -111,7 +84,7 @@ export default function MarksEntryPage() {
         </CardContent>
       </Card>
 
-      {selectedExam && (
+      {selectedExamId && (
         <Card>
           <CardHeader>
             <CardTitle>Exam Subjects</CardTitle>
@@ -121,7 +94,7 @@ export default function MarksEntryPage() {
               <div className="text-center py-8">
                 <FileText className="mx-auto h-12 w-12 text-gray-400 mb-3" />
                 <p className="text-gray-600">No subjects scheduled for this exam</p>
-                <Link href={`/admin/exams/schedule/${selectedExam}`}>
+                <Link href={`/admin/exams/schedule/${selectedExamId}`}>
                   <Button variant="outline" className="mt-4">
                     Schedule Subjects
                   </Button>
@@ -172,7 +145,7 @@ export default function MarksEntryPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Link href={`/admin/exams/results/${selectedExam}?subject=${subject.id}`}>
+                        <Link href={`/admin/exams/results/${selectedExamId}?subject=${subject.id}`}>
                           <Button size="sm" variant="outline">
                             <FileText className="mr-2 h-4 w-4" />
                             Enter Marks
@@ -188,7 +161,7 @@ export default function MarksEntryPage() {
         </Card>
       )}
 
-      {!selectedExam && exams.length === 0 && (
+      {!selectedExamId && exams.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
             <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />

@@ -12,23 +12,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Eye, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { financeService } from "@/services/finance";
 import { Payment, CreatePaymentInput, PaymentMethod } from "@/types/finance";
 import { format } from "date-fns";
+import {
+  usePayments,
+  usePayment,
+  useCreatePayment,
+  useInvoices,
+} from "@/hooks/use-finance";
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [methodFilter, setMethodFilter] = useState("all");
 
-  const [invoices, setInvoices] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<CreatePaymentInput>({
     invoice_id: 0,
@@ -37,42 +37,27 @@ export default function PaymentsPage() {
     payment_date: new Date().toISOString().split('T')[0],
   });
 
-  useEffect(() => {
-    fetchPayments();
-  }, [currentPage, searchQuery, methodFilter]);
-
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  const fetchInvoices = async () => {
-    try {
-      const data = await financeService.getAllInvoices({ status: "pending", per_page: 100 }, 1);
-      setInvoices(data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch invoices");
-    }
+  // Build filters
+  const paymentFilters = {
+    search: searchQuery || undefined,
+    payment_method: methodFilter !== "all" ? (methodFilter as PaymentMethod) : undefined,
+    per_page: 15,
   };
 
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      const data = await financeService.getAllPayments(
-        {
-          search: searchQuery || undefined,
-          payment_method: methodFilter !== "all" ? (methodFilter as PaymentMethod) : undefined,
-          per_page: 15,
-        },
-        currentPage
-      );
-      setPayments(data.data);
-      setTotalPages(data.last_page);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to fetch payments");
-    } finally {
-      setLoading(false);
-    }
+  const invoiceFilters = {
+    status: "pending" as const,
+    per_page: 100,
   };
+
+  // Hooks
+  const { data: paymentsData, isLoading: loading } = usePayments(paymentFilters, currentPage);
+  const { data: invoicesData } = useInvoices(invoiceFilters, 1);
+  const createPaymentMutation = useCreatePayment();
+
+  // Derived data
+  const payments = paymentsData?.data || [];
+  const totalPages = paymentsData?.last_page || 1;
+  const invoices = invoicesData?.data || [];
 
   const handleCreate = () => {
     setFormData({
@@ -101,28 +86,20 @@ export default function PaymentsPage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      await financeService.createPayment(formData);
-      toast.success("Payment recorded successfully");
-      setIsDialogOpen(false);
-      fetchPayments();
-      fetchInvoices();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Operation failed");
-    } finally {
-      setSubmitting(false);
-    }
+    createPaymentMutation.mutate(formData, {
+      onSuccess: () => {
+        toast.success("Payment recorded successfully");
+        setIsDialogOpen(false);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Operation failed");
+      },
+    });
   };
 
-  const handleViewDetails = async (payment: Payment) => {
-    try {
-      const details = await financeService.getPaymentById(payment.id);
-      setSelectedPayment(details);
-      setIsDetailsDialogOpen(true);
-    } catch (error: any) {
-      toast.error("Failed to load details");
-    }
+  const handleViewDetails = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setIsDetailsDialogOpen(true);
   };
 
   return (
@@ -331,11 +308,11 @@ export default function PaymentsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createPaymentMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSubmit} disabled={createPaymentMutation.isPending}>
+              {createPaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Record Payment
             </Button>
           </DialogFooter>

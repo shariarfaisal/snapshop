@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,26 +51,24 @@ import {
   X
 } from "lucide-react";
 import { toast } from "sonner";
-import { financeService } from "@/services/finance";
-import { schoolClassService } from "@/services/schoolClass";
 import { FeeStructure, CreateFeeStructureInput, FeeHead, FeeFrequency } from "@/types/finance";
+import {
+  useFeeStructures,
+  useCreateFeeStructure,
+  useDeleteFeeStructure,
+  useFeeHeads,
+} from "@/hooks/use-finance";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
+import { useAcademicYears } from "@/hooks/use-academic-years";
 
 export default function FeeStructurePage() {
-  const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const [classes, setClasses] = useState<any[]>([]);
-  const [academicYears, setAcademicYears] = useState<any[]>([]);
-  const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedFeeStructure, setSelectedFeeStructure] = useState<FeeStructure | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<CreateFeeStructureInput>({
     name: "",
@@ -80,42 +78,31 @@ export default function FeeStructurePage() {
     items: [],
   });
 
-  useEffect(() => {
-    fetchInitialData();
-    fetchFeeStructures();
-  }, [currentPage, searchQuery]);
-
-  const fetchInitialData = async () => {
-    try {
-      const [classesData, yearsData, feeHeadsData] = await Promise.all([
-        schoolClassService.getAll(),
-        fetch("http://127.0.0.1:8000/api/academic-years").then((r) => r.json()).catch(() => ({ data: [] })),
-        financeService.getAllFeeHeads({ is_active: true, per_page: 100 }, 1),
-      ]);
-      
-      setClasses(classesData.data || []);
-      setAcademicYears(yearsData.data || []);
-      setFeeHeads(feeHeadsData.data || []);
-    } catch (error) {
-      console.error("Failed to fetch initial data:", error);
-    }
+  // Build filters
+  const feeStructureFilters = {
+    search: searchQuery || undefined,
+    per_page: 15,
   };
 
-  const fetchFeeStructures = async () => {
-    try {
-      setLoading(true);
-      const data = await financeService.getAllFeeStructures(
-        { search: searchQuery || undefined, per_page: 15 },
-        currentPage
-      );
-      setFeeStructures(data.data);
-      setTotalPages(data.last_page);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to fetch fee structures");
-    } finally {
-      setLoading(false);
-    }
+  const feeHeadFilters = {
+    is_active: true,
+    per_page: 100,
   };
+
+  // Hooks
+  const { data: feeStructuresData, isLoading: loading } = useFeeStructures(feeStructureFilters, currentPage);
+  const { data: classesData } = useSchoolClasses();
+  const { data: academicYearsData } = useAcademicYears();
+  const { data: feeHeadsData } = useFeeHeads(feeHeadFilters, 1);
+  const createFeeStructureMutation = useCreateFeeStructure();
+  const deleteFeeStructureMutation = useDeleteFeeStructure();
+
+  // Derived data
+  const feeStructures = feeStructuresData?.data || [];
+  const totalPages = feeStructuresData?.last_page || 1;
+  const classes = classesData?.data || classesData || [];
+  const academicYears = academicYearsData || [];
+  const feeHeads = feeHeadsData?.data || [];
 
   const handleCreate = () => {
     setFormData({
@@ -148,7 +135,7 @@ export default function FeeStructurePage() {
     setFormData({ ...formData, items: newItems });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.name.trim()) {
       toast.error("Please enter fee structure name");
       return;
@@ -166,43 +153,35 @@ export default function FeeStructurePage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-      await financeService.createFeeStructure(formData);
-      toast.success("Fee structure created successfully");
-      setIsDialogOpen(false);
-      fetchFeeStructures();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Operation failed");
-    } finally {
-      setSubmitting(false);
-    }
+    createFeeStructureMutation.mutate(formData, {
+      onSuccess: () => {
+        toast.success("Fee structure created successfully");
+        setIsDialogOpen(false);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Operation failed");
+      },
+    });
   };
 
-  const handleViewDetails = async (feeStructure: FeeStructure) => {
-    try {
-      const details = await financeService.getFeeStructureById(feeStructure.id);
-      setSelectedFeeStructure(details);
-      setIsDetailsDialogOpen(true);
-    } catch (error: any) {
-      toast.error("Failed to load details");
-    }
+  const handleViewDetails = (feeStructure: FeeStructure) => {
+    setSelectedFeeStructure(feeStructure);
+    setIsDetailsDialogOpen(true);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedFeeStructure) return;
 
-    try {
-      setSubmitting(true);
-      await financeService.deleteFeeStructure(selectedFeeStructure.id);
-      toast.success("Fee structure deleted successfully");
-      setDeleteDialogOpen(false);
-      fetchFeeStructures();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete");
-    } finally {
-      setSubmitting(false);
-    }
+    deleteFeeStructureMutation.mutate(selectedFeeStructure.id, {
+      onSuccess: () => {
+        toast.success("Fee structure deleted successfully");
+        setDeleteDialogOpen(false);
+        setSelectedFeeStructure(null);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to delete");
+      },
+    });
   };
 
   const getTotalAmount = (items: any[]) => {
@@ -264,7 +243,7 @@ export default function FeeStructurePage() {
                     <TableRow key={structure.id}>
                       <TableCell className="font-medium">{structure.name}</TableCell>
                       <TableCell>{structure.school_class?.name || "-"}</TableCell>
-                      <TableCell>{structure.academic_year?.year || "-"}</TableCell>
+                      <TableCell>{structure.academic_year?.name || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{structure.frequency}</Badge>
                       </TableCell>
@@ -397,7 +376,7 @@ export default function FeeStructurePage() {
                   <SelectContent>
                     {academicYears.map((year) => (
                       <SelectItem key={year.id} value={year.id.toString()}>
-                        {year.year}
+                        {year.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -462,11 +441,11 @@ export default function FeeStructurePage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createFeeStructureMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSubmit} disabled={createFeeStructureMutation.isPending}>
+              {createFeeStructureMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create
             </Button>
           </DialogFooter>
@@ -533,9 +512,9 @@ export default function FeeStructurePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <AlertDialogCancel disabled={deleteFeeStructureMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteFeeStructureMutation.isPending}>
+              {deleteFeeStructureMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

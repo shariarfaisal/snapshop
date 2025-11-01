@@ -12,6 +12,7 @@ import {
   UserCircle,
   Book,
   Map,
+  DoorOpen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -22,7 +23,7 @@ type ISidebarConstant = {
     icon?: LucideIcon;
     items?: {
       title: string;
-      url: (projectId: string) => string;
+      url: string;
     }[];
   }[];
 };
@@ -50,19 +51,27 @@ export const sidebarConstant: ISidebarConstant = {
       icon: Shield,
     },
     {
-      title: "Programs",
-      url: "/admin/programs",
+      title: "Academic",
+      url: "/admin/academic",
       icon: BookOpen,
-    },
-    {
-      title: "Subjects",
-      url: "/admin/subjects",
-      icon: Book,
-    },
-    {
-      title: "Curriculum",
-      url: "/admin/curriculum",
-      icon: Map,
+      items: [
+        {
+          title: "Programs",
+          url: "/admin/programs",
+        },
+        {
+          title: "Subjects",
+          url: "/admin/subjects",
+        },
+        {
+          title: "Curriculum",
+          url: "/admin/curriculum",
+        },
+        {
+          title: "Rooms",
+          url: "/admin/academic/rooms",
+        },
+      ],
     },
     {
       title: "Campuses",
@@ -98,6 +107,32 @@ export const sidebarConstant: ISidebarConstant = {
       title: "Settings",
       url: "/settings",
       icon: Settings,
+      items: [
+        {
+          title: "Institute",
+          url: "/settings/institute",
+        },
+        {
+          title: "Organization",
+          url: "/settings/organization",
+        },
+        {
+          title: "Profile",
+          url: "/settings/profile",
+        },
+        {
+          title: "Branding",
+          url: "/settings/branding",
+        },
+        {
+          title: "System",
+          url: "/settings/system",
+        },
+        {
+          title: "Security",
+          url: "/settings/security",
+        },
+      ],
     },
   ],
 };

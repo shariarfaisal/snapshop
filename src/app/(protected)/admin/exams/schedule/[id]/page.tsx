@@ -1,29 +1,39 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ArrowLeft, Plus, Edit, Trash2, Save } from "lucide-react";
-import { examService } from "@/services/exam";
-import { Exam, ExamSubject, CreateExamSubjectInput } from "@/types/exam";
+import { CreateExamSubjectInput } from "@/types/exam";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useExam, useExamSchedule, useAddExamSubject, useRemoveExamSubject } from "@/hooks/use-exams";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
+import { useSubjects } from "@/hooks/use-subjects";
+import { toast } from "sonner";
 
 export default function ExamSchedulePage() {
   const params = useParams();
   const router = useRouter();
   const examId = parseInt(params.id as string);
-  
-  const [exam, setExam] = useState<Exam | null>(null);
-  const [schedule, setSchedule] = useState<ExamSubject[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [showAddForm, setShowAddForm] = useState(false);
-  const [classes, setClasses] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  
   const [formData, setFormData] = useState<CreateExamSubjectInput>({
     class_id: 0,
     subject_id: 0,
@@ -34,79 +44,60 @@ export default function ExamSchedulePage() {
     duration: 180,
   });
 
-  useEffect(() => {
-    fetchExamAndSchedule();
-    fetchClassesAndSubjects();
-  }, [examId]);
+  // Hooks
+  const { data: examData, isLoading: examLoading } = useExam(examId);
+  const { data: scheduleData, isLoading: scheduleLoading } = useExamSchedule(examId);
+  const { data: classesData } = useSchoolClasses({ per_page: "all" });
+  const { subjects: subjectsData } = useSubjects({ per_page: "all" });
+  const addSubjectMutation = useAddExamSubject();
+  const removeSubjectMutation = useRemoveExamSubject();
 
-  const fetchExamAndSchedule = async () => {
-    try {
-      setLoading(true);
-      const [exam, schedule] = await Promise.all([
-        examService.getById(examId),
-        examService.getSchedule(examId)
-      ]);
-      setExam(exam);
-      setSchedule(schedule);
-    } catch (error) {
-      console.error("Failed to fetch exam:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handle API response formats
+  const exam = examData?.data || examData;
+  const schedule = Array.isArray(scheduleData) ? scheduleData : [];
+  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
+  const subjects = Array.isArray(subjectsData) ? subjectsData : [];
+  const loading = examLoading || scheduleLoading;
 
-  const fetchClassesAndSubjects = async () => {
-    try {
-      const { apiClient } = await import("@/lib/api-client");
-      
-      const [classRes, subjectRes] = await Promise.all([
-        apiClient.get("/school-classes"),
-        apiClient.get("/subjects")
-      ]);
-      
-      // Handle both array and paginated responses
-      const classesArray = Array.isArray(classRes.data) ? classRes.data : 
-                          (classRes.data?.data ? (Array.isArray(classRes.data.data) ? classRes.data.data : classRes.data.data.data || []) : []);
-      const subjectsArray = Array.isArray(subjectRes.data) ? subjectRes.data : 
-                           (subjectRes.data?.data ? (Array.isArray(subjectRes.data.data) ? subjectRes.data.data : subjectRes.data.data.data || []) : []);
-      
-      setClasses(classesArray);
-      setSubjects(subjectsArray);
-    } catch (error) {
-      console.error("Failed to fetch classes/subjects:", error);
-    }
-  };
-
-  const handleAddSubject = async (e: React.FormEvent) => {
+  const handleAddSubject = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await examService.addSubject(examId, formData);
-      setShowAddForm(false);
-      fetchExamAndSchedule();
-      setFormData({
-        class_id: 0,
-        subject_id: 0,
-        max_marks: 100,
-        pass_marks: 40,
-        exam_date: "",
-        exam_time: "",
-        duration: 180,
-      });
-    } catch (error) {
-      console.error("Failed to add subject:", error);
-      alert("Failed to add subject");
-    }
+    addSubjectMutation.mutate(
+      { examId, data: formData },
+      {
+        onSuccess: () => {
+          setShowAddForm(false);
+          setFormData({
+            class_id: 0,
+            subject_id: 0,
+            max_marks: 100,
+            pass_marks: 40,
+            exam_date: "",
+            exam_time: "",
+            duration: 180,
+          });
+          toast.success("Subject added successfully");
+        },
+        onError: () => {
+          toast.error("Failed to add subject");
+        },
+      }
+    );
   };
 
-  const handleRemoveSubject = async (subjectId: number) => {
+  const handleRemoveSubject = (subjectId: number) => {
     if (!confirm("Are you sure you want to remove this subject?")) return;
-    
-    try {
-      await examService.removeSubject(examId, subjectId);
-      fetchExamAndSchedule();
-    } catch (error) {
-      console.error("Failed to remove subject:", error);
-    }
+
+    removeSubjectMutation.mutate(
+      { examId, subjectId },
+      {
+        onSuccess: () => {
+          toast.success("Subject removed successfully");
+        },
+        onError: () => {
+          toast.error("Failed to remove subject");
+        },
+      }
+    );
   };
 
   const formatDate = (date: string) => {
@@ -114,7 +105,7 @@ export default function ExamSchedulePage() {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
@@ -127,7 +118,7 @@ export default function ExamSchedulePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/admin/exams">
@@ -198,7 +189,9 @@ export default function ExamSchedulePage() {
                     id="max_marks"
                     type="number"
                     value={formData.max_marks}
-                    onChange={(e) => setFormData({ ...formData, max_marks: parseFloat(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, max_marks: parseFloat(e.target.value) })
+                    }
                     required
                   />
                 </div>
@@ -209,7 +202,9 @@ export default function ExamSchedulePage() {
                     id="pass_marks"
                     type="number"
                     value={formData.pass_marks}
-                    onChange={(e) => setFormData({ ...formData, pass_marks: parseFloat(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, pass_marks: parseFloat(e.target.value) })
+                    }
                     required
                   />
                 </div>
@@ -240,7 +235,9 @@ export default function ExamSchedulePage() {
                     id="duration"
                     type="number"
                     value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duration: parseInt(e.target.value) })
+                    }
                   />
                 </div>
               </div>

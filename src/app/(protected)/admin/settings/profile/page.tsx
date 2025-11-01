@@ -3,21 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { authService } from "@/services/api/auth";
+import { useUpdateProfile } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Save, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, getDisplayName } = useAuthStore();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+  const updateProfileMutation = useUpdateProfile();
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -37,35 +36,30 @@ export default function ProfilePage() {
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMessage("");
-    setSuccessMessage("");
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setErrorMessage("");
-    setSuccessMessage("");
 
-    try {
-      await authService.updateProfile({
+    updateProfileMutation.mutate(
+      {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
-      });
-      setSuccessMessage("Profile updated successfully!");
-      setTimeout(() => {
-        router.push("/admin/settings");
-      }, 2000);
-    } catch (error: any) {
-      setErrorMessage(error?.response?.data?.message || "Failed to update profile");
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Profile updated successfully!");
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || "Failed to update profile");
+        },
+      }
+    );
   };
 
   if (!user) {
@@ -77,32 +71,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/settings">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">My Profile</h1>
-          <p className="text-muted-foreground mt-1">Update your profile information</p>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">My Profile</h1>
+        <p className="text-muted-foreground mt-1">Update your profile information</p>
       </div>
-
-      {successMessage && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
-        </Alert>
-      )}
-
-      {errorMessage && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      )}
 
       <form onSubmit={handleSubmit}>
         <Card>
@@ -122,7 +95,7 @@ export default function ProfilePage() {
                   value={formData.firstName}
                   onChange={handleChange}
                   required
-                  disabled={isSubmitting}
+                  disabled={updateProfileMutation.isPending}
                 />
               </div>
               <div className="space-y-2">
@@ -134,7 +107,7 @@ export default function ProfilePage() {
                   value={formData.lastName}
                   onChange={handleChange}
                   required
-                  disabled={isSubmitting}
+                  disabled={updateProfileMutation.isPending}
                 />
               </div>
             </div>
@@ -163,7 +136,7 @@ export default function ProfilePage() {
                 placeholder="Enter phone number"
                 value={formData.phone}
                 onChange={handleChange}
-                disabled={isSubmitting}
+                disabled={updateProfileMutation.isPending}
               />
             </div>
 
@@ -184,8 +157,8 @@ export default function ProfilePage() {
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t">
-              <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
-                {isSubmitting ? (
+              <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
+                {updateProfileMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
@@ -196,14 +169,6 @@ export default function ProfilePage() {
                     Save Changes
                   </>
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                asChild
-                disabled={isSubmitting}
-              >
-                <Link href="/admin/settings">Cancel</Link>
               </Button>
             </div>
           </CardContent>

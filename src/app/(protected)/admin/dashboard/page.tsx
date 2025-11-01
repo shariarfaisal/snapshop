@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,31 +13,18 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-import { dashboardService, AdminDashboardData } from "@/services/api/dashboard";
+import { useAdminDashboard } from "@/hooks/use-dashboard";
 
 export default function AdminDashboard() {
   const { getDisplayName, getInstituteName } = useAuthStore();
-  const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await dashboardService.getAdminDashboard();
-        setDashboardData(data);
-      } catch (err: any) {
-        console.error("Failed to fetch dashboard data:", err);
-        setError(err?.response?.data?.message || "Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Hooks
+  const { data: dashboardData, isLoading: loading, error: queryError } = useAdminDashboard();
 
-    fetchDashboardData();
-  }, []);
+  // Handle error
+  const error = queryError
+    ? (queryError as any)?.response?.data?.message || "Failed to load dashboard data"
+    : null;
 
   // Build stats from API data or use defaults
   const stats = dashboardData?.statistics
@@ -136,19 +122,19 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 flex flex-col items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-gray-600">Loading dashboard...</p>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+        <p className="text-sm text-gray-600 mt-3">Loading dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">
-          Welcome {getDisplayName()}! Here's what's happening in {getInstituteName()}.
+        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Welcome back, {getDisplayName()}! Here's what's happening in {getInstituteName()}.
         </p>
       </div>
 
@@ -163,16 +149,16 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
           <Card key={stat.title}>
-            <CardContent className="pt-6">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                  <div className="flex items-center mt-2">
+                  <p className="text-3xl font-semibold text-gray-900 mt-2">{stat.value}</p>
+                  <div className="flex items-center mt-3">
                     {stat.trend === "up" ? (
-                      <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                      <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
                     ) : (
-                      <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                      <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
                     )}
                     <span
                       className={`text-sm font-medium ${
@@ -181,11 +167,11 @@ export default function AdminDashboard() {
                     >
                       {stat.change}
                     </span>
-                    <span className="text-sm text-gray-500 ml-1">vs last month</span>
+                    <span className="text-xs text-gray-500 ml-1">vs last month</span>
                   </div>
                 </div>
-                <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-gray-100">
+                  <stat.icon className="h-6 w-6 text-gray-700" />
                 </div>
               </div>
             </CardContent>
@@ -197,17 +183,17 @@ export default function AdminDashboard() {
         {/* Recent Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {recentActivities.map((activity, index) => (
                 <div
                   key={index}
-                  className="flex items-start space-x-3 pb-4 border-b last:border-0 last:pb-0"
+                  className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0"
                 >
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.message}</p>
+                    <p className="text-sm text-gray-900">{activity.message}</p>
                     <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
                   </div>
                 </div>
@@ -219,27 +205,27 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                <Users className="h-5 w-5 text-blue-600 mb-2" />
+              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <Users className="h-5 w-5 text-gray-700 mb-2" />
                 <p className="text-sm font-medium text-gray-900">Add Student</p>
                 <p className="text-xs text-gray-500 mt-1">Register new student</p>
               </button>
-              <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                <UserCheck className="h-5 w-5 text-green-600 mb-2" />
+              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <UserCheck className="h-5 w-5 text-gray-700 mb-2" />
                 <p className="text-sm font-medium text-gray-900">Add Teacher</p>
                 <p className="text-xs text-gray-500 mt-1">Register new teacher</p>
               </button>
-              <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                <GraduationCap className="h-5 w-5 text-purple-600 mb-2" />
+              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <GraduationCap className="h-5 w-5 text-gray-700 mb-2" />
                 <p className="text-sm font-medium text-gray-900">Create Class</p>
                 <p className="text-xs text-gray-500 mt-1">Setup new class</p>
               </button>
-              <button className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors">
-                <DollarSign className="h-5 w-5 text-orange-600 mb-2" />
+              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <DollarSign className="h-5 w-5 text-gray-700 mb-2" />
                 <p className="text-sm font-medium text-gray-900">Generate Invoice</p>
                 <p className="text-xs text-gray-500 mt-1">Create fee invoice</p>
               </button>
@@ -251,37 +237,37 @@ export default function AdminDashboard() {
       {/* Attendance Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Today's Attendance Overview</CardTitle>
+          <CardTitle className="text-base font-semibold">Today's Attendance Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-700 font-medium">Present</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">
+            <div className="p-5 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600 font-medium">Present</p>
+              <p className="text-3xl font-semibold text-gray-900 mt-2">
                 {attendanceStats.today_present}
               </p>
-              <p className="text-xs text-green-600 mt-1">
+              <p className="text-xs text-gray-500 mt-2">
                 {attendanceStats.today_percentage}% of students
               </p>
             </div>
-            <div className="p-4 bg-red-50 rounded-lg">
-              <p className="text-sm text-red-700 font-medium">Absent</p>
-              <p className="text-2xl font-bold text-red-900 mt-1">{attendanceStats.today_absent}</p>
-              <p className="text-xs text-red-600 mt-1">Total marked</p>
+            <div className="p-5 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600 font-medium">Absent</p>
+              <p className="text-3xl font-semibold text-gray-900 mt-2">{attendanceStats.today_absent}</p>
+              <p className="text-xs text-gray-500 mt-2">Total marked</p>
             </div>
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <p className="text-sm text-yellow-700 font-medium">Total Records</p>
-              <p className="text-2xl font-bold text-yellow-900 mt-1">
+            <div className="p-5 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600 font-medium">Total Records</p>
+              <p className="text-3xl font-semibold text-gray-900 mt-2">
                 {attendanceStats.today_total}
               </p>
-              <p className="text-xs text-yellow-600 mt-1">Today</p>
+              <p className="text-xs text-gray-500 mt-2">Today</p>
             </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700 font-medium">Institute</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">
+            <div className="p-5 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600 font-medium">Institute</p>
+              <p className="text-3xl font-semibold text-gray-900 mt-2">
                 {getInstituteName().split(" ")[0]}
               </p>
-              <p className="text-xs text-blue-600 mt-1">Current institute</p>
+              <p className="text-xs text-gray-500 mt-2">Current institute</p>
             </div>
           </div>
         </CardContent>

@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save } from "lucide-react";
-import Link from "next/link";
+import { Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function BrandingPage() {
@@ -17,21 +16,14 @@ export default function BrandingPage() {
     e.preventDefault();
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    router.push("/admin/settings");
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/settings">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Branding Settings</h1>
-          <p className="text-muted-foreground mt-1">Customize institute branding</p>
-        </div>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Branding Settings</h1>
+        <p className="text-muted-foreground mt-1">Customize institute branding</p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -50,9 +42,6 @@ export default function BrandingPage() {
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />
                 {isSubmitting ? "Saving..." : "Save"}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => router.push("/admin/settings")}>
-                Cancel
               </Button>
             </div>
           </CardContent>

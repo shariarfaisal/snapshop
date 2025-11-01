@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Search, Loader2, BarChart3 } from "lucide-react";
-import { schoolClassService } from "@/services/schoolClass";
 import {
   SchoolClass,
   CreateSchoolClassInput,
@@ -48,19 +47,22 @@ import {
   SchoolClassStats,
 } from "@/types/schoolClass";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useSchoolClasses,
+  useCreateSchoolClass,
+  useUpdateSchoolClass,
+  useDeleteSchoolClass,
+  useSchoolClassStats,
+} from "@/hooks/use-school-classes";
 
 export default function ClassesPage() {
   const { toast } = useToast();
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openStatsDialog, setOpenStatsDialog] = useState(false);
   const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
   const [deletingClass, setDeletingClass] = useState<SchoolClass | null>(null);
-  const [selectedClassStats, setSelectedClassStats] = useState<SchoolClassStats | null>(null);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<CreateSchoolClassInput>({
@@ -70,52 +72,33 @@ export default function ClassesPage() {
   });
 
   // Filter state
-  const [filters, setFilters] = useState({
-    search: "",
-    status: undefined as boolean | undefined,
-    page: 1,
-    perPage: 10,
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Pagination state
-  const [pagination, setPagination] = useState({
+  // Build filters
+  const classFilters = {
+    search: searchQuery || undefined,
+    status: statusFilter !== "all" ? (statusFilter === "true") : undefined,
+    page: currentPage,
+    perPage: 10,
+  };
+
+  // Hooks
+  const { data: classesData, isLoading: loading } = useSchoolClasses(classFilters);
+  const { data: selectedClassStats } = useSchoolClassStats(selectedClassId);
+  const createClassMutation = useCreateSchoolClass();
+  const updateClassMutation = useUpdateSchoolClass();
+  const deleteClassMutation = useDeleteSchoolClass();
+
+  // Derived data
+  const classes = classesData?.data || [];
+  const pagination = classesData?.pagination || {
     total: 0,
     currentPage: 1,
     lastPage: 1,
     perPage: 10,
-  });
-
-  // Fetch classes
-  const fetchClasses = async () => {
-    try {
-      setLoading(true);
-      const response = await schoolClassService.getAll(filters);
-      setClasses(response.data);
-      setPagination(response.pagination);
-    } catch (error: any) {
-      // Don't show error toast if it's a 401 (user will be redirected to login)
-      if (error.response?.status !== 401) {
-        toast({
-          title: "Error",
-          description: error.response?.data?.message || "Failed to fetch classes",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
   };
-
-  useEffect(() => {
-    fetchClasses();
-  }, [filters]);
-
-  // Prevent infinite loop on errors
-  useEffect(() => {
-    return () => {
-      setLoading(false);
-    };
-  }, []);
 
   // Handle create/update
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,34 +113,45 @@ export default function ClassesPage() {
       return;
     }
 
-    try {
-      setSubmitting(true);
-
-      if (editingClass) {
-        await schoolClassService.update(editingClass.id, formData as UpdateSchoolClassInput);
-        toast({
-          title: "Success",
-          description: "Class updated successfully",
-        });
-      } else {
-        await schoolClassService.create(formData);
-        toast({
-          title: "Success",
-          description: "Class created successfully",
-        });
-      }
-
-      setOpenDialog(false);
-      resetForm();
-      fetchClasses();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to save class",
-        variant: "destructive",
+    if (editingClass) {
+      updateClassMutation.mutate(
+        { id: editingClass.id, data: formData as UpdateSchoolClassInput },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Class updated successfully",
+            });
+            setOpenDialog(false);
+            resetForm();
+          },
+          onError: (error: any) => {
+            toast({
+              title: "Error",
+              description: error.response?.data?.message || "Failed to update class",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    } else {
+      createClassMutation.mutate(formData, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Class created successfully",
+          });
+          setOpenDialog(false);
+          resetForm();
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.response?.data?.message || "Failed to create class",
+            variant: "destructive",
+          });
+        },
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -165,40 +159,29 @@ export default function ClassesPage() {
   const handleDelete = async () => {
     if (!deletingClass) return;
 
-    try {
-      setSubmitting(true);
-      await schoolClassService.delete(deletingClass.id);
-      toast({
-        title: "Success",
-        description: "Class deleted successfully",
-      });
-      setOpenDeleteDialog(false);
-      setDeletingClass(null);
-      fetchClasses();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to delete class",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    deleteClassMutation.mutate(deletingClass.id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Class deleted successfully",
+        });
+        setOpenDeleteDialog(false);
+        setDeletingClass(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to delete class",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   // Handle view stats
-  const handleViewStats = async (classItem: SchoolClass) => {
-    try {
-      const response = await schoolClassService.getStats(classItem.id);
-      setSelectedClassStats(response.data);
-      setOpenStatsDialog(true);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to fetch statistics",
-        variant: "destructive",
-      });
-    }
+  const handleViewStats = (classItem: SchoolClass) => {
+    setSelectedClassId(classItem.id);
+    setOpenStatsDialog(true);
   };
 
   // Reset form
@@ -257,19 +240,19 @@ export default function ClassesPage() {
               <Search className="h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search classes..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </div>
             <Select
-              value={filters.status?.toString()}
-              onValueChange={(value) =>
-                setFilters({
-                  ...filters,
-                  status: value === "all" ? undefined : value === "true",
-                  page: 1,
-                })
-              }
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setCurrentPage(1);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
@@ -373,16 +356,16 @@ export default function ClassesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pagination.currentPage === 1}
-                    onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   >
                     Previous
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pagination.currentPage === pagination.lastPage}
-                    onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+                    disabled={currentPage === pagination.lastPage}
+                    onClick={() => setCurrentPage((p) => Math.min(pagination.lastPage, p + 1))}
                   >
                     Next
                   </Button>
@@ -449,12 +432,12 @@ export default function ClassesPage() {
                   setOpenDialog(false);
                   resetForm();
                 }}
-                disabled={submitting}
+                disabled={createClassMutation.isPending || updateClassMutation.isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={createClassMutation.isPending || updateClassMutation.isPending}>
+                {(createClassMutation.isPending || updateClassMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {editingClass ? "Update" : "Create"}
               </Button>
             </DialogFooter>
@@ -473,15 +456,15 @@ export default function ClassesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeletingClass(null)}>
+            <AlertDialogCancel onClick={() => setDeletingClass(null)} disabled={deleteClassMutation.isPending}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700"
-              disabled={submitting}
+              disabled={deleteClassMutation.isPending}
             >
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {deleteClassMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

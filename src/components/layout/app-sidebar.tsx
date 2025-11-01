@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui";
 import { useQuery } from "@tanstack/react-query";
-import { Link2, Plus, LogOut, User, Store } from "lucide-react";
+import { Link2, Plus, LogOut, User, Store, ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks";
@@ -72,6 +72,21 @@ const NavUser = () => {
 const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
   const { open } = useSidebar();
   const pathname = usePathname();
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const isItemActive = (item: any): boolean => {
+    if (item.items) {
+      return item.items.some((subitem: any) => pathname === subitem.url || pathname.startsWith(subitem.url + "/"));
+    }
+    return pathname === item.url || pathname.startsWith(item.url + "/");
+  };
+
+  const toggleExpand = (title: string) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }));
+  };
 
   return (
     <Sidebar collapsible="icon" {...props} className="!p-0 flex flex-col">
@@ -111,25 +126,79 @@ const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
       <SidebarContent>
         <SidebarGroup className="w-full !p-0 overflow-y-auto">
           <SidebarMenu className={cn("p-3", open ? "px-3.5" : "px-2")}>
-            {sidebarConstant.items.map((item, index) => (
-              <SidebarMenuItem key={index} className="p-0">
-                <Link href={item.url}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    className={`px-3 py-2 h-10 hover:bg-gray-100  flex justify-between  items-center ${
-                      pathname !== "/" && item.url.startsWith(pathname)
-                        ? "bg-slate-100 text-green-600"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {item.icon && <item.icon className="size-5" />}
-                      <span className="text-lg">{item.title}</span>
+            {sidebarConstant.items.map((item, index) => {
+              const isActive = isItemActive(item);
+              const hasSubItems = item.items && item.items.length > 0;
+              const isExpanded = expandedItems[item.title] || isActive;
+
+              return (
+                <div key={index}>
+                  <SidebarMenuItem className="p-0">
+                    {hasSubItems ? (
+                      <button
+                        onClick={() => toggleExpand(item.title)}
+                        className={cn(
+                          "w-full px-3 py-2 h-10 hover:bg-gray-100 flex justify-between items-center rounded-md transition-colors",
+                          isActive
+                            ? "bg-blue-50 border-l-4 border-blue-600 text-blue-600"
+                            : ""
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          {item.icon && <item.icon className="size-5" />}
+                          {open && <span className="text-lg">{item.title}</span>}
+                        </div>
+                        {open && hasSubItems && (
+                          <ChevronRight
+                            className={cn(
+                              "size-4 transition-transform",
+                              isExpanded && "rotate-90"
+                            )}
+                          />
+                        )}
+                      </button>
+                    ) : (
+                      <Link href={item.url} className="w-full">
+                        <SidebarMenuButton
+                          tooltip={item.title}
+                          className={cn(
+                            "px-3 py-2 h-10 hover:bg-gray-100 flex justify-between items-center w-full",
+                            isActive
+                              ? "bg-blue-50 border-l-4 border-blue-600 text-blue-600"
+                              : ""
+                          )}
+                        >
+                          <div className="flex items-center gap-4">
+                            {item.icon && <item.icon className="size-5" />}
+                            {open && <span className="text-lg">{item.title}</span>}
+                          </div>
+                        </SidebarMenuButton>
+                      </Link>
+                    )}
+                  </SidebarMenuItem>
+
+                  {/* Sub-items */}
+                  {hasSubItems && isExpanded && open && (
+                    <div className="mt-1 ml-6 space-y-1 border-l border-gray-200 pl-3">
+                      {item.items.map((subitem: any, subindex: number) => (
+                        <Link key={subindex} href={subitem.url} className="w-full block">
+                          <button
+                            className={cn(
+                              "w-full px-3 py-2 text-sm text-left rounded-md transition-colors hover:bg-gray-100",
+                              pathname === subitem.url || pathname.startsWith(subitem.url + "/")
+                                ? "bg-blue-50 border-l-4 border-blue-600 text-blue-600"
+                                : ""
+                            )}
+                          >
+                            {subitem.title}
+                          </button>
+                        </Link>
+                      ))}
                     </div>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

@@ -1,55 +1,44 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, Calendar, Eye, Edit, Trash2, ClipboardCheck } from "lucide-react";
-import { examService } from "@/services/exam";
 import { Exam } from "@/types/exam";
 import Link from "next/link";
+import { useExams, useDeleteExam } from "@/hooks/use-exams";
+import { toast } from "sonner";
 
 export default function ExamsPage() {
   const router = useRouter();
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, scheduled: 0, completed: 0 });
 
-  useEffect(() => {
-    fetchExams();
-  }, []);
+  // Hooks
+  const { data: examsData, isLoading: loading } = useExams();
+  const deleteExamMutation = useDeleteExam();
 
-  const fetchExams = async () => {
-    try {
-      setLoading(true);
-      const response = await examService.getAll();
-      
-      // Handle both array and paginated response
-      const examsData = Array.isArray(response) ? response : (response as any)?.data || [];
-      setExams(examsData);
+  // Handle both array and paginated response
+  const exams = Array.isArray(examsData) ? examsData : (examsData as any)?.data || [];
 
-      setStats({
-        total: examsData.length,
-        scheduled: examsData.filter(e => e.status === "scheduled" || e.status === "ongoing").length,
-        completed: examsData.filter(e => e.status === "completed").length,
-      });
-    } catch (error) {
-      console.error("Failed to fetch exams:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Calculate stats from exams data
+  const stats = useMemo(() => ({
+    total: exams.length,
+    scheduled: exams.filter((e: Exam) => e.status === "scheduled" || e.status === "ongoing").length,
+    completed: exams.filter((e: Exam) => e.status === "completed").length,
+  }), [exams]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this exam?")) return;
-    
-    try {
-      await examService.delete(id);
-      fetchExams();
-    } catch (error) {
-      console.error("Failed to delete exam:", error);
-    }
+
+    deleteExamMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success("Exam deleted successfully");
+      },
+      onError: () => {
+        toast.error("Failed to delete exam");
+      },
+    });
   };
 
   const getStatusColor = (status: string) => {

@@ -44,24 +44,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="rounded-full bg-blue-600 p-3">
-              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">E-Campus</h1>
-          <p className="mt-2 text-gray-600">Education Management System</p>
+          <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">E-Campus</h1>
+          <p className="mt-2 text-sm text-gray-600">Education Management System</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-xl bg-white p-8 shadow-lg">
-          <h2 className="mb-6 text-xl font-semibold text-gray-900">Admin Login</h2>
+        <div className="rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
+          <h2 className="mb-6 text-xl font-semibold text-gray-900">Sign in to your account</h2>
 
           {/* Error Alert */}
           {(formError || error) && (
@@ -72,16 +65,16 @@ export default function LoginPage() {
           )}
 
           {/* Demo Credentials Info */}
-          <div className="mb-6 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
-            <p className="font-semibold">Demo Credentials:</p>
-            <p>Email: admin@demo.com</p>
-            <p>Password: admin@123</p>
+          <div className="mb-6 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700">
+            <p className="font-medium mb-1">Demo Credentials:</p>
+            <p className="text-gray-600">Email: admin@demo.com</p>
+            <p className="text-gray-600">Password: admin@123</p>
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="login" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="login" className="block text-sm font-medium text-gray-900 mb-2">
                 Email or Username
               </label>
               <Input
@@ -92,15 +85,15 @@ export default function LoginPage() {
                 value={formData.login}
                 onChange={handleChange}
                 disabled={isLoading}
-                className="mt-1"
+                className="h-10"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-2">
                 Password
               </label>
-              <div className="relative mt-1">
+              <div className="relative">
                 <Input
                   id="password"
                   name="password"
@@ -109,11 +102,12 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   disabled={isLoading}
+                  className="h-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -122,10 +116,10 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2">
-                <input type="checkbox" className="h-4 w-4 rounded border-gray-300" />
+                <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <a href="/auth/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
+              <a href="/auth/forgot-password" className="text-sm text-primary hover:text-primary/80 transition-colors">
                 Forgot password?
               </a>
             </div>
@@ -133,27 +127,27 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 py-2 hover:bg-blue-700"
+              className="w-full h-10"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
+                  Signing in...
                 </>
               ) : (
-                "Login"
+                "Sign in"
               )}
             </Button>
           </form>
 
           {/* Footer */}
-          <p className="mt-4 text-center text-sm text-gray-600">
-            Having trouble? <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">Contact support</a>
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Need help? <a href="#" className="text-primary hover:text-primary/80 font-medium transition-colors">Contact support</a>
           </p>
         </div>
 
         {/* Version Info */}
-        <p className="mt-4 text-center text-xs text-gray-500">v1.0.0 | Education Management System</p>
+        <p className="mt-6 text-center text-xs text-gray-500">v1.0.0 | Education Management System</p>
       </div>
     </div>
   );

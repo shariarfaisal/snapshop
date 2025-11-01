@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,18 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { gradeScaleService } from "@/services/exam";
 import { GradeScale, CreateGradeScaleInput } from "@/types/exam";
 import { useToast } from "@/hooks/use-toast";
+import { useGradeScales, useCreateGradeScale, useUpdateGradeScale, useDeleteGradeScale } from "@/hooks/use-exams";
 
 export default function GradesPage() {
   const { toast } = useToast();
-  const [gradeScales, setGradeScales] = useState<GradeScale[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGrade, setEditingGrade] = useState<GradeScale | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+
+  // Hooks
+  const { data: gradeScales = [], isLoading: loading } = useGradeScales();
+  const createGradeMutation = useCreateGradeScale();
+  const updateGradeMutation = useUpdateGradeScale();
+  const deleteGradeMutation = useDeleteGradeScale();
 
   const [formData, setFormData] = useState<CreateGradeScaleInput>({
     name: "",
@@ -30,26 +33,6 @@ export default function GradesPage() {
     grade_point: 0,
     description: "",
   });
-
-  useEffect(() => {
-    fetchGradeScales();
-  }, []);
-
-  const fetchGradeScales = async () => {
-    try {
-      setLoading(true);
-      const grades = await gradeScaleService.getAll();
-      setGradeScales(grades);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch grade scales",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenDialog = (grade?: GradeScale) => {
     if (grade) {
@@ -76,53 +59,67 @@ export default function GradesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    try {
-      if (editingGrade) {
-        await gradeScaleService.update(editingGrade.id, formData);
-        toast({
-          title: "Success",
-          description: "Grade scale updated successfully",
-        });
-      } else {
-        await gradeScaleService.create(formData);
-        toast({
-          title: "Success",
-          description: "Grade scale created successfully",
-        });
-      }
-      setIsDialogOpen(false);
-      fetchGradeScales();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to ${editingGrade ? "update" : "create"} grade scale`,
-        variant: "destructive",
+    if (editingGrade) {
+      updateGradeMutation.mutate(
+        { id: editingGrade.id, data: formData },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Grade scale updated successfully",
+            });
+            setIsDialogOpen(false);
+            setEditingGrade(null);
+          },
+          onError: () => {
+            toast({
+              title: "Error",
+              description: "Failed to update grade scale",
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    } else {
+      createGradeMutation.mutate(formData, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Grade scale created successfully",
+          });
+          setIsDialogOpen(false);
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to create grade scale",
+            variant: "destructive",
+          });
+        },
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      await gradeScaleService.delete(id);
-      toast({
-        title: "Success",
-        description: "Grade scale deleted successfully",
-      });
-      fetchGradeScales();
-      setDeleteConfirmId(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete grade scale",
-        variant: "destructive",
-      });
-    }
+  const handleDelete = (id: number) => {
+    deleteGradeMutation.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Grade scale deleted successfully",
+        });
+        setDeleteConfirmId(null);
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to delete grade scale",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   return (
@@ -297,8 +294,11 @@ export default function GradesPage() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save"}
+              <Button
+                type="submit"
+                disabled={createGradeMutation.isPending || updateGradeMutation.isPending}
+              >
+                {createGradeMutation.isPending || updateGradeMutation.isPending ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
           </form>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -18,8 +18,25 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  LogOut,
+  HelpCircle,
+  PanelRight,
+  PanelRightOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuthStore } from "@/store/auth-store";
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -32,6 +49,7 @@ const navigation = [
       { name: "Sections", href: "/admin/academic/sections" },
       { name: "Subjects", href: "/admin/academic/subjects" },
       { name: "Timetable", href: "/admin/academic/timetable" },
+      { name: "Rooms", href: "/admin/academic/rooms" },
     ],
   },
   { name: "Students", href: "/admin/students", icon: Users },
@@ -42,6 +60,12 @@ const navigation = [
     icon: FileText,
     children: [
       { name: "Exams", href: "/admin/exams" },
+      { name: "Exam Rooms", href: "/admin/exams/rooms" },
+      { name: "Participants", href: "/admin/exams/participants" },
+      { name: "Seat Plan", href: "/admin/exams/seat-plan" },
+      { name: "Admit Cards", href: "/admin/exams/admit-cards" },
+      { name: "Merit List", href: "/admin/exams/merit-list" },
+      { name: "Exam Routine", href: "/admin/exams/schedule" },
       { name: "Marks Entry", href: "/admin/exams/results" },
     ],
   },
@@ -65,17 +89,39 @@ const navigation = [
     ],
   },
   { name: "Reports", href: "/admin/reports", icon: BarChart3 },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
+  {
+    name: "Settings",
+    icon: Settings,
+    children: [
+      { name: "Institute", href: "/admin/settings/institute" },
+      { name: "Organization", href: "/admin/settings/organization" },
+      { name: "Profile", href: "/admin/settings/profile" },
+      { name: "Branding", href: "/admin/settings/branding" },
+      { name: "System", href: "/admin/settings/system" },
+      { name: "Security", href: "/admin/settings/security" },
+      { name: "Departments", href: "/admin/settings/departments" },
+      { name: "Designations", href: "/admin/settings/designations" },
+    ],
+  },
 ];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  // Auto-expand parent menu items when child is active
+  useEffect(() => {
+    const activeParent = navigation.find((item) =>
+      item.children?.some((child) => pathname === child.href)
+    );
+    if (activeParent && !expandedItems.includes(activeParent.name)) {
+      setExpandedItems((prev) => [...prev, activeParent.name]);
+    }
+  }, [pathname]);
 
   const toggleExpand = (name: string) => {
     setExpandedItems((prev) =>
@@ -83,125 +129,278 @@ export default function AdminLayout({
     );
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push("/auth/login");
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user) return "U";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    if (user.name) {
+      const nameParts = user.name.split(" ");
+      if (nameParts.length >= 2) {
+        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+      }
+      return user.name[0].toUpperCase();
+    }
+    return user.email[0].toUpperCase();
+  };
+
+  const getDisplayName = () => {
+    if (!user) return "User";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.name || user.email;
+  };
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex items-center justify-between h-16 px-6 border-b">
-          <h1 className="text-xl font-bold text-gray-900">EMS Admin</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
+    <TooltipProvider delayDuration={300}>
+      <div className="flex h-screen bg-white overflow-hidden">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
             onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+          />
+        )}
 
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {navigation.map((item) => {
-            if (item.children) {
-              const isExpanded = expandedItems.includes(item.name);
-              return (
-                <div key={item.name}>
+        {/* Sidebar */}
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-r border-slate-700 transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+            sidebarCollapsed ? "lg:w-16 w-64" : "w-64"
+          )}
+        >
+          {/* Header */}
+          <div
+            className={cn(
+              "flex items-center justify-between h-16 border-b border-slate-700 flex-shrink-0",
+              !sidebarCollapsed ? "px-6" : "px-3"
+            )}
+          >
+            {!sidebarCollapsed && <h1 className="text-xl font-bold text-white">E-Campus</h1>}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden lg:flex text-slate-400 hover:text-white hover:bg-slate-700"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {sidebarCollapsed ? (
+                  <PanelRightOpen className="h-4 w-4" />
+                ) : (
+                  <PanelRight className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-slate-400 hover:text-white hover:bg-slate-700"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Navigation - Scrollable */}
+          <nav className="flex-1 overflow-y-auto p-3 space-y-2 sidebar-scrollbar">
+            {navigation.map((item) => {
+              if (item.children) {
+                const isExpanded = expandedItems.includes(item.name);
+                const hasActiveChild = item.children.some((child) => pathname === child.href + "/");
+
+                const menuButton = (
                   <button
-                    onClick={() => toggleExpand(item.name)}
+                    onClick={() => !sidebarCollapsed && toggleExpand(item.name)}
                     className={cn(
-                      "flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100",
-                      "text-gray-700"
+                      "flex items-center w-full px-3 py-2.5 text-[15px] font-semibold rounded-md transition-colors",
+                      hasActiveChild
+                        ? "bg-slate-700 text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white",
+                      sidebarCollapsed ? "justify-center" : "justify-between"
                     )}
                   >
                     <div className="flex items-center">
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {item.name}
+                      <item.icon className={cn("h-[18px] w-[18px]", !sidebarCollapsed && "mr-3")} />
+                      {!sidebarCollapsed && item.name}
                     </div>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 transition-transform",
-                        isExpanded && "transform rotate-180"
-                      )}
-                    />
+                    {!sidebarCollapsed && (
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 transition-transform",
+                          isExpanded && "transform rotate-180"
+                        )}
+                      />
+                    )}
                   </button>
-                  {isExpanded && (
-                    <div className="ml-8 mt-1 space-y-1">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          className={cn(
-                            "block px-3 py-2 text-sm rounded-md hover:bg-gray-100",
-                            pathname === child.href
-                              ? "bg-blue-50 text-blue-700 font-medium"
-                              : "text-gray-600"
-                          )}
-                        >
-                          {child.name}
-                        </Link>
-                      ))}
-                    </div>
+                );
+
+                return (
+                  <div key={item.name}>
+                    {sidebarCollapsed ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>{menuButton}</TooltipTrigger>
+                        <TooltipContent side="right">{item.name}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      menuButton
+                    )}
+                    {isExpanded && !sidebarCollapsed && (
+                      <div className="ml-7 mt-1 space-y-0.5">
+                        {item.children.map((child) => {
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              className={cn(
+                                "block px-3 py-2 text-[15px] font-medium rounded-md transition-colors hover:bg-slate-800",
+                                pathname === child.href + "/"
+                                  ? "text-blue-600 bg-slate-900"
+                                  : "text-white"
+                              )}
+                            >
+                              {child.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              const isActive = pathname === item.href || pathname === item.href + "/";
+
+              const menuLink = (
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "flex items-center px-3 py-2.5 text-[15px] font-semibold rounded-md transition-colors",
+                    isActive
+                      ? "bg-slate-600 text-white shadow-lg"
+                      : "text-slate-300 hover:bg-slate-700 hover:text-white",
+                    sidebarCollapsed && "justify-center"
                   )}
-                </div>
+                >
+                  <item.icon className={cn("h-[18px] w-[18px]", !sidebarCollapsed && "mr-3")} />
+                  {!sidebarCollapsed && item.name}
+                </Link>
               );
-            }
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100",
-                  pathname === item.href
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700"
-                )}
+              return sidebarCollapsed ? (
+                <Tooltip key={item.name}>
+                  <TooltipTrigger asChild>{menuLink}</TooltipTrigger>
+                  <TooltipContent side="right">{item.name}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <div key={item.name}>{menuLink}</div>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Top bar */}
+          <header className="h-16 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700">
+            <div className="h-full px-6 flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-slate-300 hover:text-white hover:bg-slate-700"
+                onClick={() => setSidebarOpen(true)}
               >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div className="flex-1" />
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="h-16 bg-white shadow-sm">
-          <div className="h-full px-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="flex-1" />
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Admin User</span>
+              {/* Profile Menu */}
+              <div className="flex items-center gap-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-3 h-11 px-4 rounded-lg hover:bg-slate-700  transition-all focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0">
+                      <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-500/30">
+                        {getUserInitials()}
+                      </div>
+                      <div className="hidden md:flex flex-col items-start">
+                        <span className="text-sm font-semibold text-white">{getDisplayName()}</span>
+                        <span className="text-xs text-slate-400">
+                          {user?.roles?.[0]?.name || "Admin"}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-64 bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 p-2"
+                  >
+                    <DropdownMenuLabel className="px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-500/30">
+                          {getUserInitials()}
+                        </div>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-semibold text-white">{getDisplayName()}</p>
+                          <p className="text-xs text-slate-400">{user?.email}</p>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-slate-700 my-2" />
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/admin/settings/profile"
+                        className="cursor-pointer flex items-center px-3 py-2.5 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      >
+                        <User className="mr-3 h-[18px] w-[18px]" />
+                        <span className="font-medium">Profile Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/admin/settings"
+                        className="cursor-pointer flex items-center px-3 py-2.5 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      >
+                        <Settings className="mr-3 h-[18px] w-[18px]" />
+                        <span className="font-medium">Account Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-slate-700 my-2" />
+                    <DropdownMenuItem asChild>
+                      <a
+                        href="#"
+                        className="cursor-pointer flex items-center px-3 py-2.5 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      >
+                        <HelpCircle className="mr-3 h-[18px] w-[18px]" />
+                        <span className="font-medium">Help & Support</span>
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-slate-700 my-2" />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="cursor-pointer flex items-center px-3 py-2.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut className="mr-3 h-[18px] w-[18px]" />
+                      <span className="font-medium">Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          {children}
-        </main>
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

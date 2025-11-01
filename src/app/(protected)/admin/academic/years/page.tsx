@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -39,9 +40,16 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Pencil, Trash2, Loader2, AlertCircle, Search } from "lucide-react";
-import { academicYearService, AcademicYear, CreateAcademicYearRequest } from "@/services/api/academic-year";
+import { Plus, Pencil, Trash2, Loader2, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { AcademicYear, CreateAcademicYearRequest } from "@/services/api/academic-year";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useAcademicYears,
+  useCreateAcademicYear,
+  useUpdateAcademicYear,
+  useDeleteAcademicYear,
+  useSetCurrentAcademicYear,
+} from "@/hooks/use-academic-years";
 
 export default function AcademicYearsPage() {
   const { toast } = useToast();
@@ -50,17 +58,12 @@ export default function AcademicYearsPage() {
   const [yearToDelete, setYearToDelete] = useState<AcademicYear | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedYear, setSelectedYear] = useState<AcademicYear | null>(null);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [filteredYears, setFilteredYears] = useState<AcademicYear[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  
+
   // Pagination & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   const [formData, setFormData] = useState<CreateAcademicYearRequest>({
     name: "",
     start_date: "",
@@ -68,46 +71,30 @@ export default function AcademicYearsPage() {
     is_current: false,
   });
 
-  // Fetch academic years on mount
-  useEffect(() => {
-    fetchAcademicYears();
-  }, []);
+  // Hooks
+  const { data: academicYears = [], isLoading, error: fetchError } = useAcademicYears();
+  const createAcademicYearMutation = useCreateAcademicYear();
+  const updateAcademicYearMutation = useUpdateAcademicYear();
+  const deleteAcademicYearMutation = useDeleteAcademicYear();
+  const setCurrentAcademicYearMutation = useSetCurrentAcademicYear();
 
-  // Filter and paginate
-  useEffect(() => {
-    let filtered = academicYears;
-    
-    // Search filter
-    if (searchQuery) {
-      filtered = academicYears.filter((year) =>
-        year.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        year.start_date.includes(searchQuery) ||
-        year.end_date.includes(searchQuery)
-      );
-    }
-    
-    setFilteredYears(filtered);
-    setCurrentPage(1); // Reset to first page on search
+  // Client-side filtering and pagination
+  const filteredYears = useMemo(() => {
+    if (!searchQuery) return academicYears;
+
+    return academicYears.filter((year) =>
+      year.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      year.start_date.includes(searchQuery) ||
+      year.end_date.includes(searchQuery)
+    );
   }, [searchQuery, academicYears]);
 
-  const fetchAcademicYears = async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-      const data = await academicYearService.getAll();
-      setAcademicYears(data);
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Failed to fetch academic years";
-      setError(errorMsg);
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const error = fetchError ? String(fetchError) : "";
 
   const handleOpenDialog = (year?: AcademicYear) => {
     if (year) {
@@ -146,7 +133,7 @@ export default function AcademicYearsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.start_date || !formData.end_date) {
       toast({
         title: "Validation Error",
@@ -156,34 +143,45 @@ export default function AcademicYearsPage() {
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      
-      if (editMode && selectedYear) {
-        await academicYearService.update(selectedYear.id, formData);
-        toast({
-          title: "Success",
-          description: "Academic year updated successfully",
-        });
-      } else {
-        await academicYearService.create(formData);
-        toast({
-          title: "Success",
-          description: "Academic year created successfully",
-        });
-      }
-      
-      handleCloseDialog();
-      await fetchAcademicYears();
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || `Failed to ${editMode ? 'update' : 'create'} academic year`;
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
+    if (editMode && selectedYear) {
+      updateAcademicYearMutation.mutate(
+        { id: selectedYear.id, data: formData },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Success",
+              description: "Academic year updated successfully",
+            });
+            handleCloseDialog();
+          },
+          onError: (err: any) => {
+            const errorMsg = err?.response?.data?.message || "Failed to update academic year";
+            toast({
+              title: "Error",
+              description: errorMsg,
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    } else {
+      createAcademicYearMutation.mutate(formData, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Academic year created successfully",
+          });
+          handleCloseDialog();
+        },
+        onError: (err: any) => {
+          const errorMsg = err?.response?.data?.message || "Failed to create academic year";
+          toast({
+            title: "Error",
+            description: errorMsg,
+            variant: "destructive",
+          });
+        },
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -195,41 +193,43 @@ export default function AcademicYearsPage() {
   const handleDelete = async () => {
     if (!yearToDelete) return;
 
-    try {
-      await academicYearService.delete(yearToDelete.id);
-      toast({
-        title: "Success",
-        description: "Academic year deleted successfully",
-      });
-      setDeleteDialogOpen(false);
-      setYearToDelete(null);
-      await fetchAcademicYears();
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Failed to delete academic year";
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      });
-    }
+    deleteAcademicYearMutation.mutate(yearToDelete.id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Academic year deleted successfully",
+        });
+        setDeleteDialogOpen(false);
+        setYearToDelete(null);
+      },
+      onError: (err: any) => {
+        const errorMsg = err?.response?.data?.message || "Failed to delete academic year";
+        toast({
+          title: "Error",
+          description: errorMsg,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
-  const handleSetCurrent = async (id: string) => {
-    try {
-      await academicYearService.setCurrent(id);
-      toast({
-        title: "Success",
-        description: "Academic year set as current",
-      });
-      await fetchAcademicYears();
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Failed to set academic year as current";
-      toast({
-        title: "Error",
-        description: errorMsg,
-        variant: "destructive",
-      });
-    }
+  const handleSetCurrent = (id: string) => {
+    setCurrentAcademicYearMutation.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Academic year set as current",
+        });
+      },
+      onError: (err: any) => {
+        const errorMsg = err?.response?.data?.message || "Failed to set academic year as current";
+        toast({
+          title: "Error",
+          description: errorMsg,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -271,31 +271,36 @@ export default function AcademicYearsPage() {
       )}
 
       {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Search by year name or dates..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Items per page" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="5">5 per page</SelectItem>
-            <SelectItem value="10">10 per page</SelectItem>
-            <SelectItem value="20">20 per page</SelectItem>
-            <SelectItem value="50">50 per page</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Search by year name or dates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={itemsPerPage.toString()} onValueChange={(val) => setItemsPerPage(parseInt(val))}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 per page</SelectItem>
+                <SelectItem value="10">10 per page</SelectItem>
+                <SelectItem value="20">20 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Dialog open={open} onOpenChange={handleCloseDialog}>
-        <DialogContent>
+      {/* Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>{editMode ? 'Edit' : 'Add'} Academic Year</DialogTitle>
@@ -348,11 +353,11 @@ export default function AcademicYearsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={handleCloseDialog} disabled={isSubmitting}>
+              <Button variant="outline" type="button" onClick={handleCloseDialog} disabled={createAcademicYearMutation.isPending || updateAcademicYearMutation.isPending}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={createAcademicYearMutation.isPending || updateAcademicYearMutation.isPending}>
+                {(createAcademicYearMutation.isPending || updateAcademicYearMutation.isPending) ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
@@ -372,111 +377,124 @@ export default function AcademicYearsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
         </div>
       ) : filteredYears.length === 0 ? (
-        <div className="text-center py-16 border rounded-lg bg-gray-50">
-          <p className="text-gray-500">
-            {searchQuery ? "No academic years found matching your search." : "No academic years found. Create one to get started."}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="text-center py-16">
+            <p className="text-gray-500">
+              {searchQuery ? "No academic years found matching your search." : "No academic years found. Create one to get started."}
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Year</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentYears.map((year) => (
-                  <TableRow key={year.id}>
-                    <TableCell className="font-medium">{year.name}</TableCell>
-                    <TableCell>{formatDate(year.start_date)}</TableCell>
-                    <TableCell>{formatDate(year.end_date)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          year.is_current
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }
-                      >
-                        {year.is_current ? "Current" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {!year.is_current && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleSetCurrent(year.id)}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Academic Years List</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border overflow-hidden bg-white">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50 hover:bg-gray-50">
+                      <TableHead>Year</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentYears.map((year) => (
+                      <TableRow key={year.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">{year.name}</TableCell>
+                        <TableCell>{formatDate(year.start_date)}</TableCell>
+                        <TableCell>{formatDate(year.end_date)}</TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              year.is_current
+                                ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                            }
                           >
-                            Set Current
-                          </Button>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleOpenDialog(year)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleOpenDeleteDialog(year)}
-                          disabled={year.is_current}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                            {year.is_current ? "Current" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {!year.is_current && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleSetCurrent(year.id)}
+                              >
+                                Set Current
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleOpenDialog(year)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleOpenDeleteDialog(year)}
+                              disabled={year.is_current}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredYears.length)} of {filteredYears.length} results
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredYears.length)}</span> of <span className="font-medium">{filteredYears.length}</span> results
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </>
       )}

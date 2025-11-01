@@ -1,65 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Loader2, DollarSign, TrendingUp, FileCheck, AlertCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  FileText,
+  Download,
+  Loader2,
+  DollarSign,
+  TrendingUp,
+  FileCheck,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
-import { financeService } from "@/services/finance";
-import { format } from "date-fns";
+import { useInvoiceStatistics, usePaymentStatistics } from "@/hooks/use-finance";
 
 export default function ReportsPage() {
-  const [loading, setLoading] = useState(true);
-  const [invoiceStats, setInvoiceStats] = useState<any>(null);
-  const [paymentStats, setPaymentStats] = useState<any>(null);
-  
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("all");
 
-  useEffect(() => {
-    fetchStatistics();
-  }, []);
+  // Build payment filters
+  const paymentFilters: any = {};
+  if (dateFrom) paymentFilters.from_date = dateFrom;
+  if (dateTo) paymentFilters.to_date = dateTo;
+  if (paymentMethod !== "all") paymentFilters.payment_method = paymentMethod;
 
-  useEffect(() => {
-    if (dateFrom || dateTo || paymentMethod !== "all") {
-      fetchPaymentStatistics();
-    }
-  }, [dateFrom, dateTo, paymentMethod]);
+  // Hooks
+  const { data: invoiceStats, isLoading: invoiceLoading } = useInvoiceStatistics();
+  const { data: paymentStats, isLoading: paymentLoading } = usePaymentStatistics(
+    Object.keys(paymentFilters).length > 0 ? paymentFilters : undefined
+  );
 
-  const fetchStatistics = async () => {
-    try {
-      setLoading(true);
-      const [invoiceData, paymentData] = await Promise.all([
-        financeService.getInvoiceStatistics(),
-        financeService.getPaymentStatistics(),
-      ]);
-      setInvoiceStats(invoiceData);
-      setPaymentStats(paymentData);
-    } catch (error: any) {
-      toast.error("Failed to fetch statistics");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPaymentStatistics = async () => {
-    try {
-      const filters: any = {};
-      if (dateFrom) filters.from_date = dateFrom;
-      if (dateTo) filters.to_date = dateTo;
-      if (paymentMethod !== "all") filters.payment_method = paymentMethod;
-      
-      const data = await financeService.getPaymentStatistics(filters);
-      setPaymentStats(data);
-    } catch (error: any) {
-      toast.error("Failed to fetch payment statistics");
-    }
-  };
+  const loading = invoiceLoading;
 
   const handleExport = () => {
     toast.info("Export functionality will be implemented soon");
@@ -74,7 +64,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Financial Reports</h1>
@@ -93,43 +83,51 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">${invoiceStats?.total_amount?.toFixed(2) || "0.00"}</p>
+                <p className="text-2xl font-bold">
+                  ${invoiceStats?.total_amount?.toFixed(2) || "0.00"}
+                </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Collected</p>
-                <p className="text-2xl font-bold text-green-600">${invoiceStats?.paid_amount?.toFixed(2) || "0.00"}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  ${invoiceStats?.paid_amount?.toFixed(2) || "0.00"}
+                </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-orange-600">${invoiceStats?.due_amount?.toFixed(2) || "0.00"}</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  ${invoiceStats?.due_amount?.toFixed(2) || "0.00"}
+                </p>
               </div>
               <FileText className="h-8 w-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Collection Rate</p>
-                <p className="text-2xl font-bold">{invoiceStats?.collection_rate?.toFixed(1) || "0.0"}%</p>
+                <p className="text-2xl font-bold">
+                  {invoiceStats?.collection_rate?.toFixed(1) || "0.0"}%
+                </p>
               </div>
               <FileCheck className="h-8 w-8 text-blue-600" />
             </div>
@@ -150,15 +148,21 @@ export default function ReportsPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-semibold text-orange-600">{invoiceStats?.pending_invoices || 0}</p>
+              <p className="text-2xl font-semibold text-orange-600">
+                {invoiceStats?.pending_invoices || 0}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Paid</p>
-              <p className="text-2xl font-semibold text-green-600">{invoiceStats?.paid_invoices || 0}</p>
+              <p className="text-2xl font-semibold text-green-600">
+                {invoiceStats?.paid_invoices || 0}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Overdue</p>
-              <p className="text-2xl font-semibold text-red-600">{invoiceStats?.overdue_invoices || 0}</p>
+              <p className="text-2xl font-semibold text-red-600">
+                {invoiceStats?.overdue_invoices || 0}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -174,19 +178,11 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>From Date</Label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>To Date</Label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Payment Method</Label>
@@ -215,7 +211,9 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-2xl font-bold">${paymentStats?.total_amount?.toFixed(2) || "0.00"}</p>
+                  <p className="text-2xl font-bold">
+                    ${paymentStats?.total_amount?.toFixed(2) || "0.00"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -250,14 +248,17 @@ export default function ReportsPage() {
                     <TableCell className="text-right">
                       {paymentStats.total_amount > 0
                         ? ((Number(method.total) / paymentStats.total_amount) * 100).toFixed(1)
-                        : "0.0"}%
+                        : "0.0"}
+                      %
                     </TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="font-bold">
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right">{paymentStats.total_count}</TableCell>
-                  <TableCell className="text-right">${paymentStats.total_amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    ${paymentStats.total_amount.toFixed(2)}
+                  </TableCell>
                   <TableCell className="text-right">100%</TableCell>
                 </TableRow>
               </TableBody>
@@ -275,8 +276,9 @@ export default function ReportsPage() {
               <div>
                 <h3 className="font-semibold text-red-900">Overdue Invoices Alert</h3>
                 <p className="text-sm text-red-700 mt-1">
-                  There are {invoiceStats.overdue_invoices} overdue invoices worth ${invoiceStats.due_amount?.toFixed(2) || "0.00"}.
-                  Please follow up with the concerned students/guardians.
+                  There are {invoiceStats.overdue_invoices} overdue invoices worth $
+                  {invoiceStats.due_amount?.toFixed(2) || "0.00"}. Please follow up with the
+                  concerned students/guardians.
                 </p>
               </div>
             </div>

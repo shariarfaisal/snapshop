@@ -1,6 +1,8 @@
 import { useAuthStore } from "@/store/auth-store";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "@/services/api/auth";
 
 /**
  * Custom hook for authentication
@@ -37,4 +39,22 @@ export const useAuth = () => {
     hasRole: authStore.hasRole,
     hasPermission: authStore.hasPermission,
   };
+};
+
+/**
+ * Hook for updating user profile
+ */
+export const useUpdateProfile = () => {
+  const authStore = useAuthStore();
+
+  return useMutation({
+    mutationFn: (data: { firstName: string; lastName: string; phone?: string }) =>
+      authService.updateProfile(data),
+    onSuccess: (updatedUser) => {
+      // Update the auth store with the new user data
+      if (updatedUser) {
+        authStore.setUser(updatedUser);
+      }
+    },
+  });
 };

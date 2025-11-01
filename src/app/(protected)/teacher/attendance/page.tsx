@@ -33,27 +33,20 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
-import { attendanceService } from "@/services/api/attendance";
 import {
   AttendanceRecord,
   AttendanceFilters,
   AttendanceStatistics,
   AttendanceStatus,
 } from "@/types/attendance";
-import { schoolClassService } from "@/services/schoolClass";
-import { sectionService } from "@/services/section";
 import { format } from "date-fns";
 import Link from "next/link";
+import { useAttendance, useAttendanceStatistics, useExportAttendance } from "@/hooks/use-attendance";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
+import { useSections } from "@/hooks/use-sections";
 
 export default function TeacherAttendancePage() {
-  // State
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statistics, setStatistics] = useState<AttendanceStatistics | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [exporting, setExporting] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState<AttendanceFilters>({
@@ -66,92 +59,54 @@ export default function TeacherAttendancePage() {
     per_page: 15,
   });
 
-  // Data
-  const [classes, setClasses] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
+  // Hooks
+  const { data: attendanceData, isLoading: loading } = useAttendance(filters, currentPage);
+  const { data: statsData } = useAttendanceStatistics(filters);
+  const { data: classesData } = useSchoolClasses({ per_page: "all" });
+  const { data: sectionsData } = useSections(
+    filters.class_id !== "all" ? { classId: parseInt(filters.class_id as string) } : undefined
+  );
+  const exportMutation = useExportAttendance();
 
-  // Load data
-  useEffect(() => {
-    loadData();
-    loadStatistics();
-    loadClasses();
-  }, [currentPage, filters]);
+  // Handle API response formats
+  const attendance = attendanceData?.data || [];
+  const totalPages = attendanceData?.last_page || 1;
+  const total = attendanceData?.total || 0;
+  const statistics = statsData || null;
+  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
+  const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const data = await attendanceService.getAll(filters, currentPage);
-      setAttendance(data.data);
-      setCurrentPage(data.current_page);
-      setTotalPages(data.last_page);
-      setTotal(data.total);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to load attendance");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleExport = () => {
+    exportMutation.mutate(filters, {
+      onSuccess: (data) => {
+        if (data.length === 0) {
+          toast.info("No attendance records to export");
+          return;
+        }
 
-  const loadStatistics = async () => {
-    try {
-      const stats = await attendanceService.getStatistics(filters);
-      setStatistics(stats);
-    } catch (error) {
-      console.error("Failed to load statistics", error);
-    }
-  };
+        // Convert to CSV
+        const headers = Object.keys(data[0] || {});
+        const csv = [
+          headers.join(","),
+          ...data.map((row) =>
+            headers.map((header) => `"${row[header as keyof typeof row] || ""}"`).join(",")
+          ),
+        ].join("\n");
 
-  const loadClasses = async () => {
-    try {
-      const classesData = await schoolClassService.getAll();
-      setClasses(classesData.data || classesData);
-    } catch (error) {
-      console.error("Failed to load classes", error);
-    }
-  };
+        // Download
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `attendance_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
 
-  const loadSections = async (classId: number) => {
-    try {
-      const sectionsData = await sectionService.getAll({ classId });
-      setSections(sectionsData.data || sectionsData);
-    } catch (error) {
-      console.error("Failed to load sections", error);
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      setExporting(true);
-      const data = await attendanceService.export(filters);
-
-      if (data.length === 0) {
-        toast.info("No attendance records to export");
-        return;
-      }
-
-      // Convert to CSV
-      const headers = Object.keys(data[0] || {});
-      const csv = [
-        headers.join(","),
-        ...data.map((row) =>
-          headers.map((header) => `"${row[header as keyof typeof row] || ""}"`).join(",")
-        ),
-      ].join("\n");
-
-      // Download
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `attendance_${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-
-      toast.success("Attendance exported successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to export attendance");
-    } finally {
-      setExporting(false);
-    }
+        toast.success("Attendance exported successfully");
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to export attendance");
+      },
+    });
   };
 
   const getStatusBadge = (status: AttendanceStatus) => {
@@ -194,8 +149,8 @@ export default function TeacherAttendancePage() {
               Mark Attendance
             </Link>
           </Button>
-          <Button variant="outline" onClick={handleExport} disabled={exporting}>
-            {exporting ? (
+          <Button variant="outline" onClick={handleExport} disabled={exportMutation.isPending}>
+            {exportMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Download className="mr-2 h-4 w-4" />
@@ -267,10 +222,6 @@ export default function TeacherAttendancePage() {
               onValueChange={(value) => {
                 setFilters((prev) => ({ ...prev, class_id: value, section_id: "all" }));
                 setCurrentPage(1);
-                setSections([]);
-                if (value !== "all") {
-                  loadSections(parseInt(value));
-                }
               }}
             >
               <SelectTrigger>

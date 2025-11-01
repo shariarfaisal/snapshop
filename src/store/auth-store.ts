@@ -48,6 +48,8 @@ export interface AuthStore {
   initialize: () => Promise<void>;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
+  getDisplayName: () => string;
+  getInstituteName: () => string;
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({

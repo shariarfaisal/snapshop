@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,31 +34,32 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Plus, 
-  Search, 
-  Pencil, 
+import {
+  Plus,
+  Search,
+  Pencil,
   Trash2,
   ChevronLeft,
   ChevronRight,
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { financeService } from "@/services/finance";
 import { FeeHead, CreateFeeHeadInput } from "@/types/finance";
+import {
+  useFeeHeads,
+  useCreateFeeHead,
+  useUpdateFeeHead,
+  useDeleteFeeHead,
+} from "@/hooks/use-finance";
 
 export default function FeeHeadsPage() {
-  const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedFeeHead, setSelectedFeeHead] = useState<FeeHead | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<CreateFeeHeadInput>({
     name: "",
@@ -67,25 +68,21 @@ export default function FeeHeadsPage() {
     is_active: true,
   });
 
-  useEffect(() => {
-    fetchFeeHeads();
-  }, [currentPage, searchQuery]);
-
-  const fetchFeeHeads = async () => {
-    try {
-      setLoading(true);
-      const data = await financeService.getAllFeeHeads(
-        { search: searchQuery || undefined, per_page: 15 },
-        currentPage
-      );
-      setFeeHeads(data.data);
-      setTotalPages(data.last_page);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to fetch fee heads");
-    } finally {
-      setLoading(false);
-    }
+  // Build filters
+  const feeHeadFilters = {
+    search: searchQuery || undefined,
+    per_page: 15,
   };
+
+  // Hooks
+  const { data: feeHeadsData, isLoading: loading } = useFeeHeads(feeHeadFilters, currentPage);
+  const createFeeHeadMutation = useCreateFeeHead();
+  const updateFeeHeadMutation = useUpdateFeeHead();
+  const deleteFeeHeadMutation = useDeleteFeeHead();
+
+  // Derived data
+  const feeHeads = feeHeadsData?.data || [];
+  const totalPages = feeHeadsData?.last_page || 1;
 
   const handleCreate = () => {
     setIsEditMode(false);
@@ -105,44 +102,51 @@ export default function FeeHeadsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.name.trim()) {
       toast.error("Please enter fee head name");
       return;
     }
 
-    try {
-      setSubmitting(true);
-      if (isEditMode && selectedFeeHead) {
-        await financeService.updateFeeHead(selectedFeeHead.id, formData);
-        toast.success("Fee head updated successfully");
-      } else {
-        await financeService.createFeeHead(formData);
-        toast.success("Fee head created successfully");
-      }
-      setIsDialogOpen(false);
-      fetchFeeHeads();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Operation failed");
-    } finally {
-      setSubmitting(false);
+    if (isEditMode && selectedFeeHead) {
+      updateFeeHeadMutation.mutate(
+        { id: selectedFeeHead.id, data: formData },
+        {
+          onSuccess: () => {
+            toast.success("Fee head updated successfully");
+            setIsDialogOpen(false);
+          },
+          onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to update fee head");
+          },
+        }
+      );
+    } else {
+      createFeeHeadMutation.mutate(formData, {
+        onSuccess: () => {
+          toast.success("Fee head created successfully");
+          setIsDialogOpen(false);
+        },
+        onError: (error: any) => {
+          toast.error(error.response?.data?.message || "Failed to create fee head");
+        },
+      });
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedFeeHead) return;
 
-    try {
-      setSubmitting(true);
-      await financeService.deleteFeeHead(selectedFeeHead.id);
-      toast.success("Fee head deleted successfully");
-      setDeleteDialogOpen(false);
-      fetchFeeHeads();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete fee head");
-    } finally {
-      setSubmitting(false);
-    }
+    deleteFeeHeadMutation.mutate(selectedFeeHead.id, {
+      onSuccess: () => {
+        toast.success("Fee head deleted successfully");
+        setDeleteDialogOpen(false);
+        setSelectedFeeHead(null);
+      },
+      onError: (error: any) {
+        toast.error(error.response?.data?.message || "Failed to delete fee head");
+      },
+    });
   };
 
   return (
@@ -312,11 +316,11 @@ export default function FeeHeadsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSubmit} disabled={createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending}>
+              {(createFeeHeadMutation.isPending || updateFeeHeadMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditMode ? "Update" : "Create"}
             </Button>
           </DialogFooter>
@@ -332,9 +336,9 @@ export default function FeeHeadsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <AlertDialogCancel disabled={deleteFeeHeadMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteFeeHeadMutation.isPending}>
+              {deleteFeeHeadMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

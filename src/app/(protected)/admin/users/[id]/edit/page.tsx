@@ -16,12 +16,12 @@ export default function EditPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     router.push("/admin/users");
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/admin/users">
@@ -45,7 +45,7 @@ export default function EditPage() {
               <Label htmlFor="name">Name *</Label>
               <Input id="name" placeholder="Enter name" required />
             </div>
-            
+
             <div className="flex gap-3">
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />

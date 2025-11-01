@@ -1,37 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, FileText, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { financeService } from "@/services/finance";
-import { toast } from "sonner";
+import { useInvoiceStatistics, usePayments } from "@/hooks/use-finance";
 
 export default function FinancePage() {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-  const [recentPayments, setRecentPayments] = useState<any[]>([]);
+  // Hooks
+  const { data: stats, isLoading: statsLoading } = useInvoiceStatistics();
+  const { data: paymentsData, isLoading: paymentsLoading } = usePayments({ per_page: 5 }, 1);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [invoiceStats, paymentsData] = await Promise.all([
-        financeService.getInvoiceStatistics(),
-        financeService.getAllPayments({ per_page: 5 }, 1),
-      ]);
-      setStats(invoiceStats);
-      setRecentPayments(paymentsData.data || []);
-    } catch (error: any) {
-      toast.error("Failed to fetch finance data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Handle API response format
+  const recentPayments = paymentsData?.data || [];
+  const loading = statsLoading || paymentsLoading;
 
   if (loading) {
     return (

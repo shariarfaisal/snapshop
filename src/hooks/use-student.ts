@@ -1,172 +1,200 @@
 import { studentService } from "@/services/student";
-import { 
-  StudentProfile, 
-  UpdateStudentProfileInput,
-  CreateStudentProfileInput,
-  StudentMedical,
+import {
+  StudentFilters,
+  CreateStudentInput,
+  UpdateStudentInput,
   CreateStudentMedicalInput,
   UpdateStudentMedicalInput,
-  StudentGuardian,
   CreateStudentGuardianInput,
   UpdateStudentGuardianInput
 } from "@/types/student";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export const useStudent = () => {
+// ============= STUDENTS =============
+export const useStudents = (filters?: StudentFilters, page: number = 1) => {
+  return useQuery({
+    queryKey: ["students", filters, page],
+    queryFn: () => studentService.getAll(filters, page),
+  });
+};
+
+export const useStudent = (id: number | null) => {
+  return useQuery({
+    queryKey: ["student", id],
+    queryFn: () => studentService.getById(id!),
+    enabled: !!id,
+  });
+};
+
+export const useStudentByUserId = (userId: string | null) => {
+  return useQuery({
+    queryKey: ["student-by-user", userId],
+    queryFn: () => studentService.getByUserId(userId!),
+    enabled: !!userId,
+  });
+};
+
+export const useCreateStudent = () => {
   const queryClient = useQueryClient();
 
-  // Student profile queries
-  const {
-    data: students,
-    isLoading: isStudentsLoading,
-    error: studentsError,
-    refetch: refetchStudents,
-  } = useQuery({
-    queryKey: ["students"],
-    queryFn: () => studentService.getAll(),
-  });
-
-  // Student by ID query
-  const getStudentById = (id: string) => 
-    useQuery({
-      queryKey: ["student", id],
-      queryFn: () => studentService.getById(id),
-      enabled: !!id,
-    });
-
-  // Student by user ID query
-  const getStudentByUserId = (userId: string) =>
-    useQuery({
-      queryKey: ["student-by-user", userId],
-      queryFn: () => studentService.getByUserId(userId),
-      enabled: !!userId,
-    });
-
-  // Medical record query
-  const getStudentMedical = (studentId: string) =>
-    useQuery({
-      queryKey: ["student-medical", studentId],
-      queryFn: () => studentService.getMedicalRecord(studentId),
-      enabled: !!studentId,
-    });
-
-  // Guardians query
-  const getStudentGuardians = (studentId: string) =>
-    useQuery({
-      queryKey: ["student-guardians", studentId],
-      queryFn: () => studentService.getGuardians(studentId),
-      enabled: !!studentId,
-    });
-
-  // Student profile mutations
-  const createStudentProfile = useMutation({
-    mutationFn: studentService.create,
+  return useMutation({
+    mutationFn: (data: CreateStudentInput) => studentService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["student-statistics"] });
     },
   });
+};
 
-  const updateStudentProfile = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateStudentProfileInput }) => 
+export const useUpdateStudent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateStudentInput }) =>
       studentService.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["student", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["student-statistics"] });
     },
   });
+};
 
-  const deleteStudentProfile = useMutation({
-    mutationFn: studentService.delete,
+export const useDeleteStudent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => studentService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["student-statistics"] });
+    },
+  });
+};
+
+export const useBulkUpdateStudentStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ studentIds, status }: { studentIds: number[]; status: string }) =>
+      studentService.bulkUpdateStatus(studentIds, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["student-statistics"] });
+    },
+  });
+};
+
+export const useBulkAssignClass = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ studentIds, classId, sectionId }: { studentIds: number[]; classId: number; sectionId?: number }) =>
+      studentService.bulkAssignClass(studentIds, classId, sectionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
     },
   });
+};
 
-  const changeStudentStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => 
+export const useExportStudents = () => {
+  return useMutation({
+    mutationFn: (filters?: StudentFilters) => studentService.export(filters),
+  });
+};
+
+export const useStudentStatistics = () => {
+  return useQuery({
+    queryKey: ["student-statistics"],
+    queryFn: () => studentService.getStatistics(),
+  });
+};
+
+export const useChangeStudentStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
       studentService.changeStatus(id, status),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["student", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["student-statistics"] });
     },
   });
+};
 
-  // Medical record mutations
-  const createMedicalRecord = useMutation({
-    mutationFn: studentService.createMedicalRecord,
+// ============= MEDICAL RECORDS =============
+export const useStudentMedical = (studentId: string | null) => {
+  return useQuery({
+    queryKey: ["student-medical", studentId],
+    queryFn: () => studentService.getMedicalRecord(studentId!),
+    enabled: !!studentId,
+  });
+};
+
+export const useCreateMedicalRecord = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateStudentMedicalInput) => studentService.createMedicalRecord(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["student-medical", variables.studentId] });
     },
   });
+};
 
-  const updateMedicalRecord = useMutation({
-    mutationFn: ({ studentId, data }: { studentId: string; data: UpdateStudentMedicalInput }) => 
+export const useUpdateMedicalRecord = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ studentId, data }: { studentId: string; data: UpdateStudentMedicalInput }) =>
       studentService.updateMedicalRecord(studentId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["student-medical", variables.studentId] });
     },
   });
+};
 
-  // Guardian mutations
-  const addGuardian = useMutation({
-    mutationFn: studentService.addGuardian,
+// ============= GUARDIANS =============
+export const useStudentGuardians = (studentId: string | null) => {
+  return useQuery({
+    queryKey: ["student-guardians", studentId],
+    queryFn: () => studentService.getGuardians(studentId!),
+    enabled: !!studentId,
+  });
+};
+
+export const useAddGuardian = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateStudentGuardianInput) => studentService.addGuardian(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["student-guardians", variables.studentId] });
     },
   });
+};
 
-  const updateGuardian = useMutation({
-    mutationFn: ({ guardianId, data }: { guardianId: string; data: UpdateStudentGuardianInput }) => 
+export const useUpdateGuardian = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ guardianId, data }: { guardianId: string; data: UpdateStudentGuardianInput }) =>
       studentService.updateGuardian(guardianId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-guardians"] });
     },
   });
+};
 
-  const deleteGuardian = useMutation({
-    mutationFn: studentService.deleteGuardian,
+export const useDeleteGuardian = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (guardianId: string) => studentService.deleteGuardian(guardianId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-guardians"] });
     },
   });
-
-  // Cache invalidation
-  const invalidateStudents = () => {
-    queryClient.invalidateQueries({ queryKey: ["students"] });
-  };
-
-  const invalidateStudentById = (id: string) => {
-    queryClient.invalidateQueries({ queryKey: ["student", id] });
-  };
-
-  return {
-    // Queries
-    students,
-    isStudentsLoading,
-    studentsError,
-    refetchStudents,
-    getStudentById,
-    getStudentByUserId,
-    getStudentMedical,
-    getStudentGuardians,
-    
-    // Student profile mutations
-    createStudentProfile,
-    updateStudentProfile,
-    deleteStudentProfile,
-    changeStudentStatus,
-    
-    // Medical record mutations
-    createMedicalRecord,
-    updateMedicalRecord,
-    
-    // Guardian mutations
-    addGuardian,
-    updateGuardian,
-    deleteGuardian,
-    
-    // Cache invalidation
-    invalidateStudents,
-    invalidateStudentById,
-  };
 }; 

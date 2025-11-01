@@ -31,20 +31,23 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Eye, Pencil, Trash2, Download, Upload, Loader2, X } from "lucide-react";
-import { teacherService } from "@/services/teacher";
-import type { Teacher, Department, Designation, TeacherFormData } from "@/types/teacher";
+import type { Teacher, TeacherFormData } from "@/types/teacher";
 import { useToast } from "@/hooks/use-toast";
 import { TeacherFormDialog } from "@/components/teachers/TeacherFormDialog";
 import { TeacherViewDialog } from "@/components/teachers/TeacherViewDialog";
 import { TeacherDeleteDialog } from "@/components/teachers/TeacherDeleteDialog";
+import {
+  useTeachers,
+  useCreateTeacher,
+  useUpdateTeacher,
+  useDeleteTeacher,
+  useDepartments,
+  useDesignations,
+  useExportTeachers,
+} from "@/hooks/use-teachers";
 
 export default function TeachersPage() {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [designations, setDesignations] = useState<Designation[]>([]);
-  const [totalTeachers, setTotalTeachers] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage] = useState(15);
 
@@ -76,126 +79,96 @@ export default function TeachersPage() {
     status: "active",
   });
 
-  // Load initial data
-  useEffect(() => {
-    loadTeachers();
-    loadDepartments();
-    loadDesignations();
-  }, [currentPage, searchQuery, departmentFilter, designationFilter, statusFilter]);
-
-  const loadTeachers = async () => {
-    try {
-      setLoading(true);
-      const filters: any = {
-        page: currentPage,
-        per_page: perPage,
-      };
-
-      if (searchQuery) filters.search = searchQuery;
-      if (departmentFilter !== "all") filters.department_id = parseInt(departmentFilter);
-      if (designationFilter !== "all") filters.designation_id = parseInt(designationFilter);
-      if (statusFilter !== "all") filters.status = statusFilter;
-
-      const response = await teacherService.getTeachers(filters);
-      setTeachers(response.data);
-      setTotalTeachers(response.total);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load teachers",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  // Build filters object
+  const filters = {
+    search: searchQuery || undefined,
+    department_id: departmentFilter !== "all" ? parseInt(departmentFilter) : undefined,
+    designation_id: designationFilter !== "all" ? parseInt(designationFilter) : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    per_page: perPage,
+    page: currentPage,
   };
 
-  const loadDepartments = async () => {
-    try {
-      const deps = await teacherService.getDepartments({ status: "true", per_page: "all" });
-      setDepartments(deps);
-    } catch (error) {
-      console.error("Failed to load departments:", error);
-    }
-  };
+  // Hooks
+  const { data: teachersData, isLoading: loading } = useTeachers(filters);
+  const { data: departmentsData } = useDepartments({ status: "true", per_page: "all" });
+  const { data: designationsData } = useDesignations({ status: "true", per_page: "all" });
+  const createTeacherMutation = useCreateTeacher();
+  const updateTeacherMutation = useUpdateTeacher();
+  const deleteTeacherMutation = useDeleteTeacher();
+  const exportTeachersMutation = useExportTeachers();
 
-  const loadDesignations = async () => {
-    try {
-      const desigs = await teacherService.getDesignations({ status: "true", per_page: "all" });
-      setDesignations(desigs);
-    } catch (error) {
-      console.error("Failed to load designations:", error);
-    }
-  };
+  // Derived data
+  const teachers = teachersData?.data || [];
+  const totalTeachers = teachersData?.total || 0;
+  const departments = departmentsData || [];
+  const designations = designationsData || [];
 
   const handleAddTeacher = async () => {
-    try {
-      setLoading(true);
-      await teacherService.createTeacher(formData);
-      toast({
-        title: "Success",
-        description: "Teacher added successfully",
-      });
-      setShowAddDialog(false);
-      resetForm();
-      loadTeachers();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add teacher",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    createTeacherMutation.mutate(formData, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Teacher added successfully",
+        });
+        setShowAddDialog(false);
+        resetForm();
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to add teacher",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleEditTeacher = async () => {
     if (!selectedTeacher) return;
-    
-    try {
-      setLoading(true);
-      await teacherService.updateTeacher(selectedTeacher.id, formData);
-      toast({
-        title: "Success",
-        description: "Teacher updated successfully",
-      });
-      setShowEditDialog(false);
-      resetForm();
-      loadTeachers();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update teacher",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+
+    updateTeacherMutation.mutate(
+      { id: selectedTeacher.id, data: formData },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Teacher updated successfully",
+          });
+          setShowEditDialog(false);
+          resetForm();
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to update teacher",
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   const handleDeleteTeacher = async () => {
     if (!selectedTeacher) return;
-    
-    try {
-      setLoading(true);
-      await teacherService.deleteTeacher(selectedTeacher.id);
-      toast({
-        title: "Success",
-        description: "Teacher deleted successfully",
-      });
-      setShowDeleteDialog(false);
-      setSelectedTeacher(null);
-      loadTeachers();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete teacher",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+
+    deleteTeacherMutation.mutate(selectedTeacher.id, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Teacher deleted successfully",
+        });
+        setShowDeleteDialog(false);
+        setSelectedTeacher(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete teacher",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleViewTeacher = async (teacher: Teacher) => {
@@ -256,29 +229,33 @@ export default function TeachersPage() {
   };
 
   const handleExport = async () => {
-    try {
-      const blob = await teacherService.exportTeachers({
+    exportTeachersMutation.mutate(
+      {
         search: searchQuery,
         department_id: departmentFilter !== "all" ? parseInt(departmentFilter) : undefined,
         designation_id: designationFilter !== "all" ? parseInt(designationFilter) : undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
-      });
-      
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `teachers_${new Date().toISOString().split("T")[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to export teachers",
-        variant: "destructive",
-      });
-    }
+      },
+      {
+        onSuccess: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `teachers_${new Date().toISOString().split("T")[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to export teachers",
+            variant: "destructive",
+          });
+        },
+      }
+    );
   };
 
   return (
@@ -484,7 +461,7 @@ export default function TeachersPage() {
         formData={formData}
         onFormDataChange={setFormData}
         onSubmit={handleAddTeacher}
-        loading={loading}
+        loading={createTeacherMutation.isPending}
         departments={departments}
         designations={designations}
       />
@@ -501,7 +478,7 @@ export default function TeachersPage() {
         formData={formData}
         onFormDataChange={setFormData}
         onSubmit={handleEditTeacher}
-        loading={loading}
+        loading={updateTeacherMutation.isPending}
         departments={departments}
         designations={designations}
         isEdit
@@ -520,7 +497,7 @@ export default function TeachersPage() {
         onOpenChange={setShowDeleteDialog}
         teacher={selectedTeacher}
         onConfirm={handleDeleteTeacher}
-        loading={loading}
+        loading={deleteTeacherMutation.isPending}
       />
     </div>
   );

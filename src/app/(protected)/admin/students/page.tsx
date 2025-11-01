@@ -57,22 +57,24 @@ import {
   GraduationCap
 } from "lucide-react";
 import { toast } from "sonner";
-import { studentService } from "@/services/student";
-import { Student, StudentFilters, StudentStatistics } from "@/types/student";
+import { Student, StudentFilters } from "@/types/student";
 import { StudentFormDialog } from "@/components/students/student-form-dialog";
 import { StudentDetailsDialog } from "@/components/students/student-details-dialog";
 import { useRouter } from "next/navigation";
-import { schoolClassService } from "@/services/schoolClass";
-import { sectionService } from "@/services/section";
+import {
+  useStudents,
+  useDeleteStudent,
+  useBulkUpdateStudentStatus,
+  useBulkAssignClass,
+  useExportStudents,
+  useStudentStatistics,
+} from "@/hooks/use-student";
+import { useSchoolClasses } from "@/hooks/use-school-classes";
+import { useSectionsBySchoolClass } from "@/hooks/use-sections";
 
 export default function StudentsPage() {
   const router = useRouter();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statistics, setStatistics] = useState<StudentStatistics | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
 
   // Filters
   const [filters, setFilters] = useState<StudentFilters>({
@@ -95,95 +97,64 @@ export default function StudentsPage() {
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState<"status" | "class" | null>(null);
 
-  // Class/Section data
-  const [classes, setClasses] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
+  // Hooks
+  const { data: studentsData, isLoading: loading } = useStudents(filters, currentPage);
+  const { data: statistics } = useStudentStatistics();
+  const { data: classesData } = useSchoolClasses();
+  const { data: sectionsData } = useSectionsBySchoolClass(
+    filters.class_id !== "all" ? parseInt(filters.class_id as string) : null
+  );
+  const deleteStudentMutation = useDeleteStudent();
+  const bulkUpdateStatusMutation = useBulkUpdateStudentStatus();
+  const bulkAssignClassMutation = useBulkAssignClass();
+  const exportStudentsMutation = useExportStudents();
 
-  useEffect(() => {
-    loadData();
-    loadStatistics();
-    loadClasses();
-  }, [currentPage, filters]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const data = await studentService.getAll(filters, currentPage);
-      setStudents(data.data);
-      setCurrentPage(data.current_page);
-      setTotalPages(data.last_page);
-      setTotal(data.total);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to load students");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStatistics = async () => {
-    try {
-      const stats = await studentService.getStatistics();
-      setStatistics(stats);
-    } catch (error) {
-      console.error("Failed to load statistics", error);
-    }
-  };
-
-  const loadClasses = async () => {
-    try {
-      const classesData = await schoolClassService.getAll();
-      setClasses(classesData.data || classesData);
-    } catch (error) {
-      console.error("Failed to load classes", error);
-    }
-  };
-
-  const loadSections = async (classId: number) => {
-    try {
-      const sectionsData = await sectionService.getAll({ classId });
-      setSections(sectionsData.data || sectionsData);
-    } catch (error) {
-      console.error("Failed to load sections", error);
-    }
-  };
+  // Derived data
+  const students = studentsData?.data || [];
+  const totalPages = studentsData?.last_page || 1;
+  const total = studentsData?.total || 0;
+  const classes = classesData?.data || classesData || [];
+  const sections = sectionsData?.data || sectionsData || [];
 
   const handleDelete = async () => {
     if (!selectedStudent) return;
-    
-    try {
-      await studentService.delete(selectedStudent.id);
-      toast.success("Student deleted successfully");
-      setDeleteDialogOpen(false);
-      loadData();
-      loadStatistics();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete student");
-    }
+
+    deleteStudentMutation.mutate(selectedStudent.id, {
+      onSuccess: () => {
+        toast.success("Student deleted successfully");
+        setDeleteDialogOpen(false);
+        setSelectedStudent(null);
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to delete student");
+      },
+    });
   };
 
   const handleExport = async () => {
-    try {
-      const data = await studentService.export(filters);
-      
-      // Convert to CSV
-      const headers = Object.keys(data[0] || {});
-      const csv = [
-        headers.join(","),
-        ...data.map(row => headers.map(header => `"${row[header] || ""}"`).join(","))
-      ].join("\n");
-      
-      // Download
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `students_${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-      
-      toast.success("Students exported successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to export students");
-    }
+    exportStudentsMutation.mutate(filters, {
+      onSuccess: (data) => {
+        // Convert to CSV
+        const headers = Object.keys(data[0] || {});
+        const csv = [
+          headers.join(","),
+          ...data.map(row => headers.map(header => `"${row[header] || ""}"`).join(","))
+        ].join("\n");
+
+        // Download
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `students_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+
+        toast.success("Students exported successfully");
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Failed to export students");
+      },
+    });
   };
 
   const handleBulkAction = async (action: "status" | "class", value: any) => {
@@ -192,21 +163,34 @@ export default function StudentsPage() {
       return;
     }
 
-    try {
-      if (action === "status") {
-        await studentService.bulkUpdateStatus(selectedStudents, value);
-        toast.success(`${selectedStudents.length} students updated`);
-      } else if (action === "class") {
-        await studentService.bulkAssignClass(selectedStudents, value.classId, value.sectionId);
-        toast.success(`${selectedStudents.length} students assigned`);
-      }
-      
-      setSelectedStudents([]);
-      setBulkActionDialogOpen(false);
-      loadData();
-      loadStatistics();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to perform bulk action");
+    if (action === "status") {
+      bulkUpdateStatusMutation.mutate(
+        { studentIds: selectedStudents, status: value },
+        {
+          onSuccess: () => {
+            toast.success(`${selectedStudents.length} students updated`);
+            setSelectedStudents([]);
+            setBulkActionDialogOpen(false);
+          },
+          onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to perform bulk action");
+          },
+        }
+      );
+    } else if (action === "class") {
+      bulkAssignClassMutation.mutate(
+        { studentIds: selectedStudents, classId: value.classId, sectionId: value.sectionId },
+        {
+          onSuccess: () => {
+            toast.success(`${selectedStudents.length} students assigned`);
+            setSelectedStudents([]);
+            setBulkActionDialogOpen(false);
+          },
+          onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to perform bulk action");
+          },
+        }
+      );
     }
   };
 
@@ -330,13 +314,10 @@ export default function StudentsPage() {
               />
             </div>
             <Select 
-              value={filters.class_id?.toString() || "all"} 
+              value={filters.class_id?.toString() || "all"}
               onValueChange={(value) => {
-                setFilters(prev => ({ ...prev, class_id: value }));
+                setFilters(prev => ({ ...prev, class_id: value, section_id: "all" }));
                 setCurrentPage(1);
-                if (value !== "all") {
-                  loadSections(parseInt(value));
-                }
               }}
             >
               <SelectTrigger>
@@ -571,8 +552,7 @@ export default function StudentsPage() {
         }}
         student={isEditDialogOpen ? selectedStudent : undefined}
         onSuccess={() => {
-          loadData();
-          loadStatistics();
+          // Data will auto-refetch via React Query
         }}
       />
 

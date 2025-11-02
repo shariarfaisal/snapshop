@@ -72,33 +72,33 @@ export function RolePermissionsDialog({
   const handleTogglePermission = async (permission: Permission, checked: boolean) => {
     try {
       if (checked) {
-        await assignPermission.mutateAsync({ 
-          roleId: role.id, 
-          data: { permission_id: permission.id } 
+        await assignPermission.mutateAsync({
+          roleId: role.id,
+          data: { permission_id: permission.id }
         });
         setRolePermissions((prev) => [...prev, permission]);
         toast({
           title: "Success",
-          description: `Added permission: ${permission.description}`,
+          description: `Added permission: ${permission.name}`,
         });
       } else {
-        await removePermission.mutateAsync({ 
-          roleId: role.id, 
-          permissionId: permission.id 
+        await removePermission.mutateAsync({
+          roleId: role.id,
+          permissionId: permission.id
         });
-        setRolePermissions((prev) => 
+        setRolePermissions((prev) =>
           prev.filter((p) => p.id !== permission.id)
         );
         toast({
           title: "Success",
-          description: `Removed permission: ${permission.description}`,
+          description: `Removed permission: ${permission.name}`,
         });
       }
       invalidateRolePermissions(role.id);
     } catch (error) {
       const action = checked ? "add" : "remove";
-      const msg = isAxiosError(error) 
-        ? error.response?.data?.error || `Failed to ${action} permission` 
+      const msg = isAxiosError(error)
+        ? error.response?.data?.error || `Failed to ${action} permission`
         : `Failed to ${action} permission`;
       toast({
         title: "Error",
@@ -113,11 +113,86 @@ export function RolePermissionsDialog({
   };
 
   const filteredPermissions = permissions?.data
-    ? permissions.data.filter((permission) => 
-        permission.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        permission.code.toLowerCase().includes(searchTerm.toLowerCase())
+    ? permissions.data.filter((permission) =>
+        permission.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        permission.type.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
+
+  const allFilteredPermissionsAssigned = 
+    filteredPermissions.length > 0 && 
+    filteredPermissions.every((p) => isPermissionAssigned(p.id));
+
+  const handleSelectAll = async () => {
+    try {
+      const permissionsToAssign = filteredPermissions.filter(
+        (p) => !isPermissionAssigned(p.id)
+      );
+
+      for (const permission of permissionsToAssign) {
+        await assignPermission.mutateAsync({
+          roleId: role.id,
+          data: { permission_id: permission.id }
+        });
+      }
+
+      setRolePermissions((prev) => [
+        ...prev,
+        ...permissionsToAssign,
+      ]);
+
+      toast({
+        title: "Success",
+        description: `Added ${permissionsToAssign.length} permissions`,
+      });
+
+      invalidateRolePermissions(role.id);
+    } catch (error) {
+      const msg = isAxiosError(error)
+        ? error.response?.data?.error || "Failed to add permissions"
+        : "Failed to add permissions";
+      toast({
+        title: "Error",
+        description: msg,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeselectAll = async () => {
+    try {
+      const permissionsToRemove = filteredPermissions.filter(
+        (p) => isPermissionAssigned(p.id)
+      );
+
+      for (const permission of permissionsToRemove) {
+        await removePermission.mutateAsync({
+          roleId: role.id,
+          permissionId: permission.id
+        });
+      }
+
+      setRolePermissions((prev) =>
+        prev.filter((p) => !permissionsToRemove.some((pr) => pr.id === p.id))
+      );
+
+      toast({
+        title: "Success",
+        description: `Removed ${permissionsToRemove.length} permissions`,
+      });
+
+      invalidateRolePermissions(role.id);
+    } catch (error) {
+      const msg = isAxiosError(error)
+        ? error.response?.data?.error || "Failed to remove permissions"
+        : "Failed to remove permissions";
+      toast({
+        title: "Error",
+        description: msg,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,6 +208,25 @@ export function RolePermissionsDialog({
             onChange={(e) => setSearchTerm(e.target.value)}
             className="mb-4"
           />
+
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+              disabled={assignPermission.isPending || allFilteredPermissionsAssigned || filteredPermissions.length === 0}
+            >
+              Select All
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeselectAll}
+              disabled={removePermission.isPending || !allFilteredPermissionsAssigned || filteredPermissions.length === 0}
+            >
+              Deselect All
+            </Button>
+          </div>
           
           {isLoading || isPermissionsLoading ? (
             <div className="space-y-2">
@@ -158,12 +252,12 @@ export function RolePermissionsDialog({
                       }
                       disabled={assignPermission.isPending || removePermission.isPending}
                     />
-                    <Label 
+                    <Label
                       htmlFor={`permission-${permission.id}`}
                       className="flex-1 text-sm cursor-pointer"
                     >
-                      <div className="font-medium">{permission.description}</div>
-                      <div className="text-xs text-muted-foreground">{permission.code}</div>
+                      <div className="font-medium">{permission.name}</div>
+                      <div className="text-xs text-muted-foreground">{permission.type}</div>
                     </Label>
                   </div>
                 ))}

@@ -7,8 +7,10 @@ export interface Role {
 
 export interface Permission {
   id: number;
-  code: string;
-  description: string;
+  name: string;
+  type: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface RoleResponse {

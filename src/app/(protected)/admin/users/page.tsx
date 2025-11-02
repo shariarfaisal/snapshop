@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,54 +27,54 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Search, Filter, MoreVertical, Edit, Trash2, UserPlus, Upload } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
+import { useRole } from "@/hooks/use-role";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  // Mock data
-  const users = [
-    {
-      id: 1,
-      name: "John Smith",
-      email: "john@example.com",
-      role: "Teacher",
-      status: "Active",
-      phone: "+1234567890",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      role: "Student",
-      status: "Active",
-      phone: "+1234567891",
-    },
-    {
-      id: 3,
-      name: "Mike Brown",
-      email: "mike@example.com",
-      role: "Accountant",
-      status: "Active",
-      phone: "+1234567892",
-    },
-    {
-      id: 4,
-      name: "Emily Davis",
-      email: "emily@example.com",
-      role: "Teacher",
-      status: "Inactive",
-      phone: "+1234567893",
-    },
-    {
-      id: 5,
-      name: "David Wilson",
-      email: "david@example.com",
-      role: "Student",
-      status: "Active",
-      phone: "+1234567894",
-    },
-  ];
+  const { users, isLoading, deleteUser, deactivateUser, invalidateUsers } = useUser();
+  const { roles } = useRole();
+
+  // Filter users based on search query and role filter
+  const filteredUsers = useMemo(() => {
+    if (!users?.data) return [];
+
+    return users.data.filter((user) => {
+      const matchesSearch = searchQuery
+        ? (user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           user.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           user.username?.toLowerCase().includes(searchQuery.toLowerCase()))
+        : true;
+
+      const matchesRole = roleFilter !== "all"
+        ? user.role?.name?.toLowerCase() === roleFilter.toLowerCase()
+        : true;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [users?.data, searchQuery, roleFilter]);
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      await deleteUser.mutateAsync(userId);
+      invalidateUsers();
+      toast.success("User deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete user");
+    }
+  };
+
+  const totalUsers = users?.total || 0;
+  const activeUsers = filteredUsers.filter((u) => u.status === "active").length;
+  const teachersCount = filteredUsers.filter((u) => u.role?.name === "Teacher").length;
+  const studentsCount = filteredUsers.filter((u) => u.role?.name === "Student").length;
 
   return (
     <div className="space-y-6 p-6">
@@ -128,89 +128,115 @@ export default function UsersPage() {
 
       {/* Users Table */}
       <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.phone}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{user.role}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={user.status === "Active" ? "default" : "secondary"}>
-                    {user.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/admin/users/${user.id}/edit`}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/admin/users/${user.id}/roles`}>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Manage Roles
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+        {isLoading ? (
+          <div className="p-8">
+            <Skeleton className="h-96" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No users found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      {user.firstName && user.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.username}
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.username}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {user.role?.name || "No Role"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                        {user.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/users/${user.id}/edit`}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/users/${user.id}/roles`}>
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Manage Roles
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="bg-card border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Total Users</p>
-          <p className="text-2xl font-bold mt-1">{users.length}</p>
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
         </div>
-        <div className="bg-card border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Active Users</p>
-          <p className="text-2xl font-bold mt-1">
-            {users.filter((u) => u.status === "Active").length}
-          </p>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Total Users</p>
+            <p className="text-2xl font-bold mt-1">{totalUsers}</p>
+          </div>
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Active Users</p>
+            <p className="text-2xl font-bold mt-1">{activeUsers}</p>
+          </div>
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Teachers</p>
+            <p className="text-2xl font-bold mt-1">{teachersCount}</p>
+          </div>
+          <div className="bg-card border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Students</p>
+            <p className="text-2xl font-bold mt-1">{studentsCount}</p>
+          </div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Teachers</p>
-          <p className="text-2xl font-bold mt-1">
-            {users.filter((u) => u.role === "Teacher").length}
-          </p>
-        </div>
-        <div className="bg-card border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Students</p>
-          <p className="text-2xl font-bold mt-1">
-            {users.filter((u) => u.role === "Student").length}
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

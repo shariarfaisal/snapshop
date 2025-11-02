@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { setCookie, getCookie, deleteCookie } from "cookies-next";
 import { authService, LoginResponse } from "@/services/api/auth";
+import { Permission } from "@/types/role";
 
 export interface User {
   id: number | string;
@@ -14,7 +15,11 @@ export interface User {
   institute_id?: number | string;
   roleId?: number | string;
   status?: string;
-  roles?: { id: string; name: string }[];
+  role?: {
+    id: number;
+    name: string;
+    permissions?: Permission[];
+  };
   institute?: {
     id: number | string;
     name: string;
@@ -193,17 +198,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   // Check if user has role
   hasRole: (role: string) => {
     const { user } = get();
-    if (!user) return false;
-    return (user.roles || []).some((r) => r.name.toLowerCase() === role.toLowerCase());
+    if (!user || !user.role) return false;
+    return user.role.name.toLowerCase() === role.toLowerCase();
   },
 
   // Check if user has permission
   hasPermission: (permission?: string) => {
-    void permission; // Intentionally unused, for future implementation
     const { user } = get();
-    if (!user) return false;
-    // TODO: Implement permission checking based on roles
-    return true;
+    if (!user || !permission) return false;
+
+    // If user has no role or no permissions, deny access
+    if (!user.role || !user.role.permissions) return false;
+
+    // Check if user has the specific permission
+    return user.role.permissions.some(
+      (p) => p.name.toLowerCase() === permission.toLowerCase()
+    );
   },
 
   // Get display name

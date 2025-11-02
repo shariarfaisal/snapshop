@@ -7,3 +7,4 @@ export * from "./use-program";
 export * from "./use-course-offering";
 export * from "./use-enrollment";
 export * from "./use-student";
+export * from "./use-permissions";

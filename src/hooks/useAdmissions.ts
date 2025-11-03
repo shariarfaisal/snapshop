@@ -2,10 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { admissionService } from '@/services/admissionService';
 
 export const useAdmissionApplications = (params: any) => {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const query = useQuery({
     queryKey: ['admissionApplications', params],
     queryFn: () => admissionService.getApplications(params),
   });
+
+  return {
+    ...query,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['admissionApplications', params] }),
+  };
 };
 
 export const useAdmissionStats = () => {
@@ -27,13 +33,14 @@ export const useUpdateAdmissionStatus = () => {
   });
 };
 
-export const useDeleteAdmission = () => {
+export const useDeleteAdmission = (options?: { onSuccess?: () => void }) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => admissionService.deleteApplication(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admissionApplications'] });
       queryClient.invalidateQueries({ queryKey: ['admissionStats'] });
+      options?.onSuccess?.();
     },
   });
 };

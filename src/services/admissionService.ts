@@ -6,18 +6,23 @@ export const admissionService = {
     return response.data;
   },
 
+  getApplicationDetail: async (id: number) => {
+    const response = await $clientPrivate.get(`/admin/admission/${id}`);
+    return response.data;
+  },
+
   getStats: async () => {
     const response = await $clientPrivate.get("/admin/admission/stats");
     return response.data;
   },
 
   updateApplicationStatus: async (id: number, data: any) => {
-    const response = await $clientPrivate.put(`/admin/admission/update-status/${id}`, data);
+    const response = await $clientPrivate.patch(`/admin/admission/${id}`, data);
     return response.data;
   },
 
   deleteApplication: async (id: number) => {
-    const response = await $clientPrivate.delete(`/admin/admission/delete/${id}`);
+    const response = await $clientPrivate.delete(`/admin/admission/${id}`);
     return response.data;
   },
 

@@ -1,23 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, Trash2, Download, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { Eye, Trash2, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   useAdmissionApplications,
   useAdmissionStats,
-  useUpdateAdmissionStatus,
   useDeleteAdmission,
-  useExportAdmissions,
 } from '@/hooks/useAdmissions';
+import { DeleteConfirmationDialog } from '@/components/admissions/delete-confirmation-dialog';
 
 interface AdmissionApplication {
   id: number;
   application_number: string;
   first_name: string;
   last_name: string;
+  student_name: string;
   email: string;
   phone: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'admitted' | 'rejected';
   institute: { id: number; name: string };
   schoolClass: { id: number; name: string };
   created_at: string;
@@ -25,15 +26,16 @@ interface AdmissionApplication {
 }
 
 export default function AdminAdmissionsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [selectedApp, setSelectedApp] = useState<AdmissionApplication | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
-  const [remarks, setRemarks] = useState('');
   const [page, setPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; appId: number | null }>({
+    isOpen: false,
+    appId: null,
+  });
 
-  const { data: applicationsData, isLoading: isLoadingApplications } = useAdmissionApplications({
+  const { data: applicationsData, isLoading: isLoadingApplications, refetch } = useAdmissionApplications({
     page,
     per_page: 10,
     search,
@@ -41,38 +43,28 @@ export default function AdminAdmissionsPage() {
   });
 
   const { data: statsData } = useAdmissionStats();
-  const updateStatusMutation = useUpdateAdmissionStatus();
-  const deleteAdmissionMutation = useDeleteAdmission();
-  const exportAdmissionsMutation = useExportAdmissions();
-
-  const handleStatusUpdate = () => {
-    if (!selectedApp || !newStatus) return;
-    updateStatusMutation.mutate(
-      { id: selectedApp.id, data: { status: newStatus, remarks } },
-      {
-        onSuccess: () => {
-          setShowModal(false);
-          setNewStatus('');
-          setRemarks('');
-          setSelectedApp(null);
-        },
-      }
-    );
-  };
+  const deleteAdmissionMutation = useDeleteAdmission({
+    onSuccess: () => {
+      refetch();
+      setDeleteConfirm({ isOpen: false, appId: null });
+    },
+  });
 
   const handleDelete = (id: number) => {
-    if (!confirm('Are you sure you want to delete this application?')) return;
-    deleteAdmissionMutation.mutate(id);
+    setDeleteConfirm({ isOpen: true, appId: id });
   };
 
-  const handleExport = () => {
-    exportAdmissionsMutation.mutate();
+  const confirmDelete = () => {
+    if (deleteConfirm.appId) {
+      deleteAdmissionMutation.mutate(deleteConfirm.appId);
+    }
   };
 
   const getStatusBadge = (status: string) => {
     const badges = {
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
       approved: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
+      admitted: { bg: 'bg-blue-100', text: 'text-blue-800', icon: CheckCircle },
       rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
     };
     const badge = badges[status as keyof typeof badges] || badges.pending;
@@ -121,7 +113,7 @@ export default function AdminAdmissionsPage() {
               <Search size={20} className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, email, phone..."
+                placeholder="Search by name, email, or phone..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -141,24 +133,19 @@ export default function AdminAdmissionsPage() {
               <option value="">All Status</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
+              <option value="admitted">Admitted</option>
               <option value="rejected">Rejected</option>
             </select>
-            <button
-              onClick={handleExport}
-              disabled={exportAdmissionsMutation.isPending}
-              className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-            >
-              <Download size={20} /> {exportAdmissionsMutation.isPending ? 'Exporting...' : 'Export CSV'}
-            </button>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {isLoadingApplications ? (
-            <div className="p-6 text-center text-gray-600">Loading applications...</div>
-          ) : applications.length === 0 ? (
-            <div className="p-6 text-center text-gray-600">No applications found</div>
-          ) : (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Loading applications...</p>
+            </div>
+          ) : applications.length > 0 ? (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -186,12 +173,7 @@ export default function AdminAdmissionsPage() {
                         <td className="px-6 py-3 text-sm text-gray-500">{new Date(app.created_at).toLocaleDateString()}</td>
                         <td className="px-6 py-3 text-sm space-x-2 flex">
                           <button
-                            onClick={() => {
-                              setSelectedApp(app);
-                              setNewStatus(app.status);
-                              setRemarks(app.remarks || '');
-                              setShowModal(true);
-                            }}
+                            onClick={() => router.push(`/admin/admissions/${app.id}`)}
                             className="text-blue-600 hover:text-blue-800 transition"
                           >
                             <Eye size={18} />
@@ -232,62 +214,22 @@ export default function AdminAdmissionsPage() {
                 </div>
               </div>
             </>
+          ) : (
+            <div className="p-8 text-center text-gray-600">
+              No admission applications found.
+            </div>
           )}
         </div>
       </div>
 
-      {showModal && selectedApp && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Update Application Status</h2>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">Application: {selectedApp.application_number}</p>
-              <p className="text-sm text-gray-600 mb-2">Applicant: {selectedApp.first_name} {selectedApp.last_name}</p>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Remarks (Optional)</label>
-              <textarea
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Add remarks..."
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleStatusUpdate}
-                disabled={updateStatusMutation.isPending}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {updateStatusMutation.isPending ? 'Updating...' : 'Update'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Application"
+        description="Are you sure you want to delete this admission application? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, appId: null })}
+        isLoading={deleteAdmissionMutation.isPending}
+      />
     </div>
   );
 }

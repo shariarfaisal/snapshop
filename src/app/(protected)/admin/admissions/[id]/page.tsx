@@ -12,7 +12,7 @@ import {
   Clock,
   XCircle,
 } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
+import { admissionService } from '@/services/admissionService';
 
 interface AdmissionDetail {
   id: number;
@@ -59,7 +59,6 @@ export default function AdmissionDetailPage() {
   const [newStatus, setNewStatus] = useState('');
   const [remarks, setRemarks] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCreateUser, setShowCreateUser] = useState(false);
 
   useEffect(() => {
     fetchApplicationDetail();
@@ -68,11 +67,11 @@ export default function AdmissionDetailPage() {
   const fetchApplicationDetail = async () => {
     try {
       setIsLoading(true);
-      const response = await apiClient.get(`/api/admin/admissions/${id}`);
-      if (response.data.success) {
-        setApplication(response.data.data);
-        setNewStatus(response.data.data.status);
-        setRemarks(response.data.data.remarks || '');
+      const response = await admissionService.getApplicationDetail(parseInt(id));
+      if (response.success) {
+        setApplication(response.data);
+        setNewStatus(response.data.status);
+        setRemarks(response.data.remarks || '');
       } else {
         setError('Failed to load application details');
       }
@@ -86,14 +85,13 @@ export default function AdmissionDetailPage() {
   const handleStatusUpdate = async () => {
     try {
       setIsSubmitting(true);
-      const response = await apiClient.patch(`/api/admin/admissions/${id}`, {
+      const response = await admissionService.updateApplicationStatus(parseInt(id), {
         status: newStatus,
         remarks,
       });
-      if (response.data.success) {
-        setApplication(response.data.data);
+      if (response.success) {
+        setApplication(response.data);
         setShowEditStatus(false);
-        // Show success message
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error updating status');
@@ -104,7 +102,6 @@ export default function AdmissionDetailPage() {
 
   const handleCreateUser = () => {
     if (!application) return;
-    // Store application data in session/state for the create user form
     sessionStorage.setItem(
       'prefill_student_data',
       JSON.stringify({

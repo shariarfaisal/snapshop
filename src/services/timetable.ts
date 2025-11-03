@@ -9,7 +9,7 @@ import {
   BulkCreateResponse,
   DayOfWeek,
 } from "@/types/timetable";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 
 const BASE_URL = "/timetables";
 

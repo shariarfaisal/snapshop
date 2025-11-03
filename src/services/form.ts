@@ -1,4 +1,4 @@
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 import type { Form, FormResponse } from "@/types/form";
 
 export const formService = {

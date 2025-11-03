@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import { getCookie, setCookie } from "cookies-next";
+import { getCookie, setCookie, deleteCookie } from "cookies-next";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -44,8 +44,11 @@ const createApiClient = (): AxiosInstance => {
           const refreshToken = getCookie("refresh_token");
           if (!refreshToken) {
             // No refresh token, redirect to login
-            // window.location.href = "/auth/login";
-            // return Promise.reject(error);
+            if (typeof window !== "undefined") {
+              deleteCookie("auth_token");
+              window.location.href = "/auth/login";
+            }
+            return Promise.reject(error);
           }
 
           // Attempt refresh
@@ -63,8 +66,19 @@ const createApiClient = (): AxiosInstance => {
           return client(config);
         } catch (refreshError) {
           // Refresh failed, redirect to login
-          // window.location.href = "/login";
-          // return Promise.reject(refreshError);
+          if (typeof window !== "undefined") {
+            deleteCookie("auth_token");
+            window.location.href = "/auth/login";
+          }
+          return Promise.reject(refreshError);
+        }
+      }
+
+      // Handle 401 with redirect to login
+      if (error.response?.status === 401) {
+        if (typeof window !== "undefined" && window.location.pathname !== "/auth/login") {
+          deleteCookie("auth_token");
+          window.location.href = "/auth/login";
         }
       }
 
@@ -76,6 +90,18 @@ const createApiClient = (): AxiosInstance => {
 };
 
 export const apiClient = createApiClient();
+
+// Export public client (no auth required)
+export const $clientPublic = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+// Export private client (auth required) - same as apiClient with raw axios interface
+export const $clientPrivate = apiClient;
 
 interface ApiResponse<T> {
   success: boolean;

@@ -1,4 +1,4 @@
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 
 const MEDIA_API = {
   async uploadFile(file: File, onUploadProgress: (progress: number) => void) {

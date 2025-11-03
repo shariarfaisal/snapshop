@@ -1,0 +1,147 @@
+'use client';
+
+import { useState } from 'react';
+import { Mail, Phone, MapPin, Send } from 'lucide-react';
+
+export default function ContactPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: '',
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert('Thank you for contacting us. We will get back to you soon!');
+    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+  };
+
+  return (
+    <div className="bg-white">
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
+          <p className="text-xl opacity-90">We'd love to hear from you</p>
+        </div>
+      </section>
+
+      {/* Contact Content */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-8">Get In Touch</h2>
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <Mail className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Email</h3>
+                    <p className="text-gray-600">support@ecampus.com</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <Phone className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Phone</h3>
+                    <p className="text-gray-600">+91 9876543210</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <MapPin className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+                  <div>
+                    <h3 className="font-semibold text-gray-800">Address</h3>
+                    <p className="text-gray-600">123 Education Street, Learning City, LC 12345</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-gray-800 mb-3">Office Hours</h3>
+                <p className="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM</p>
+                <p className="text-gray-600">Saturday: 10:00 AM - 2:00 PM</p>
+                <p className="text-gray-600">Sunday: Closed</p>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-8">Send us a Message</h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Your Name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Your Email"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="Phone Number"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  placeholder="Subject"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  placeholder="Your Message"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={5}
+                  required
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                >
+                  <Send size={20} />
+                  Send Message
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Map Section */}
+      <section className="bg-gray-100 py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Reach Us</h2>
+          <div className="h-96 bg-gray-300 rounded-lg flex items-center justify-center">
+            <p className="text-gray-600">Map would be displayed here</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

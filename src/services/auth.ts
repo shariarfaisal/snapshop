@@ -1,4 +1,4 @@
-import { $clientPrivate, $clientPublic } from "./client";
+import { $clientPrivate, $clientPublic } from "@/lib/api-client";
 import { User } from "@/types/user";
 
 interface LoginResponse {

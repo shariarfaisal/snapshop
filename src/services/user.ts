@@ -1,12 +1,17 @@
 import { Paginated } from "@/types";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 import { User, CreateUserInput, UpdateUserInput, ResetPasswordInput } from "@/types/user";
 
 const BASE_URL = "/v1/users";
 
 export const userService = {
-  getAllUser: async () => {
-    const response = await $clientPrivate.get<Paginated<User>>(BASE_URL);
+  getAllUser: async (page = 1, limit = 15, filters: any = {}) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters,
+    });
+    const response = await $clientPrivate.get<Paginated<User>>(`${BASE_URL}?${params}`);
     return response.data;
   },
 
@@ -35,8 +40,13 @@ export const userService = {
     return response.data;
   },
 
-  adminResetUserPassword: async (id: string, data: ResetPasswordInput) => {
-    const response = await $clientPrivate.put<void>(`${BASE_URL}/${id}/admin-reset-password`, data);
+  changeUserStatus: async (id: string, status: string) => {
+    const response = await $clientPrivate.patch<User>(`${BASE_URL}/${id}/status`, { status });
+    return response.data;
+  },
+
+  bulkCreateUsers: async (users: CreateUserInput[]) => {
+    const response = await $clientPrivate.post<any>(`${BASE_URL}/bulk`, { users });
     return response.data;
   },
 

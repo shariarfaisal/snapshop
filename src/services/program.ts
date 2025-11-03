@@ -1,5 +1,5 @@
 import { Program, CurriculumMapEntry } from "@/types/program";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 
 const BASE_URL = "/v1/programmes";
 

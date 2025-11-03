@@ -39,6 +39,20 @@ export const sidebarConstant: ISidebarConstant = {
       title: "Users",
       url: "/admin/users",
       icon: Users,
+      items: [
+        {
+          title: "All Users",
+          url: "/admin/users",
+        },
+        {
+          title: "Create User",
+          url: "/admin/users/create",
+        },
+        {
+          title: "Bulk Import",
+          url: "/admin/users/bulk-import",
+        },
+      ],
     },
     {
       title: "Students",

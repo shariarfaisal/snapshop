@@ -25,6 +25,7 @@ import {
   HelpCircle,
   PanelRight,
   PanelRightOpen,
+  FormInput,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,6 +105,14 @@ const navigation: NavigationItem[] = [
     permissions: "readAll-attendance",
   },
   {
+    name: "Admissions",
+    href: "/admin/admissions",
+    icon: FormInput,
+    section: "admin",
+    requiredRole: "admin",
+    permissions: "manage-admissions",
+  },
+  {
     name: "Examinations",
     icon: FileText,
     section: "admin",
@@ -165,6 +174,17 @@ const navigation: NavigationItem[] = [
     section: "admin",
     requiredRole: "admin",
     permissions: "readAll-report",
+  },
+  {
+    name: "Users",
+    icon: Users,
+    section: "admin",
+    requiredRole: "admin",
+    children: [
+      { name: "All Users", href: "/admin/users", permissions: "readAll-user" },
+      { name: "Create User", href: "/admin/users/create", permissions: "create-user" },
+      { name: "Bulk Import", href: "/admin/users/bulk-import", permissions: "create-user" },
+    ],
   },
 
   // Teacher Section Divider
@@ -271,6 +291,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
 
   // Auto-expand parent menu items when child is active
   useEffect(() => {
@@ -281,6 +302,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setExpandedItems((prev) => [...prev, activeParent.name]);
     }
   }, [pathname]);
+
+  // Close mobile sidebar on resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Set body background color
+  useEffect(() => {
+    document.body.classList.add("bg-slate-900");
+    return () => {
+      document.body.classList.remove("bg-slate-900");
+    };
+  }, []);
 
   const toggleExpand = (name: string) => {
     setExpandedItems((prev) =>
@@ -365,7 +405,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               !sidebarCollapsed ? "px-6" : "px-3"
             )}
           >
-            {!sidebarCollapsed && <h1 className="text-xl font-bold text-white">E-Campus</h1>}
+            {!sidebarCollapsed && (
+              <h1 className="text-xl font-bold text-white transition-all duration-300">E-Campus</h1>
+            )}
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -398,7 +440,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 // Show dividers if the section has visible items
                 if (item.isDivider) {
                   if (item.requiredRole === "teacher") {
-                    return hasRole("Teacher");
+                    return hasRole("teacher") || hasRole("admin");
                   }
                   return true; // Show common dividers
                 }
@@ -432,7 +474,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 if (item.children) {
                   const isExpanded = expandedItems.includes(item.name);
                   const hasActiveChild = item.children.some(
-                    (child) => pathname === child.href + "/"
+                    (child) => pathname === child.href || pathname === child.href + "/"
                   );
 
                   const menuButton = (
@@ -466,35 +508,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   return (
                     <div key={item.name}>
                       {sidebarCollapsed ? (
-                        <Tooltip>
+                        <Tooltip key={item.name}>
                           <TooltipTrigger asChild>{menuButton}</TooltipTrigger>
                           <TooltipContent side="right">{item.name}</TooltipContent>
                         </Tooltip>
                       ) : (
                         menuButton
                       )}
-                      {isExpanded && !sidebarCollapsed && (
-                        <div className="ml-7 mt-1 space-y-0.5">
-                          {item.children
-                            .filter((child) => hasPermissionForItem(child.permissions))
-                            .map((child) => {
-                              return (
-                                <Link
-                                  key={child.href}
-                                  href={child.href}
-                                  className={cn(
-                                    "block px-3 py-2 text-[15px] font-medium rounded-md transition-colors hover:bg-slate-800",
-                                    pathname === child.href + "/"
-                                      ? "text-blue-600 bg-slate-900"
-                                      : "text-white"
-                                  )}
-                                >
-                                  {child.name}
-                                </Link>
-                              );
-                            })}
-                        </div>
-                      )}
+                      <div
+                        className={cn(
+                          "ml-7 mt-1 space-y-0.5 overflow-hidden transition-all duration-300",
+                          isExpanded && !sidebarCollapsed
+                            ? "max-h-screen opacity-100"
+                            : "max-h-0 opacity-0"
+                        )}
+                      >
+                        {item.children
+                          .filter((child) => hasPermissionForItem(child.permissions))
+                          .map((child) => {
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setSidebarOpen(false)}
+                                className={cn(
+                                  "block px-3 py-2 text-[15px] font-medium rounded-md transition-colors hover:bg-slate-800",
+                                  pathname === child.href || pathname === child.href + "/"
+                                    ? "text-blue-600 bg-slate-900"
+                                    : "text-white"
+                                )}
+                              >
+                                {child.name}
+                              </Link>
+                            );
+                          })}
+                      </div>
                     </div>
                   );
                 }
@@ -504,6 +552,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 const menuLink = (
                   <Link
                     href={item.href || ""}
+                    onClick={() => setSidebarOpen(false)}
                     className={cn(
                       "flex items-center px-3 py-2.5 text-[15px] font-semibold rounded-md transition-colors",
                       isActive
@@ -546,7 +595,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               {/* Profile Menu */}
               <div className="flex items-center gap-3">
-                <DropdownMenu>
+                <DropdownMenu onOpenChange={setProfileMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-3 h-11 px-4 rounded-lg hover:bg-slate-700  transition-all focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0">
                       <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-500/30">
@@ -555,10 +604,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <div className="hidden md:flex flex-col items-start">
                         <span className="text-sm font-semibold text-white">{getDisplayName()}</span>
                         <span className="text-xs text-slate-400">
-                          {user?.roles?.[0]?.name || "Admin"}
+                          {user?.role?.name || "Admin"}
                         </span>
                       </div>
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 text-slate-400 transition-transform",
+                          isProfileMenuOpen && "rotate-180"
+                        )}
+                      />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -620,7 +674,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </header>
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
+          <main className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="container mx-auto px-4 py-12">{children}</div>
+          </main>
         </div>
       </div>
     </TooltipProvider>

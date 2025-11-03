@@ -7,7 +7,7 @@ import {
   AssignPermissionInput,
   Permission 
 } from "@/types/role";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 
 const BASE_URL = "/v1/roles";
 

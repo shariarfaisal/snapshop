@@ -1,5 +1,5 @@
 import { Paginated } from "@/types";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 import { Campus, CreateCampusInput, UpdateCampusInput } from "@/types/campus";
 
 const BASE_URL = "/v1/campuses";

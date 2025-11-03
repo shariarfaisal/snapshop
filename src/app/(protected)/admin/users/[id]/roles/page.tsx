@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,44 +10,20 @@ import { ArrowLeft, Save, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useRole } from "@/hooks/use-role";
+import { useGetUserById } from "@/hooks/use-user";
 import { toast } from "sonner";
-import { userService } from "@/services/user";
 
 export default function RolesPage() {
   const router = useRouter();
   const params = useParams();
   const userId = params.id as string;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
-  const [user, setUser] = useState<any>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
+  const { data: user, isLoading: isLoadingUser } = useGetUserById(userId);
   const { roles, isRolesLoading, assignRoleToUser, invalidateUserRoles } = useRole();
 
-  // Fetch user details
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setIsLoadingUser(true);
-        const userData = await userService.getUserById(userId);
-        setUser(userData);
-        if (userData.roleId) {
-          setSelectedRoleId(userData.roleId.toString());
-        }
-      } catch (error) {
-        toast.error("Failed to load user details");
-      } finally {
-        setIsLoadingUser(false);
-      }
-    };
-
-    if (userId) {
-      fetchUser();
-    }
-  }, [userId]);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!selectedRoleId) {
@@ -55,22 +31,22 @@ export default function RolesPage() {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      await assignRoleToUser.mutateAsync({
+    assignRoleToUser.mutate(
+      {
         userId: userId,
         roleId: parseInt(selectedRoleId)
-      });
-
-      invalidateUserRoles();
-      toast.success("Role assigned successfully");
-      router.push("/admin/users");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to assign role");
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          invalidateUserRoles(userId);
+          toast.success("Role assigned successfully");
+          router.push("/admin/users");
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || "Failed to assign role");
+        }
+      }
+    );
   };
 
   return (
@@ -163,9 +139,9 @@ export default function RolesPage() {
             )}
 
             <div className="flex gap-3">
-              <Button type="submit" disabled={isSubmitting || !selectedRoleId}>
+              <Button type="submit" disabled={assignRoleToUser.isPending || !selectedRoleId}>
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {assignRoleToUser.isPending ? "Saving..." : "Save Changes"}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.push("/admin/users")}>
                 Cancel

@@ -1,6 +1,6 @@
 import { ApplicationCreate, ApplicationUpdate } from '@/types/application';
 import { Application } from '@/types/application';
-import { $clientPrivate } from './client';
+import { $clientPrivate } from '@/lib/api-client';
 
 export const admissionService = {
   async getAllApplications(params?: {

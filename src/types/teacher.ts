@@ -1,21 +1,18 @@
+import type { User } from './user';
+
 export interface Teacher {
   id: number;
-  userId?: number;
+  userId: number;      // UNIQUE - single user per teacher
+  user?: User;         // User data (firstName, lastName, email, phone, etc.)
   employeeId: string;
-  firstName: string;
-  lastName: string;
-  username?: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  profileImage?: string;
   departmentId?: number;
   designationId?: number;
   qualification?: string;
   experience?: number;
   joiningDate?: string;
   salary?: number;
-  roleId: number;
+  address?: string;
+  profileImage?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -70,46 +67,42 @@ export interface CourseSection {
 }
 
 export interface TeacherFormData {
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   username?: string;
   password?: string;
   phone?: string;
   address?: string;
-  employee_id?: string;
-  department_id?: number;
-  designation_id?: number;
+  employeeId?: string;
+  departmentId?: number;
+  designationId?: number;
   qualification?: string;
   experience?: number;
-  joining_date?: string;
+  joiningDate?: string;
   salary?: number;
   status?: string;
-  subject_ids?: number[];
+  subjectIds?: number[];
 }
 
 export interface TeacherFilters {
   search?: string;
-  department_id?: number;
-  designation_id?: number;
+  departmentId?: number;
+  designationId?: number;
   status?: string;
-  per_page?: number;
+  perPage?: number;
   page?: number;
 }
 
 export interface TeacherListResponse {
-  current_page: number;
+  success: boolean;
   data: Teacher[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
 }
 
 export interface TeacherStats {

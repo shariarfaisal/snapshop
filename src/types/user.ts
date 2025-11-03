@@ -1,7 +1,12 @@
-export type UserRole = "admin" | "teacher" | "student" | "librarian" | "accountant" | "staff";
+export type UserRole = 
+  | "super_admin"
+  | "institute_admin"
+  | "teacher"
+  | "student"
+  | "accountant"
+  | "parent";
 
-export type UserStatus = "Active" | "Inactive";
-
+export type UserStatus = "active" | "inactive" | "suspended";
 
 export type User = {
   id: string;
@@ -9,29 +14,72 @@ export type User = {
   email: string;
   firstName?: string;
   lastName?: string;
-  locale: string;
+  phone?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
   status: UserStatus;
-  tenant_id: string;
-  campus_id: string | null;
-  role_id: number;
-  role_code: string;
-  role_label: string;
-  created_at: string;
-  updated_at: string;
+  roleId: number;
+  role?: {
+    id: number;
+    name: UserRole;
+  };
+  teacher?: Teacher;  // If user is teacher
+  institute?: {
+    id: number;
+    name: string;
+  };
+  institute_id?: number;
+  department?: {
+    id: number;
+    name: string;
+  };
+  departmentId?: number;
+  designation?: {
+    id: number;
+    name: string;
+  };
+  designationId?: number;
+  employeeId?: string;
+  joinDate?: string;
+  leaveDate?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type CreateUserInput = {
   username: string;
   email: string;
-  password?: string;
-  role_id: number | string;
-  campus_id?: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  roleId: number;
+  institute_id?: number;
   status?: UserStatus;
-  locale: string;
+  phone?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
 };
 
 export type UpdateUserInput = Partial<Omit<CreateUserInput, "email" | "password">>;
 
 export type ResetPasswordInput = {
-  new_password: string;
+  password: string;
+  new_password?: string;
+};
+
+export type BulkUserImport = {
+  username: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  roleId: number;
+  institute_id?: number;
+  phone?: string;
+  password?: string;
 };

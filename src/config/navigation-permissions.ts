@@ -88,6 +88,18 @@ export const NAVIGATION_PERMISSIONS: NavigationPermission[] = [
     label: "Users",
     description: "View and manage users",
   },
+  {
+    path: "/admin/users/create",
+    permissions: "create-user",
+    label: "Create User",
+    description: "Create new user accounts",
+  },
+  {
+    path: "/admin/users/bulk-import",
+    permissions: "create-user",
+    label: "Bulk Import Users",
+    description: "Import users from CSV file",
+  },
 
   // Students
   {

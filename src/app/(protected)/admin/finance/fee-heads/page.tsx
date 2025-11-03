@@ -143,7 +143,7 @@ export default function FeeHeadsPage() {
         setDeleteDialogOpen(false);
         setSelectedFeeHead(null);
       },
-      onError: (error: any) {
+      onError: (error: any) => {
         toast.error(error.response?.data?.message || "Failed to delete fee head");
       },
     });

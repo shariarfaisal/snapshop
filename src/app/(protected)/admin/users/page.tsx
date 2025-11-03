@@ -35,8 +35,12 @@ import { toast } from "sonner";
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
-  const { users, isLoading, deleteUser, deactivateUser, invalidateUsers } = useUser();
+  const { users, isLoading, deleteUser, changeUserStatus, invalidateUsers, setCurrentFilters } = useUser(page, 15, {
+    roleId: roleFilter !== "all" ? roleFilter : undefined,
+    search: searchQuery
+  });
   const { roles } = useRole();
 
   // Filter users based on search query and role filter

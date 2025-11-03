@@ -65,6 +65,9 @@ export const useDeleteFeeHead = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fee-heads"] });
     },
+    onError: (error: any) => {
+      console.error("Delete failed:", error);
+    },
   });
 };
 

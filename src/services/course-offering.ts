@@ -1,5 +1,5 @@
 import { CourseOffering } from "@/types/course-offering";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 
 const BASE_URL = "/v1/courses";
 

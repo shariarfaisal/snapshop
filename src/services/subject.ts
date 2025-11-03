@@ -5,7 +5,7 @@ import {
   SubjectFilters,
   SubjectStatistics 
 } from "@/types/subject";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 
 const BASE_URL = "/subjects";
 

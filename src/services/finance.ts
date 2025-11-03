@@ -1,5 +1,5 @@
 import { Paginated } from "@/types";
-import { $clientPrivate } from "./client";
+import { $clientPrivate } from "@/lib/api-client";
 import {
   FeeHead,
   CreateFeeHeadInput,

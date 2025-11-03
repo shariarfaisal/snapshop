@@ -1,24 +1,60 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import { toast } from "sonner";
+import { UserForm } from "@/components/user/user-form";
+import { CreateUserInput } from "@/types/user";
+import { useUser, useGetUserById } from "@/hooks/use-user";
 
-export default function EditPage() {
+export default function EditUserPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const params = useParams();
+  const userId = params.id as string;
+  
+  const { updateUser } = useUser();
+  const { data: user, isLoading } = useGetUserById(userId);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    router.push("/admin/users");
+  const handleSubmit = (data: CreateUserInput) => {
+    updateUser.mutate(
+      { 
+        id: userId, 
+        data: data as any 
+      },
+      {
+        onSuccess: () => {
+          toast.success("User updated successfully!");
+          router.push("/admin/users");
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || "Failed to update user");
+        }
+      }
+    );
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">User not found</h1>
+          <Button className="mt-4" asChild>
+            <Link href="/admin/users">Back to Users</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -34,30 +70,14 @@ export default function EditPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Details</CardTitle>
-            <CardDescription>Enter the required information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input id="name" placeholder="Enter name" required />
-            </div>
-
-            <div className="flex gap-3">
-              <Button type="submit" disabled={isSubmitting}>
-                <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Saving..." : "Save"}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => router.push("/admin/users")}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </form>
+      <div className="max-w-2xl">
+        <UserForm 
+          user={user} 
+          onSubmit={handleSubmit} 
+          isLoading={updateUser.isPending}
+          onCancel={() => router.push("/admin/users")}
+        />
+      </div>
     </div>
   );
 }

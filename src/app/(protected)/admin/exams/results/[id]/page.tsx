@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,19 +53,31 @@ export default function ExamResultsPage() {
   const [studentMarks, setStudentMarks] = useState<Map<number, StudentMark>>(new Map());
   const [maxMarks, setMaxMarks] = useState(100);
 
+  // Memoize filter object to prevent re-renders
+  const studentFilters = useMemo(() => ({ per_page: "all" }), []);
+
   // Hooks
   const { data: examData, isLoading: examLoading } = useExam(examId);
   const { data: subjectsData } = useExamSubjects(examId);
-  const { data: studentsData } = useStudents({ per_page: "all" });
+  const { data: studentsData } = useStudents(studentFilters);
   const { data: marksData } = useMarksByExamSubject(examId, selectedSubject);
   const saveMutation = useBulkCreateMarks();
   const publishMutation = usePublishExamResults();
 
-  // Handle API response formats
+  // Handle API response formats - Memoize to prevent infinite loops
   const exam = examData?.data || examData;
-  const subjects = Array.isArray(subjectsData) ? subjectsData : [];
-  const students = Array.isArray(studentsData) ? studentsData : (studentsData?.data || []);
-  const existingMarks = Array.isArray(marksData) ? marksData : [];
+
+  const subjects = useMemo(() => {
+    return Array.isArray(subjectsData) ? subjectsData : [];
+  }, [subjectsData]);
+
+  const students = useMemo(() => {
+    return Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
+  }, [studentsData]);
+
+  const existingMarks = useMemo(() => {
+    return Array.isArray(marksData) ? marksData : [];
+  }, [marksData]);
 
   // Set default subject when subjects load
   useEffect(() => {
@@ -84,8 +96,10 @@ export default function ExamResultsPage() {
     }
   }, [selectedSubject, subjects]);
 
-  // Build student marks map when students or marks change
+  // Build student marks map when subject or marks change
   useEffect(() => {
+    if (!selectedSubject) return;
+
     const marksMap = new Map<number, StudentMark>();
 
     students.forEach((student: Student) => {
@@ -101,7 +115,7 @@ export default function ExamResultsPage() {
     });
 
     setStudentMarks(marksMap);
-  }, [students, existingMarks]);
+  }, [selectedSubject, existingMarks, students]);
 
   const handleMarkChange = (studentId: number, marks: string) => {
     const marksValue = marks === "" ? undefined : parseFloat(marks);
@@ -272,9 +286,9 @@ export default function ExamResultsPage() {
                       <TableRow key={student.id}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell className="font-medium">
-                          {student.user?.first_name} {student.user?.last_name}
+                          {student.user?.firstName} {student.user?.lastName}
                         </TableCell>
-                        <TableCell>{student.roll_number || "N/A"}</TableCell>
+                        <TableCell>{student.rollNumber || "N/A"}</TableCell>
                         <TableCell>
                           <Input
                             type="number"

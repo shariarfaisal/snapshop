@@ -12,15 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Save, Loader2, CheckCircle, XCircle, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AttendanceStatus, BulkAttendanceRequest } from "@/types/attendance";
 import Link from "next/link";
@@ -49,7 +41,7 @@ export default function MarkAttendancePage() {
   const [students, setStudents] = useState<StudentAttendanceState[]>([]);
 
   // Hooks
-  const { data: classesData } = useSchoolClasses({ per_page: "all" });
+  const { data: classesData } = useSchoolClasses({ perPage: 20 });
   const { data: sectionsData } = useSections(classId ? { classId } : undefined);
   const studentFilters: any = {
     class_id: classId,
@@ -64,8 +56,8 @@ export default function MarkAttendancePage() {
   const bulkAttendanceMutation = useBulkMarkAttendance();
 
   // Handle API response formats
-  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
-  const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
+  const classes = Array.isArray(classesData) ? classesData : classesData?.data || [];
+  const sections = Array.isArray(sectionsData) ? sectionsData : sectionsData?.data || [];
 
   // Build students state when data loads
   useEffect(() => {
@@ -84,15 +76,11 @@ export default function MarkAttendancePage() {
   }, [studentsData]);
 
   const handleStatusChange = (studentId: number, status: AttendanceStatus) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.student_id === studentId ? { ...s, status } : s))
-    );
+    setStudents((prev) => prev.map((s) => (s.student_id === studentId ? { ...s, status } : s)));
   };
 
   const handleRemarksChange = (studentId: number, remarks: string) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.student_id === studentId ? { ...s, remarks } : s))
-    );
+    setStudents((prev) => prev.map((s) => (s.student_id === studentId ? { ...s, remarks } : s)));
   };
 
   const handleMarkAllPresent = () => {
@@ -174,7 +162,10 @@ export default function MarkAttendancePage() {
           <h1 className="text-3xl font-bold text-gray-900">Mark Attendance</h1>
           <p className="text-gray-500 mt-1">Record student attendance for your class</p>
         </div>
-        <Button onClick={handleSubmit} disabled={bulkAttendanceMutation.isPending || students.length === 0}>
+        <Button
+          onClick={handleSubmit}
+          disabled={bulkAttendanceMutation.isPending || students.length === 0}
+        >
           {bulkAttendanceMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -231,7 +222,7 @@ export default function MarkAttendancePage() {
                   <SelectValue placeholder="Select Section" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sections</SelectItem>
+                  <SelectItem value="all">All Sections</SelectItem>
                   {sections.map((sec) => (
                     <SelectItem key={sec.id} value={sec.id.toString()}>
                       {sec.name}

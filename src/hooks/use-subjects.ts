@@ -118,3 +118,17 @@ export const useSubjectById = (id: number | null) => {
     error,
   };
 };
+
+export const useClassSubjects = (classId: number | null) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [QUERY_KEY, 'class', classId],
+    queryFn: () => subjectService.getByClass(classId!),
+    enabled: !!classId,
+  });
+
+  return {
+    subjects: data?.data || [],
+    isLoading,
+    error,
+  };
+};

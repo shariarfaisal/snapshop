@@ -8,7 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Eye, CheckCircle2, XCircle, Send, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Application, ApplicationStatus } from "@/types/application";
@@ -44,7 +51,7 @@ export function Applications({
   const handleFilterChange = (key: string, value: string) => {
     onFilterChange({ ...filters, [key]: value });
   };
-  const maritCategories = ["xyz"]
+  const maritCategories = ["xyz"];
 
   if (admissions.length === 0) {
     return (
@@ -65,7 +72,7 @@ export function Applications({
             <SelectValue placeholder="Filter by Program" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Programs</SelectItem>
+            <SelectItem value="all">All Programs</SelectItem>
             {/* Add program options here */}
           </SelectContent>
         </Select>
@@ -78,7 +85,7 @@ export function Applications({
             <SelectValue placeholder="Filter by Campus" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Campuses</SelectItem>
+            <SelectItem value="all">All Campuses</SelectItem>
             {/* Add campus options here */}
           </SelectContent>
         </Select>
@@ -91,7 +98,7 @@ export function Applications({
             <SelectValue placeholder="Filter by Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             {maritCategories.map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
@@ -108,7 +115,7 @@ export function Applications({
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             {Object.keys(statusColors).map((status) => (
               <SelectItem key={status} value={status}>
                 {status}
@@ -133,17 +140,15 @@ export function Applications({
           <TableBody>
             {admissions.map((admission) => (
               <TableRow key={admission.id}>
-                <TableCell className="font-medium">{admission.first_name} {admission.last_name}</TableCell>
+                <TableCell className="font-medium">
+                  {admission.first_name} {admission.last_name}
+                </TableCell>
                 <TableCell>{admission.applied_level}</TableCell>
                 <TableCell>{admission.merit_cat_id}</TableCell>
                 <TableCell>
-                  <Badge className={statusColors[admission.status]}>
-                    {admission.status}
-                  </Badge>
+                  <Badge className={statusColors[admission.status]}>{admission.status}</Badge>
                 </TableCell>
-                <TableCell>
-                  {new Date(admission.created_at).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{new Date(admission.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
@@ -203,4 +208,4 @@ export function Applications({
       </div>
     </div>
   );
-} 
+}

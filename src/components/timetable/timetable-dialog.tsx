@@ -43,8 +43,10 @@ const timetableSchema = z.object({
   section_id: z.number({ required_error: "Section is required" }).min(1, "Section is required"),
   subject_id: z.number({ required_error: "Subject is required" }).min(1, "Subject is required"),
   teacher_id: z.number({ required_error: "Teacher is required" }).min(1, "Teacher is required"),
-  academic_year_id: z.number({ required_error: "Academic year is required" }).min(1, "Academic year is required"),
-  day_of_week: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"], {
+  academic_year_id: z
+    .number({ required_error: "Academic year is required" })
+    .min(1, "Academic year is required"),
+  day_of_week: z.enum(["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"], {
     required_error: "Day of week is required",
   }),
   period_number: z.number({ required_error: "Period number is required" }).min(1).max(10),
@@ -59,9 +61,12 @@ interface TimetableDialogProps {
   onSuccess: () => void;
   onSubmit: (data: CreateTimetableInput) => Promise<void>;
   editData?: Timetable | null;
+  selectedClassId?: number | null;
+  selectedSectionId?: number | null;
+  selectedAcademicYearId?: number | null;
   classes?: Array<{ id: number; name: string }>;
   sections?: Array<{ id: number; name: string; schoolClassId: number }>;
-  subjects?: Array<{ id: number; name: string }>;
+  subjects?: Array<{ id: number; subject_name: string }>;
   teachers?: Array<{ id: number; user?: { firstName: string; lastName: string } }>;
   academicYears?: Array<{ id: number; name: string; is_current: boolean }>;
   isSubmitting?: boolean;
@@ -73,6 +78,9 @@ export function TimetableDialog({
   onSuccess,
   onSubmit,
   editData,
+  selectedClassId: propClassId,
+  selectedSectionId: propSectionId,
+  selectedAcademicYearId: propAcademicYearId,
   classes = [],
   sections = [],
   subjects = [],
@@ -103,6 +111,9 @@ export function TimetableDialog({
           room_id: editData.room_id || undefined,
         }
       : {
+          class_id: propClassId || undefined,
+          section_id: propSectionId || undefined,
+          academic_year_id: propAcademicYearId || undefined,
           period_number: 1,
           start_time: "09:00",
           end_time: "10:00",
@@ -158,10 +169,12 @@ export function TimetableDialog({
           room_id: editData.room_id || undefined,
         });
       } else {
-        // Set default academic year to current one
-        const currentYear = academicYears.find((y) => y.is_current);
+        // Set default values from filter selection
+        const currentYear = propAcademicYearId || academicYears.find((y) => y.is_current)?.id;
         form.reset({
-          academic_year_id: currentYear?.id,
+          class_id: propClassId || undefined,
+          section_id: propSectionId || undefined,
+          academic_year_id: currentYear,
           period_number: 1,
           start_time: "09:00",
           end_time: "10:00",
@@ -169,7 +182,7 @@ export function TimetableDialog({
       }
       setConflictWarnings([]);
     }
-  }, [open, editData, academicYears, form]);
+  }, [open, editData, academicYears, form, propClassId, propSectionId, propAcademicYearId]);
 
   // Filter sections based on selected class
   const selectedClassId = form.watch("class_id");
@@ -183,21 +196,27 @@ export function TimetableDialog({
         value.section_id &&
         value.subject_id &&
         value.teacher_id &&
+        value.academic_year_id &&
         value.day_of_week &&
         value.period_number &&
         value.start_time &&
         value.end_time
       ) {
         try {
-          const conflicts = await checkConflicts({
+          const response = await checkConflicts({
             class_id: value.class_id,
             section_id: value.section_id,
+            subject_id: value.subject_id,
             teacher_id: value.teacher_id,
+            academic_year_id: value.academic_year_id,
             day_of_week: value.day_of_week,
             period_number: value.period_number,
-            timetable_id: editData?.id,
+            start_time: value.start_time,
+            end_time: value.end_time,
+            room_id: value.room_id,
+            exclude_id: editData?.id,
           });
-          setConflictWarnings(conflicts || []);
+          setConflictWarnings(response?.data?.conflicts || []);
         } catch (error) {
           console.error("Error checking conflicts:", error);
         }
@@ -253,7 +272,7 @@ export function TimetableDialog({
                       <SelectContent>
                         {subjects.map((subject) => (
                           <SelectItem key={subject.id} value={subject.id.toString()}>
-                            {subject.name}
+                            {subject.subject_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -263,97 +282,105 @@ export function TimetableDialog({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="academic_year_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Academic Year *</FormLabel>
-                    <Select
-                      value={field.value?.toString()}
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select academic year" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {academicYears.map((year) => (
-                          <SelectItem key={year.id} value={year.id.toString()}>
-                            {year.name} {year.is_current && "(Current)"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!propAcademicYearId && (
+                <FormField
+                  control={form.control}
+                  name="academic_year_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Academic Year *</FormLabel>
+                      <Select
+                        value={field.value?.toString()}
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select academic year" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {academicYears.map((year) => (
+                            <SelectItem key={year.id} value={year.id.toString()}>
+                              {year.name} {year.is_current && "(Current)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             {/* Class and Section */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="class_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Class *</FormLabel>
-                    <Select
-                      value={field.value?.toString()}
-                      onValueChange={(value) => {
-                        field.onChange(parseInt(value));
-                        form.setValue("section_id", 0 as any);
-                      }}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select class" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id.toString()}>
-                            {cls.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+            {(!propClassId || !propSectionId) && (
+              <div className="grid grid-cols-2 gap-4">
+                {!propClassId && (
+                  <FormField
+                    control={form.control}
+                    name="class_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Class *</FormLabel>
+                        <Select
+                          value={field.value?.toString()}
+                          onValueChange={(value) => {
+                            field.onChange(parseInt(value));
+                            form.setValue("section_id", 0 as any);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select class" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {classes.map((cls) => (
+                              <SelectItem key={cls.id} value={cls.id.toString()}>
+                                {cls.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
 
-              <FormField
-                control={form.control}
-                name="section_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Section *</FormLabel>
-                    <Select
-                      value={field.value?.toString()}
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      disabled={!selectedClassId || filteredSections.length === 0}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredSections.map((section) => (
-                          <SelectItem key={section.id} value={section.id.toString()}>
-                            {section.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                {!propSectionId && (
+                  <FormField
+                    control={form.control}
+                    name="section_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section *</FormLabel>
+                        <Select
+                          value={field.value?.toString()}
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          disabled={!selectedClassId || filteredSections.length === 0}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select section" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {filteredSections.map((section) => (
+                              <SelectItem key={section.id} value={section.id.toString()}>
+                                {section.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
-            </div>
+              </div>
+            )}
 
             {/* Teacher and Room */}
             <div className="grid grid-cols-2 gap-4">
@@ -369,7 +396,9 @@ export function TimetableDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={loadingTeachers ? "Loading..." : "Select teacher"} />
+                          <SelectValue
+                            placeholder={loadingTeachers ? "Loading..." : "Select teacher"}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -395,11 +424,15 @@ export function TimetableDialog({
                     <FormLabel>Room</FormLabel>
                     <Select
                       value={field.value?.toString() || "none"}
-                      onValueChange={(value) => field.onChange(value === "none" ? undefined : parseInt(value))}
+                      onValueChange={(value) =>
+                        field.onChange(value === "none" ? undefined : parseInt(value))
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={loadingRooms ? "Loading..." : "Select room (optional)"} />
+                          <SelectValue
+                            placeholder={loadingRooms ? "Loading..." : "Select room (optional)"}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

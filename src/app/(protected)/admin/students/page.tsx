@@ -39,14 +39,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  Plus, 
-  Search, 
-  Eye, 
-  Pencil, 
-  Trash2, 
-  Download, 
-  Upload, 
+import {
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  Download,
+  Upload,
   Filter,
   ChevronLeft,
   ChevronRight,
@@ -54,7 +54,7 @@ import {
   Users,
   UserCheck,
   UserX,
-  GraduationCap
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Student, StudentFilters } from "@/types/student";
@@ -87,8 +87,6 @@ export default function StudentsPage() {
 
   // Dialogs
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -138,7 +136,7 @@ export default function StudentsPage() {
         const headers = Object.keys(data[0] || {});
         const csv = [
           headers.join(","),
-          ...data.map(row => headers.map(header => `"${row[header] || ""}"`).join(","))
+          ...data.map((row) => headers.map((header) => `"${row[header] || ""}"`).join(",")),
         ].join("\n");
 
         // Download
@@ -195,10 +193,8 @@ export default function StudentsPage() {
   };
 
   const toggleStudentSelection = (studentId: number) => {
-    setSelectedStudents(prev =>
-      prev.includes(studentId)
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId]
+    setSelectedStudents((prev) =>
+      prev.includes(studentId) ? prev.filter((id) => id !== studentId) : [...prev, studentId]
     );
   };
 
@@ -206,7 +202,7 @@ export default function StudentsPage() {
     if (selectedStudents.length === students.length) {
       setSelectedStudents([]);
     } else {
-      setSelectedStudents(students.map(s => s.id));
+      setSelectedStudents(students.map((s) => s.id));
     }
   };
 
@@ -308,15 +304,15 @@ export default function StudentsPage() {
                 className="pl-9"
                 value={filters.search}
                 onChange={(e) => {
-                  setFilters(prev => ({ ...prev, search: e.target.value }));
+                  setFilters((prev) => ({ ...prev, search: e.target.value }));
                   setCurrentPage(1);
                 }}
               />
             </div>
-            <Select 
+            <Select
               value={filters.class_id?.toString() || "all"}
               onValueChange={(value) => {
-                setFilters(prev => ({ ...prev, class_id: value, section_id: "all" }));
+                setFilters((prev) => ({ ...prev, class_id: value, section_id: "all" }));
                 setCurrentPage(1);
               }}
             >
@@ -325,17 +321,19 @@ export default function StudentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                {classes.filter(cls => cls.id && cls.id.toString().trim() !== "").map(cls => (
-                  <SelectItem key={cls.id} value={cls.id.toString()}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
+                {classes
+                  .filter((cls) => cls.id && cls.id.toString().trim() !== "")
+                  .map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
-            <Select 
-              value={filters.section_id?.toString() || "all"} 
+            <Select
+              value={filters.section_id?.toString() || "all"}
               onValueChange={(value) => {
-                setFilters(prev => ({ ...prev, section_id: value }));
+                setFilters((prev) => ({ ...prev, section_id: value }));
                 setCurrentPage(1);
               }}
             >
@@ -344,17 +342,19 @@ export default function StudentsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sections</SelectItem>
-                {sections.filter(sec => sec.id && sec.id.toString().trim() !== "").map(sec => (
-                  <SelectItem key={sec.id} value={sec.id.toString()}>
-                    {sec.name}
-                  </SelectItem>
-                ))}
+                {sections
+                  .filter((sec) => sec.id && sec.id.toString().trim() !== "")
+                  .map((sec) => (
+                    <SelectItem key={sec.id} value={sec.id.toString()}>
+                      {sec.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
-            <Select 
-              value={filters.status?.toString() || "all"} 
+            <Select
+              value={filters.status?.toString() || "all"}
               onValueChange={(value) => {
-                setFilters(prev => ({ ...prev, status: value as any }));
+                setFilters((prev) => ({ ...prev, status: value as any }));
                 setCurrentPage(1);
               }}
             >
@@ -379,20 +379,26 @@ export default function StudentsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">
-                {selectedStudents.length} student(s) selected
-              </p>
+              <p className="text-sm font-medium">{selectedStudents.length} student(s) selected</p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => {
-                  setBulkAction("status");
-                  setBulkActionDialogOpen(true);
-                }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setBulkAction("status");
+                    setBulkActionDialogOpen(true);
+                  }}
+                >
                   Change Status
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => {
-                  setBulkAction("class");
-                  setBulkActionDialogOpen(true);
-                }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setBulkAction("class");
+                    setBulkActionDialogOpen(true);
+                  }}
+                >
                   Assign Class
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setSelectedStudents([])}>
@@ -415,83 +421,86 @@ export default function StudentsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
           ) : students.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No students found
-            </div>
+            <div className="text-center py-8 text-gray-500">No students found</div>
           ) : (
             <>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
+                      <TableHead style={{ width: "40px" }} className="whitespace-nowrap">
                         <Checkbox
-                          checked={selectedStudents.length === students.length}
+                          checked={
+                            selectedStudents.length === students.length && students.length > 0
+                          }
                           onCheckedChange={toggleAllStudents}
                         />
                       </TableHead>
-                      <TableHead>Admission No.</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Roll No.</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="whitespace-nowrap">Name</TableHead>
+                      <TableHead className="whitespace-nowrap">Admission No.</TableHead>
+                      <TableHead className="whitespace-nowrap">Class</TableHead>
+                      <TableHead className="whitespace-nowrap">Phone</TableHead>
+                      <TableHead className="whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {students.map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell>
+                        <TableCell style={{ width: "40px" }} className="whitespace-nowrap">
                           <Checkbox
                             checked={selectedStudents.includes(student.id)}
                             onCheckedChange={() => toggleStudentSelection(student.id)}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="whitespace-nowrap">
+                          <div>
+                            <p className="font-medium">
+                              {student.user
+                                ? `${student.user.firstName} ${student.user.lastName}`
+                                : "N/A"}
+                            </p>
+                            {student.section && (
+                              <p className="text-xs text-gray-500">{student.section.name}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap font-medium">
                           {student.admissionNumber || "-"}
                         </TableCell>
-                        <TableCell>
-                          {student.user ? `${student.user.firstName} ${student.user.lastName}` : "N/A"}
+                        <TableCell className="whitespace-nowrap">
+                          {student.school_class?.name || "-"}
                         </TableCell>
-                        <TableCell>{student.rollNumber || "-"}</TableCell>
-                        <TableCell>
-                          {student.schoolClass?.name}
-                          {student.section && ` - ${student.section.name}`}
+                        <TableCell className="whitespace-nowrap">
+                          {student.user?.phone || "-"}
                         </TableCell>
-                        <TableCell>{student.user?.email}</TableCell>
-                        <TableCell>{student.user?.phone || "-"}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusBadge(student.status)}>
-                            {student.status}
-                          </Badge>
+                        <TableCell className="whitespace-nowrap">
+                          <Badge className={getStatusBadge(student.status)}>{student.status}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right whitespace-nowrap">
                           <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => {
                                 setSelectedStudent(student);
-                                setIsDetailsDialogOpen(true);
+                                router.push(`/admin/students/${student.id}`);
                               }}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => {
-                                setSelectedStudent(student);
-                                setIsEditDialogOpen(true);
+                                router.push(`/admin/students/${student.id}/edit`);
                               }}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="text-red-600 hover:text-red-700"
                               onClick={() => {
                                 setSelectedStudent(student);
@@ -511,14 +520,14 @@ export default function StudentsPage() {
               {/* Pagination */}
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-gray-500">
-                  Showing {((currentPage - 1) * (filters.per_page || 15)) + 1} to{" "}
+                  Showing {(currentPage - 1) * (filters.per_page || 15) + 1} to{" "}
                   {Math.min(currentPage * (filters.per_page || 15), total)} of {total} results
                 </p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -527,7 +536,7 @@ export default function StudentsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                   >
                     Next
@@ -542,26 +551,21 @@ export default function StudentsPage() {
 
       {/* Create/Edit Dialog */}
       <StudentFormDialog
-        open={isCreateDialogOpen || isEditDialogOpen}
+        open={isCreateDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
             setIsCreateDialogOpen(false);
-            setIsEditDialogOpen(false);
             setSelectedStudent(null);
           }
         }}
-        student={isEditDialogOpen ? selectedStudent : undefined}
+        student={undefined}
         onSuccess={() => {
           // Data will auto-refetch via React Query
         }}
       />
 
       {/* Details Dialog */}
-      <StudentDetailsDialog
-        open={isDetailsDialogOpen}
-        onOpenChange={setIsDetailsDialogOpen}
-        student={selectedStudent}
-      />
+      {/* Removed - using dedicated page instead */}
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -585,9 +589,7 @@ export default function StudentsPage() {
       <Dialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {bulkAction === "status" ? "Change Status" : "Assign Class"}
-            </DialogTitle>
+            <DialogTitle>{bulkAction === "status" ? "Change Status" : "Assign Class"}</DialogTitle>
             <DialogDescription>
               This will affect {selectedStudents.length} selected student(s).
             </DialogDescription>

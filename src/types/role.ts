@@ -12,7 +12,6 @@ export interface Role {
   id: number;
   name: RoleEnum | string;
   status?: string;
-  institute_id?: number;
   permissions?: Permission[];
 }
 
@@ -36,7 +35,6 @@ export interface PermissionResponse {
 
 export interface CreateRoleInput {
   name: string;
-  institute_id?: number;
 }
 
 export interface UpdateRoleInput {
@@ -67,8 +65,6 @@ export const ROLE_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<RoleEnum, string> = {
-  [RoleEnum.SUPER_ADMIN]: "Full system access - manages institutes and billing",
-  [RoleEnum.INSTITUTE_ADMIN]: "Full institute access - manages all operations",
   [RoleEnum.TEACHER]: "Teaching staff - manages classes, attendance, marks",
   [RoleEnum.STUDENT]: "Student - view-only access to academic data",
   [RoleEnum.ACCOUNTANT]: "Finance staff - manages fees, invoices, payments",

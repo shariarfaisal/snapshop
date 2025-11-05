@@ -10,7 +10,6 @@ export type TargetRole = "student" | "parent" | "teacher" | "staff" | "all";
 // Message Template
 export interface MessageTemplate {
   id: number;
-  institute_id: number;
   name: string;
   slug: string;
   type: TemplateType;
@@ -46,7 +45,6 @@ export interface UpdateMessageTemplateInput {
 // Message
 export interface Message {
   id: number;
-  institute_id: number;
   template_id?: number;
   template?: MessageTemplate;
   type: MessageType;
@@ -88,7 +86,6 @@ export interface BulkMessageInput {
 // Notice
 export interface Notice {
   id: number;
-  institute_id: number;
   title: string;
   content: string;
   target_roles?: TargetRole[];

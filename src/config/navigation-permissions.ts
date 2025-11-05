@@ -181,10 +181,8 @@ export const NAVIGATION_PERMISSIONS: NavigationPermission[] = [
     description: "Manage system settings",
   },
   {
-    path: "/settings/institute",
     permissions: "readAll-user",
     label: "Institute Settings",
-    description: "Manage institute information",
   },
   {
     path: "/settings/organization",
@@ -202,7 +200,6 @@ export const NAVIGATION_PERMISSIONS: NavigationPermission[] = [
     path: "/settings/branding",
     permissions: "readAll-user",
     label: "Branding",
-    description: "Manage institute branding",
   },
   {
     path: "/settings/system",

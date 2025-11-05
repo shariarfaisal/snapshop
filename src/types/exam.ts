@@ -3,7 +3,6 @@ export type ExamTerm = "first" | "second" | "third" | "final" | "other";
 
 export interface Exam {
   id: number;
-  institute_id: number;
   academic_year_id: number;
   name: string;
   code?: string;
@@ -57,7 +56,6 @@ export interface SchoolClass {
 
 export interface Mark {
   id: number;
-  institute_id: number;
   exam_id: number;
   student_id: number;
   subject_id: number;
@@ -90,7 +88,6 @@ export interface Student {
 
 export interface GradeScale {
   id: number;
-  institute_id: number;
   name: string;
   grade: string;
   min_percentage: number;
@@ -122,6 +119,29 @@ export interface CreateExamSubjectInput {
   exam_date?: string;
   exam_time?: string;
   duration?: number;
+}
+
+export interface ScheduleClassForExamSubject {
+  subject_id: number;
+  max_marks?: number;
+  pass_marks?: number;
+  exam_date?: string;
+  exam_time?: string;
+  duration?: number;
+}
+
+export interface ScheduleClassForExam {
+  class_id: number;
+  subjects: ScheduleClassForExamSubject[];
+}
+
+export interface ScheduleClassesInput {
+  max_marks: number;
+  pass_marks: number;
+  duration: number;
+  exam_date?: string;
+  exam_time?: string;
+  classes: ScheduleClassForExam[];
 }
 
 export interface CreateMarkInput {
@@ -160,7 +180,6 @@ export type ExamRoomStatus = "active" | "inactive" | "maintenance";
 
 export interface ExamRoom {
   id: number;
-  institute_id: number;
   name: string;
   code?: string;
   capacity: number;
@@ -191,7 +210,6 @@ export type ParticipantStatus = "registered" | "absent" | "disqualified" | "expe
 
 export interface ExamParticipant {
   id: number;
-  institute_id: number;
   exam_id: number;
   student_id: number;
   class_id: number;
@@ -335,7 +353,6 @@ export type ResultType = "pass" | "fail" | "promoted" | "detained";
 
 export interface ExamRanking {
   id: number;
-  institute_id: number;
   exam_id: number;
   student_id: number;
   class_id?: number;

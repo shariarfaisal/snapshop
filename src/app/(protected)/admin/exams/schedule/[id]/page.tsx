@@ -25,8 +25,9 @@ import {
 } from "@/components/ui/select";
 import { useExam, useExamSchedule, useAddExamSubject, useRemoveExamSubject } from "@/hooks/use-exams";
 import { useSchoolClasses } from "@/hooks/use-school-classes";
-import { useSubjects } from "@/hooks/use-subjects";
+import { useClassSubjects } from "@/hooks/use-class-subjects";
 import { toast } from "sonner";
+import { ExamScheduleAutomationDialog } from "@/components/exams/exam-schedule-automation-dialog";
 
 export default function ExamSchedulePage() {
   const params = useParams();
@@ -48,7 +49,7 @@ export default function ExamSchedulePage() {
   const { data: examData, isLoading: examLoading } = useExam(examId);
   const { data: scheduleData, isLoading: scheduleLoading } = useExamSchedule(examId);
   const { data: classesData } = useSchoolClasses({ per_page: "all" });
-  const { subjects: subjectsData } = useSubjects({ per_page: "all" });
+  const { subjects: classSubjects } = useClassSubjects(formData.class_id || null);
   const addSubjectMutation = useAddExamSubject();
   const removeSubjectMutation = useRemoveExamSubject();
 
@@ -56,7 +57,7 @@ export default function ExamSchedulePage() {
   const exam = examData?.data || examData;
   const schedule = Array.isArray(scheduleData) ? scheduleData : [];
   const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
-  const subjects = Array.isArray(subjectsData) ? subjectsData : [];
+  const subjects = classSubjects || [];
   const loading = examLoading || scheduleLoading;
 
   const handleAddSubject = (e: React.FormEvent) => {
@@ -131,10 +132,18 @@ export default function ExamSchedulePage() {
             {formatDate(exam.start_date)} - {formatDate(exam.end_date)}
           </p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Subject
-        </Button>
+        <div className="flex gap-2">
+          <ExamScheduleAutomationDialog
+            examId={examId}
+            defaultMaxMarks={100}
+            defaultPassMarks={40}
+            defaultDuration={180}
+          />
+          <Button onClick={() => setShowAddForm(!showAddForm)} variant="outline">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Subject
+          </Button>
+        </div>
       </div>
 
       {showAddForm && (
@@ -169,14 +178,21 @@ export default function ExamSchedulePage() {
                   <Select
                     value={formData.subject_id.toString()}
                     onValueChange={(v) => setFormData({ ...formData, subject_id: parseInt(v) })}
+                    disabled={!formData.class_id || subjects.length === 0}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select subject" />
+                      <SelectValue placeholder={
+                        !formData.class_id
+                          ? "Select a class first"
+                          : subjects.length === 0
+                          ? "No subjects in this class"
+                          : "Select subject"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.id.toString()}>
-                          {subject.name}
+                        <SelectItem key={subject.subject_id} value={subject.subject_id.toString()}>
+                          {subject.subject_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -263,7 +279,7 @@ export default function ExamSchedulePage() {
         <CardContent>
           {schedule.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No subjects added yet. Click "Add Subject" to get started.
+              No subjects added yet. Use "Automation Setup" or click "Add Subject" to get started.
             </div>
           ) : (
             <Table>

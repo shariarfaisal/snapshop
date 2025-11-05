@@ -74,8 +74,6 @@ const navigation: NavigationItem[] = [
         permissions: "readAll-academicYear",
       },
       { name: "Classes", href: "/admin/academic/classes", permissions: "readAll-schoolClass" },
-      { name: "Sections", href: "/admin/academic/sections", permissions: "readAll-section" },
-      { name: "Subjects", href: "/admin/academic/subjects", permissions: "readAll-subject" },
       { name: "Timetable", href: "/admin/academic/timetable", permissions: "readAll-timetable" },
       { name: "Rooms", href: "/admin/academic/rooms", permissions: "readAll-room" },
     ],
@@ -119,14 +117,11 @@ const navigation: NavigationItem[] = [
     requiredRole: "admin",
     children: [
       { name: "Exams", href: "/admin/exams", permissions: "readAll-exam" },
-      { name: "Exam Rooms", href: "/admin/exams/rooms", permissions: "readAll-examRoom" },
       {
         name: "Participants",
         href: "/admin/exams/participants",
         permissions: "readAll-examParticipant",
       },
-      { name: "Seat Plan", href: "/admin/exams/seat-plan", permissions: "readAll-seatPlan" },
-      { name: "Admit Cards", href: "/admin/exams/admit-cards", permissions: "readAll-admitCard" },
       { name: "Merit List", href: "/admin/exams/merit-list", permissions: "readAll-meritList" },
       { name: "Exam Routine", href: "/admin/exams/schedule", permissions: "readAll-examSchedule" },
       {
@@ -253,7 +248,6 @@ const navigation: NavigationItem[] = [
     icon: Settings,
     section: "common",
     children: [
-      { name: "Institute", href: "/admin/settings/institute", permissions: "update-institute" },
       {
         name: "Organization",
         href: "/admin/settings/organization",

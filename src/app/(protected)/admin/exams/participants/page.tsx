@@ -5,9 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -20,7 +40,7 @@ import {
   Trash2,
   Edit,
   UserCheck,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { ExamParticipant, ParticipantStatus } from "@/types/exam";
 import { useToast } from "@/hooks/use-toast";
@@ -42,16 +62,21 @@ export default function ExamParticipantsPage() {
 
   // Hooks
   const { data: examsData, isLoading: loadingExams } = useExams();
-  const { data: classesData, isLoading: loadingClasses } = useSchoolClasses({ status: true, perPage: 100 });
-  const { data: participants = [], isLoading: loadingParticipants } = useExamParticipantsByExam(selectedExamId);
+  const { data: classesData, isLoading: loadingClasses } = useSchoolClasses({
+    status: true,
+    perPage: 100,
+  });
+  const { data: participants = [], isLoading: loadingParticipants } =
+    useExamParticipantsByExam(selectedExamId);
   const { data: stats } = useExamParticipantStats(selectedExamId);
   const registerClassMutation = useRegisterClass();
   const deleteParticipantMutation = useDeleteExamParticipant();
   const updateParticipantMutation = useUpdateExamParticipant();
 
   // Derived data
-  const exams = Array.isArray(examsData) ? examsData : (examsData?.data || []);
-  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
+  const exams = Array.isArray(examsData) ? examsData : examsData?.data || [];
+  const classes = Array.isArray(classesData) ? classesData : classesData?.data || [];
+  console.log({ classes });
 
   // Set first exam as default when exams load
   if (exams.length > 0 && selectedExamId === null) {
@@ -76,7 +101,9 @@ export default function ExamParticipantsPage() {
         onSuccess: (result) => {
           toast({
             title: "Success",
-            description: `${Array.isArray(result) ? result.length : 0} students registered successfully`,
+            description: `${
+              Array.isArray(result) ? result.length : 0
+            } students registered successfully`,
           });
           setIsRegisterClassDialogOpen(false);
           setSelectedClassId("");
@@ -268,15 +295,13 @@ export default function ExamParticipantsPage() {
                   <TableBody>
                     {participants.map((participant) => (
                       <TableRow key={participant.id}>
-                        <TableCell className="font-medium">
-                          {participant.roll_number}
-                        </TableCell>
+                        <TableCell className="font-medium">{participant.roll_number}</TableCell>
                         <TableCell>
-                          {participant.student?.user?.name || "N/A"}
+                          {participant.student?.user?.firstName +
+                            " " +
+                            participant.student?.user?.lastName || "N/A"}
                         </TableCell>
-                        <TableCell>
-                          {participant.school_class?.name || "N/A"}
-                        </TableCell>
+                        <TableCell>{participant.school_class?.name || "N/A"}</TableCell>
                         <TableCell>
                           <Select
                             value={participant.status}
@@ -382,7 +407,9 @@ export default function ExamParticipantsPage() {
             </Button>
             <Button onClick={handleRegisterClass} disabled={registerClassMutation.isPending}>
               {registerClassMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {registerClassMutation.isPending ? "Registering..." : (
+              {registerClassMutation.isPending ? (
+                "Registering..."
+              ) : (
                 <>
                   <UserCheck className="mr-2 h-4 w-4" />
                   Register Class

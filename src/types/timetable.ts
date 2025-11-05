@@ -1,8 +1,7 @@
-export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+export type DayOfWeek = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export interface Timetable {
   id: number;
-  institute_id: number;
   academic_year_id: number;
   class_id: number;
   section_id: number;
@@ -163,15 +162,17 @@ export interface BulkCreateResponse {
 
 // Helper constants
 export const DAYS_OF_WEEK: DayOfWeek[] = [
+  'saturday',
+  'sunday',
   'monday',
   'tuesday',
   'wednesday',
   'thursday',
-  'friday',
-  'saturday'
+  'friday'
 ];
 
 export const DAY_LABELS: Record<DayOfWeek, string> = {
+  sunday: 'Sunday',
   monday: 'Monday',
   tuesday: 'Tuesday',
   wednesday: 'Wednesday',

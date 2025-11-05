@@ -124,7 +124,6 @@ export const sidebarConstant: ISidebarConstant = {
       items: [
         {
           title: "Institute",
-          url: "/settings/institute",
         },
         {
           title: "Organization",

@@ -4,7 +4,7 @@ export interface Teacher {
   id: number;
   userId: number;      // UNIQUE - single user per teacher
   user?: User;         // User data (firstName, lastName, email, phone, etc.)
-  employeeId: string;
+  employeeId?: string;
   departmentId?: number;
   designationId?: number;
   qualification?: string;
@@ -13,9 +13,8 @@ export interface Teacher {
   salary?: number;
   address?: string;
   profileImage?: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string;
   
   // Relations
@@ -39,7 +38,7 @@ export interface Designation {
   id: number;
   name: string;
   description?: string;
-  departmentId: number;
+  departmentId?: number;
   status: string;
   created_at: string;
   updated_at: string;
@@ -64,44 +63,50 @@ export interface CourseSection {
   courseId: number;
   sectionId: number;
   teacherId: number;
+  course?: any;
+  section?: any;
 }
 
 export interface TeacherFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  username?: string;
-  password?: string;
-  phone?: string;
-  address?: string;
+  user_id?: number;
   employeeId?: string;
-  departmentId?: number;
-  designationId?: number;
   qualification?: string;
   experience?: number;
-  joiningDate?: string;
+  joining_date?: string;
   salary?: number;
-  status?: string;
-  subjectIds?: number[];
+  designation_id?: number;
+  department_id?: number;
+  address?: string;
+  subject_ids?: number[];
 }
 
 export interface TeacherFilters {
   search?: string;
-  departmentId?: number;
-  designationId?: number;
+  department_id?: number;
+  designation_id?: number;
   status?: string;
-  perPage?: number;
+  per_page?: number;
   page?: number;
 }
 
 export interface TeacherListResponse {
-  success: boolean;
+  success?: boolean;
   data: Teacher[];
-  pagination: {
+  current_page?: number;
+  last_page?: number;
+  total?: number;
+  per_page?: number;
+  pagination?: {
     total: number;
     page: number;
     limit: number;
     pages: number;
+  };
+  paginationInfo?: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
   };
 }
 

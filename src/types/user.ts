@@ -1,6 +1,5 @@
 export type UserRole = 
   | "super_admin"
-  | "institute_admin"
   | "teacher"
   | "student"
   | "accountant"
@@ -27,11 +26,9 @@ export type User = {
     name: UserRole;
   };
   teacher?: Teacher;  // If user is teacher
-  institute?: {
     id: number;
     name: string;
   };
-  institute_id?: number;
   department?: {
     id: number;
     name: string;
@@ -56,7 +53,6 @@ export type CreateUserInput = {
   firstName?: string;
   lastName?: string;
   roleId: number;
-  institute_id?: number;
   status?: UserStatus;
   phone?: string;
   street?: string;
@@ -79,7 +75,6 @@ export type BulkUserImport = {
   firstName?: string;
   lastName?: string;
   roleId: number;
-  institute_id?: number;
   phone?: string;
   password?: string;
 };

@@ -64,10 +64,10 @@ export function InvoicesList() {
       return [
         {
           id: "1",
-          name: "xyz"
-        }
-      ]
-    }
+          name: "xyz",
+        },
+      ];
+    },
   });
 
   const handleView = (id: string) => {
@@ -90,23 +90,19 @@ export function InvoicesList() {
         <Input
           placeholder="Search by student name"
           value={filters.student}
-          onChange={(e) =>
-            setFilters({ ...filters, student: e.target.value })
-          }
+          onChange={(e) => setFilters({ ...filters, student: e.target.value })}
           className="max-w-xs"
         />
 
         <Select
           value={filters.status}
-          onValueChange={(value) =>
-            setFilters({ ...filters, status: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, status: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             <SelectItem value="Unpaid">Unpaid</SelectItem>
             <SelectItem value="Paid">Paid</SelectItem>
             <SelectItem value="Overdue">Overdue</SelectItem>
@@ -115,15 +111,13 @@ export function InvoicesList() {
 
         <Select
           value={filters.campusId}
-          onValueChange={(value) =>
-            setFilters({ ...filters, campusId: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, campusId: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Campus" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             {campuses?.data?.map((campus) => (
               <SelectItem key={campus.id} value={String(campus.id)}>
                 {campus.name}
@@ -134,15 +128,13 @@ export function InvoicesList() {
 
         <Select
           value={filters.programId}
-          onValueChange={(value) =>
-            setFilters({ ...filters, programId: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, programId: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Program" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             {programs?.map((program) => (
               <SelectItem key={program.id} value={String(program.id)}>
                 {program.title}
@@ -153,15 +145,13 @@ export function InvoicesList() {
 
         <Select
           value={filters.termId}
-          onValueChange={(value) =>
-            setFilters({ ...filters, termId: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, termId: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Term" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             {terms?.map((term) => (
               <SelectItem key={term.id} value={term.id}>
                 {term.name}
@@ -187,13 +177,9 @@ export function InvoicesList() {
           <TableBody>
             {invoices?.map((invoice) => (
               <TableRow key={invoice.id}>
-                <TableCell className="font-medium">
-                  {invoice.studentName}
-                </TableCell>
+                <TableCell className="font-medium">{invoice.studentName}</TableCell>
                 <TableCell>{invoice.id}</TableCell>
-                <TableCell>
-                  {new Date(invoice.dueDate).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
                 <TableCell>
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
@@ -227,15 +213,11 @@ export function InvoicesList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => handleView(invoice.id)}
-                      >
+                      <DropdownMenuItem onClick={() => handleView(invoice.id)}>
                         View
                       </DropdownMenuItem>
                       {invoice.status !== "Paid" && (
-                        <DropdownMenuItem
-                          onClick={() => handleRecordPayment(invoice.id)}
-                        >
+                        <DropdownMenuItem onClick={() => handleRecordPayment(invoice.id)}>
                           Record Payment
                         </DropdownMenuItem>
                       )}
@@ -261,4 +243,4 @@ export function InvoicesList() {
       />
     </div>
   );
-} 
+}

@@ -1,7 +1,9 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DateInput } from "@/components/ui/date-input";
 
 interface DateRangeFilterProps {
   fromDate: string;
@@ -41,24 +43,22 @@ export function DateRangeFilter({
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <Label htmlFor="from_date">From Date</Label>
-            <Input
-              id="from_date"
-              type="date"
+            <Label>From Date</Label>
+            <DateInput
               value={fromDate}
-              onChange={(e) => onFromDateChange(e.target.value)}
+              onChange={onFromDateChange}
               disabled={loading}
+              placeholder="From date"
             />
           </div>
 
           <div>
-            <Label htmlFor="to_date">To Date</Label>
-            <Input
-              id="to_date"
-              type="date"
+            <Label>To Date</Label>
+            <DateInput
               value={toDate}
-              onChange={(e) => onToDateChange(e.target.value)}
+              onChange={onToDateChange}
               disabled={loading}
+              placeholder="To date"
             />
           </div>
 

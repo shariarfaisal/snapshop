@@ -1,7 +1,6 @@
 // Fee Head types
 export interface FeeHead {
   id: number;
-  institute_id: number;
   name: string;
   code?: string;
   description?: string;
@@ -40,7 +39,6 @@ export interface FeeStructureItem {
 
 export interface FeeStructure {
   id: number;
-  institute_id: number;
   name: string;
   academic_year_id: number;
   academic_year?: any;
@@ -78,7 +76,6 @@ export type InvoiceStatus = "pending" | "partially_paid" | "paid" | "overdue" | 
 
 export interface Invoice {
   id: number;
-  institute_id: number;
   invoice_number: string;
   student_id: number;
   student?: any;
@@ -154,7 +151,6 @@ export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
 
 export interface Payment {
   id: number;
-  institute_id: number;
   payment_number: string;
   invoice_id: number;
   invoice?: Invoice;

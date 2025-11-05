@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useSchoolClasses } from "@/hooks/use-school-classes";
 import { useSections } from "@/hooks/use-sections";
-import { useSubjects } from "@/hooks/use-subjects";
+import { useClassSubjects } from "@/hooks/use-class-subjects";
 import { useAcademicYears } from "@/hooks/use-academic-years";
 
 export default function TimetablePage() {
@@ -30,18 +30,23 @@ export default function TimetablePage() {
   const [editingTimetable, setEditingTimetable] = useState<Timetable | null>(null);
 
   // Hooks for dropdown data
-  const { data: classesData, isLoading: isLoadingClasses } = useSchoolClasses({ per_page: 'all' });
-  const { data: sectionsData, isLoading: isLoadingSections } = useSections({ per_page: 'all' });
-  const { subjects, isLoading: isLoadingSubjects } = useSubjects({ per_page: 'all' });
+  const { data: classesData, isLoading: isLoadingClasses } = useSchoolClasses({ per_page: "all" });
+  const { data: sectionsData, isLoading: isLoadingSections } = useSections({ per_page: "all" });
+  const { subjects: classSubjects, isLoading: isLoadingSubjects } =
+    useClassSubjects(selectedClassId);
   const { data: academicYearsData, isLoading: isLoadingYears } = useAcademicYears();
 
   // Handle API response formats
-  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
-  const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
-  const academicYears = Array.isArray(academicYearsData) ? academicYearsData : (academicYearsData?.data || []);
+  const classes = Array.isArray(classesData) ? classesData : classesData?.data || [];
+  const sections = Array.isArray(sectionsData) ? sectionsData : sectionsData?.data || [];
+  const subjects = classSubjects || [];
+  const academicYears = Array.isArray(academicYearsData)
+    ? academicYearsData
+    : academicYearsData?.data || [];
   const teachers: any[] = []; // TODO: Load teachers from API
 
-  const isLoadingData = isLoadingClasses || isLoadingSections || isLoadingSubjects || isLoadingYears;
+  const isLoadingData =
+    isLoadingClasses || isLoadingSections || isLoadingSubjects || isLoadingYears;
 
   // Fetch timetable data
   const {
@@ -70,9 +75,7 @@ export default function TimetablePage() {
   }, [academicYears, selectedAcademicYearId]);
 
   // Filter sections based on selected class
-  const filteredSections = sections.filter(
-    (s) => s.schoolClassId === selectedClassId
-  );
+  const filteredSections = sections.filter((s) => s.schoolClassId === selectedClassId);
 
   const handleCreate = () => {
     setEditingTimetable(null);
@@ -145,9 +148,9 @@ export default function TimetablePage() {
       allSlots.push(...daySlots);
     });
 
-    const periods = Array.from(
-      new Set(allSlots.map((slot) => slot.period_number))
-    ).sort((a, b) => a - b);
+    const periods = Array.from(new Set(allSlots.map((slot) => slot.period_number))).sort(
+      (a, b) => a - b
+    );
 
     return (
       <Card>
@@ -173,9 +176,7 @@ export default function TimetablePage() {
                 {periods.map((periodNum) => {
                   // Find any slot with this period to get time info
                   const sampleSlot = allSlots.find((s) => s.period_number === periodNum);
-                  const timeLabel = sampleSlot
-                    ? `${sampleSlot.start_time} - ${sampleSlot.end_time}`
-                    : `Period ${periodNum}`;
+                  const timeLabel = sampleSlot ? "" : `Period ${periodNum}`;
 
                   return (
                     <tr key={periodNum}>
@@ -186,7 +187,6 @@ export default function TimetablePage() {
                       {DAYS_OF_WEEK.map((day) => {
                         const daySlots = timetable[day] || [];
                         const slot = daySlots.find((s: any) => s.period_number === periodNum);
-
                         return (
                           <td
                             key={day}
@@ -203,11 +203,14 @@ export default function TimetablePage() {
                                     ? `${slot.teacher.user.firstName} ${slot.teacher.user.lastName}`
                                     : "Teacher"}
                                 </div>
-                                {slot.room_number && (
+                                {slot.room && (
                                   <div className="text-xs mt-1 text-blue-600">
-                                    Room: {slot.room_number}
+                                    Room: {slot.room.room_name}
                                   </div>
                                 )}
+                                <div className="text-xs mt-1 text-blue-600">
+                                  {slot.start_time} - {slot.end_time}
+                                </div>
                               </div>
                             ) : (
                               <div className="p-2 text-center text-gray-400 text-sm">-</div>
@@ -242,16 +245,14 @@ export default function TimetablePage() {
           <p className="text-gray-500 mt-1">Manage class schedules and periods</p>
         </div>
         <div className="flex gap-2">
-        <Link href="/admin/academic/rooms">
-          <Button variant="outline">
-            Manage Rooms
+          <Link href="/admin/academic/rooms">
+            <Button variant="outline">Manage Rooms</Button>
+          </Link>
+          <Button onClick={handleCreate} disabled={!selectedClassId || !selectedSectionId}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Period
           </Button>
-        </Link>
-        <Button onClick={handleCreate} disabled={!selectedClassId || !selectedSectionId}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Period
-        </Button>
-      </div>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -397,6 +398,9 @@ export default function TimetablePage() {
         onSuccess={handleSuccess}
         onSubmit={handleSubmit}
         editData={editingTimetable}
+        selectedClassId={selectedClassId}
+        selectedSectionId={selectedSectionId}
+        selectedAcademicYearId={selectedAcademicYearId}
         classes={classes}
         sections={sections}
         subjects={subjects}

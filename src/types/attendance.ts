@@ -2,7 +2,6 @@ export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'sic
 
 export interface AttendanceRecord {
   id: number;
-  institute_id: number;
   student_id: number;
   class_id: number;
   section_id?: number;

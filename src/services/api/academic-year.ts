@@ -2,7 +2,6 @@ import { api } from "@/lib/api-client";
 
 export interface AcademicYear {
   id: string;
-  institute_id: string;
   name: string;
   start_date: string;
   end_date: string;

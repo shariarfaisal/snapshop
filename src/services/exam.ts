@@ -30,7 +30,8 @@ import {
   GenerateRankingsInput,
   MeritListFilters,
   ExamInvigilator,
-  CreateInvigilatorInput
+  CreateInvigilatorInput,
+  ScheduleClassesInput
 } from "@/types/exam";
 
 export const examService = {
@@ -74,6 +75,10 @@ export const examService = {
 
   getSchedule: async (examId: number): Promise<ExamSubject[]> => {
     return api.get<ExamSubject[]>(`/exams/${examId}/schedule`);
+  },
+
+  scheduleClasses: async (examId: number, data: ScheduleClassesInput): Promise<ExamSubject[]> => {
+    return api.post<ExamSubject[]>(`/exams/${examId}/schedule-classes`, data);
   },
 
   publishResults: async (examId: number): Promise<Exam> => {

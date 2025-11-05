@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { DateInput } from "@/components/ui/date-input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Pencil, Trash2, Loader2, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { AcademicYear, CreateAcademicYearRequest } from "@/services/api/academic-year";
@@ -322,22 +323,18 @@ export default function AcademicYearsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="startDate">Start Date *</Label>
-                  <Input 
-                    id="startDate" 
-                    type="date"
+                  <DateInput 
                     value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    required
+                    onChange={(date) => setFormData({ ...formData, start_date: date })}
+                    placeholder="Start date"
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="endDate">End Date *</Label>
-                  <Input 
-                    id="endDate" 
-                    type="date"
+                  <DateInput 
                     value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    required
+                    onChange={(date) => setFormData({ ...formData, end_date: date })}
+                    placeholder="End date"
                   />
                 </div>
               </div>

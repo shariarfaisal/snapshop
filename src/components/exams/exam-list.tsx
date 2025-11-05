@@ -92,9 +92,7 @@ export function ExamList() {
       <div className="text-center py-10">
         <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">No exams</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Get started by creating a new exam.
-        </p>
+        <p className="mt-1 text-sm text-gray-500">Get started by creating a new exam.</p>
         <div className="mt-6">
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -117,7 +115,7 @@ export function ExamList() {
               <SelectValue placeholder="Filter by Program" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Programs</SelectItem>
+              <SelectItem value="all">All Programs</SelectItem>
               {/* Add program options here */}
             </SelectContent>
           </Select>
@@ -130,7 +128,7 @@ export function ExamList() {
               <SelectValue placeholder="Filter by Subject" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Subjects</SelectItem>
+              <SelectItem value="all">All Subjects</SelectItem>
               {/* Add subject options here */}
             </SelectContent>
           </Select>
@@ -143,7 +141,7 @@ export function ExamList() {
               <SelectValue placeholder="Filter by Term" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Terms</SelectItem>
+              <SelectItem value="all">All Terms</SelectItem>
               {/* Add term options here */}
             </SelectContent>
           </Select>
@@ -177,15 +175,11 @@ export function ExamList() {
                 <TableCell>{exam.subjectName}</TableCell>
                 <TableCell>{exam.programName}</TableCell>
                 <TableCell>{exam.termName}</TableCell>
-                <TableCell>
-                  {format(new Date(exam.examDate), "PPP")}
-                </TableCell>
+                <TableCell>{format(new Date(exam.examDate), "PPP")}</TableCell>
                 <TableCell>{exam.maxMarks}</TableCell>
                 <TableCell>{exam.weight}%</TableCell>
                 <TableCell>
-                  <Badge className={statusColors[exam.status]}>
-                    {exam.status}
-                  </Badge>
+                  <Badge className={statusColors[exam.status]}>{exam.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
@@ -209,11 +203,7 @@ export function ExamList() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(exam)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(exam)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -243,4 +233,4 @@ export function ExamList() {
       )}
     </div>
   );
-} 
+}

@@ -2,7 +2,7 @@ import { User } from "./user";
 
 export type StudentStatus = "active" | "inactive" | "graduated" | "suspended" | "withdrawn";
 
-export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "all";
 
 export interface Student {
   id: number;
@@ -154,4 +154,4 @@ export interface CreateStudentGuardianInput {
   isPrimary: boolean;
 }
 
-export type UpdateStudentGuardianInput = Partial<CreateStudentGuardianInput>; 
+export type UpdateStudentGuardianInput = Partial<CreateStudentGuardianInput>;

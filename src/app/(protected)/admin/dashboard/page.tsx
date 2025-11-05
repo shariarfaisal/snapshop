@@ -16,7 +16,7 @@ import {
 import { useAdminDashboard } from "@/hooks/use-dashboard";
 
 export default function AdminDashboard() {
-  const { getDisplayName, getInstituteName } = useAuthStore();
+  const { getDisplayName } = useAuthStore();
 
   // Hooks
   const { data: dashboardData, isLoading: loading, error: queryError } = useAdminDashboard();
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-600 mt-1">
-          Welcome back, {getDisplayName()}! Here's what's happening in {getInstituteName()}.
+          Welcome back, {getDisplayName()}! Here's what's happening today.
         </p>
       </div>
 
@@ -263,11 +263,11 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-500 mt-2">Today</p>
             </div>
             <div className="p-5 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Institute</p>
+              <p className="text-sm text-gray-600 font-medium">Attendance Rate</p>
               <p className="text-3xl font-semibold text-gray-900 mt-2">
-                {getInstituteName().split(" ")[0]}
+                {attendanceStats.today_percentage}%
               </p>
-              <p className="text-xs text-gray-500 mt-2">Current institute</p>
+              <p className="text-xs text-gray-500 mt-2">Overall</p>
             </div>
           </div>
         </CardContent>

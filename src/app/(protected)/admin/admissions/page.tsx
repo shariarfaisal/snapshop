@@ -19,7 +19,6 @@ interface AdmissionApplication {
   email: string;
   phone: string;
   status: 'pending' | 'approved' | 'admitted' | 'rejected';
-  institute: { id: number; name: string };
   schoolClass: { id: number; name: string };
   created_at: string;
   remarks?: string;

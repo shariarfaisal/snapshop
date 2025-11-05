@@ -26,6 +26,14 @@ export const useStudent = (id: number | null) => {
   });
 };
 
+export const useStudentById = (id: number) => {
+  return useQuery({
+    queryKey: ["student", id],
+    queryFn: () => studentService.getById(id),
+    enabled: !!id,
+  });
+};
+
 export const useStudentByUserId = (userId: string | null) => {
   return useQuery({
     queryKey: ["student-by-user", userId],

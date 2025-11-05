@@ -3,12 +3,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronRight, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
 
-interface Institute {
-  id: number;
-  name: string;
-  city: string;
-}
-
 interface SchoolClass {
   id: number;
   name: string;
@@ -16,7 +10,6 @@ interface SchoolClass {
 }
 
 interface FormData {
-  institute_id: number;
   class_id: number;
   first_name: string;
   last_name: string;
@@ -42,7 +35,6 @@ const STORAGE_KEY = 'admission_form_draft';
 
 export default function AdmissionForm() {
   const [formData, setFormData] = useState<FormData>({
-    institute_id: 0,
     class_id: 0,
     first_name: '',
     last_name: '',
@@ -64,7 +56,6 @@ export default function AdmissionForm() {
     guardian_phone: '',
   });
 
-  const [institutes, setInstitutes] = useState<Institute[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
@@ -96,25 +87,17 @@ export default function AdmissionForm() {
     }
   }, [formData]);
 
-  // Load institutes
+  // Load available classes
   useEffect(() => {
-    fetch(`${API_URL}/public/admission/institutes`)
+    fetch(`${API_URL}/public/admission/classes`)
       .then(res => res.json())
-      .then(data => data.success && setInstitutes(data.data))
-      .catch(() => setError('Failed to load institutes'));
+      .then(data => {
+        if (data.success) {
+          setClasses(data.data);
+        }
+      })
+      .catch(() => setError('Failed to load classes'));
   }, [API_URL]);
-
-  // Load classes when institute changes
-  useEffect(() => {
-    if (formData.institute_id) {
-      fetch(`${API_URL}/public/admission/institutes/${formData.institute_id}/classes`)
-        .then(res => res.json())
-        .then(data => data.success && setClasses(data.data))
-        .catch(() => setError('Failed to load classes'));
-    } else {
-      setClasses([]);
-    }
-  }, [formData.institute_id, API_URL]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -126,7 +109,6 @@ export default function AdmissionForm() {
     localStorage.removeItem(STORAGE_KEY);
     setHasDraft(false);
     setFormData({
-      institute_id: 0,
       class_id: 0,
       first_name: '',
       last_name: '',
@@ -151,7 +133,6 @@ export default function AdmissionForm() {
   };
 
   const validateStep = (step: number): boolean => {
-    if (step === 1) return formData.institute_id > 0 && formData.class_id > 0;
     if (step === 2) return formData.first_name && formData.last_name && formData.email && formData.phone;
     if (step === 3) return formData.father_name && formData.father_phone && formData.mother_name && formData.mother_phone;
     return true;
@@ -264,7 +245,7 @@ export default function AdmissionForm() {
         <div className="mb-8 sm:mb-12">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-0">
             {[
-              { step: 1, label: 'Institution' },
+              { step: 1, label: 'Class Selection' },
               { step: 2, label: 'Student Info' },
               { step: 3, label: 'Parent Info' }
             ].map((item, idx) => (
@@ -303,29 +284,12 @@ export default function AdmissionForm() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-6 sm:p-8">
-            {/* Step 1: Institution & Class */}
+            {/* Step 1: Class Selection */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-1">Institution & Class</h2>
-                  <p className="text-gray-600">Select your preferred institution and class</p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Institution
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
-                  <select 
-                    name="institute_id" 
-                    value={formData.institute_id} 
-                    onChange={handleInputChange} 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white font-medium"
-                    required
-                  >
-                    <option value="0">Choose an institution...</option>
-                    {institutes.map(i => <option key={i.id} value={i.id}>{i.name} - {i.city}</option>)}
-                  </select>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-1">Class Selection</h2>
+                  <p className="text-gray-600">Select the class/program you want to apply for</p>
                 </div>
 
                 <div className="space-y-2">
@@ -333,17 +297,17 @@ export default function AdmissionForm() {
                     Class/Program
                     <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <select 
-                    name="class_id" 
-                    value={formData.class_id} 
-                    onChange={handleInputChange} 
-                    disabled={!formData.institute_id} 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white font-medium disabled:bg-gray-100 disabled:text-gray-500"
+                  <select
+                    name="class_id"
+                    value={formData.class_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white font-medium"
                     required
                   >
                     <option value="0">Choose a class...</option>
                     {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
+                  <p className="text-xs text-gray-500">Select the class you wish to apply for admission</p>
                 </div>
               </div>
             )}

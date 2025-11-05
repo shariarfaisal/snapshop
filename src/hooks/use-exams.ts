@@ -143,6 +143,19 @@ export const useExamSchedule = (examId: number | null) => {
   });
 };
 
+export const useScheduleClassesForExam = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ examId, data }: { examId: number; data: any }) =>
+      examService.scheduleClasses(examId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["exam-subjects", variables.examId] });
+      queryClient.invalidateQueries({ queryKey: ["exam-schedule", variables.examId] });
+    },
+  });
+};
+
 export const usePublishExamResults = () => {
   const queryClient = useQueryClient();
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Search, Loader2, BarChart3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Loader2, BarChart3, Eye } from "lucide-react";
 import {
   SchoolClass,
   CreateSchoolClassInput,
@@ -314,6 +315,15 @@ export default function ClassesPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Link href={`/admin/academic/classes/${classItem.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="View Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
                             <Button
                               variant="ghost"
                               size="icon"

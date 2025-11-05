@@ -42,7 +42,11 @@ export function NotificationsList() {
 
   const { toast } = useToast();
 
-  const { data: notifications, isLoading, refetch } = useQuery({
+  const {
+    data: notifications,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["notifications", filters],
     queryFn: () => notificationService.getAllNotifications(filters),
   });
@@ -96,23 +100,19 @@ export function NotificationsList() {
         <Input
           placeholder="Search notifications..."
           value={filters.search}
-          onChange={(e) =>
-            setFilters({ ...filters, search: e.target.value })
-          }
+          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
           className="max-w-xs"
         />
 
         <Select
           value={filters.role}
-          onValueChange={(value) =>
-            setFilters({ ...filters, role: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, role: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Target Role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Roles</SelectItem>
+            <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="Student">Students</SelectItem>
             <SelectItem value="Teacher">Teachers</SelectItem>
             <SelectItem value="Guardian">Guardians</SelectItem>
@@ -122,15 +122,13 @@ export function NotificationsList() {
 
         <Select
           value={filters.channel}
-          onValueChange={(value) =>
-            setFilters({ ...filters, channel: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, channel: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Channel" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Channels</SelectItem>
+            <SelectItem value="all">All Channels</SelectItem>
             <SelectItem value="Email">Email</SelectItem>
             <SelectItem value="SMS">SMS</SelectItem>
             <SelectItem value="WhatsApp">WhatsApp</SelectItem>
@@ -140,15 +138,13 @@ export function NotificationsList() {
 
         <Select
           value={filters.status}
-          onValueChange={(value) =>
-            setFilters({ ...filters, status: value })
-          }
+          onValueChange={(value) => setFilters({ ...filters, status: value })}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Queued">Queued</SelectItem>
             <SelectItem value="Sent">Sent</SelectItem>
             <SelectItem value="Failed">Failed</SelectItem>
@@ -195,9 +191,7 @@ export function NotificationsList() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {notification.sentAt
-                    ? new Date(notification.sentAt).toLocaleString()
-                    : "-"}
+                  {notification.sentAt ? new Date(notification.sentAt).toLocaleString() : "-"}
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -220,16 +214,12 @@ export function NotificationsList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => handleViewNotification(notification.id)}
-                      >
+                      <DropdownMenuItem onClick={() => handleViewNotification(notification.id)}>
                         <Eye className="mr-2 h-4 w-4" />
                         View
                       </DropdownMenuItem>
                       {notification.status === "Failed" && (
-                        <DropdownMenuItem
-                          onClick={() => handleResendNotification(notification.id)}
-                        >
+                        <DropdownMenuItem onClick={() => handleResendNotification(notification.id)}>
                           <RefreshCw className="mr-2 h-4 w-4" />
                           Resend
                         </DropdownMenuItem>
@@ -257,4 +247,4 @@ export function NotificationsList() {
       />
     </div>
   );
-} 
+}

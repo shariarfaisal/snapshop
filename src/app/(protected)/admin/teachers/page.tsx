@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,6 +13,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -20,485 +31,280 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Eye, Pencil, Trash2, Download, Upload, Loader2, X } from "lucide-react";
-import type { Teacher, TeacherFormData } from "@/types/teacher";
-import { useToast } from "@/hooks/use-toast";
-import { TeacherFormDialog } from "@/components/teachers/TeacherFormDialog";
-import { TeacherViewDialog } from "@/components/teachers/TeacherViewDialog";
-import { TeacherDeleteDialog } from "@/components/teachers/TeacherDeleteDialog";
-import {
-  useTeachers,
-  useCreateTeacher,
-  useUpdateTeacher,
-  useDeleteTeacher,
-  useDepartments,
-  useDesignations,
-  useExportTeachers,
-} from "@/hooks/use-teachers";
+import { Plus, Eye, Edit, Trash2, Loader2, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useTeachers, useDeleteTeacher } from "@/hooks/use-teacher";
+import { teacherService } from "@/services/teacher";
+import { useQuery } from "@tanstack/react-query";
 
 export default function TeachersPage() {
-  const { toast } = useToast();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage] = useState(15);
+  const router = useRouter();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [deleteTeacherId, setDeleteTeacherId] = useState<number | null>(null);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
-  const [designationFilter, setDesignationFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const { data: teachersData, isLoading } = useTeachers(
+    {
+      search,
+      department_id: departmentFilter ? parseInt(departmentFilter) : undefined,
+      per_page: 15,
+    },
+    page
+  );
 
-  // Dialogs
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showViewDialog, setShowViewDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-
-  // Form data
-  const [formData, setFormData] = useState<TeacherFormData>({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    address: "",
-    department_id: undefined,
-    designation_id: undefined,
-    qualification: "",
-    experience: undefined,
-    joining_date: "",
-    status: "active",
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: () => teacherService.getDepartments(),
   });
 
-  // Build filters object
-  const filters = {
-    search: searchQuery || undefined,
-    department_id: departmentFilter !== "all" ? parseInt(departmentFilter) : undefined,
-    designation_id: designationFilter !== "all" ? parseInt(designationFilter) : undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    per_page: perPage,
-    page: currentPage,
-  };
+  const deleteMutation = useDeleteTeacher();
 
-  // Hooks
-  const { data: teachersData, isLoading: loading } = useTeachers(filters);
-  const { data: departmentsData } = useDepartments({ status: "true", per_page: "all" });
-  const { data: designationsData } = useDesignations({ status: "true", per_page: "all" });
-  const createTeacherMutation = useCreateTeacher();
-  const updateTeacherMutation = useUpdateTeacher();
-  const deleteTeacherMutation = useDeleteTeacher();
-  const exportTeachersMutation = useExportTeachers();
+  const handleDeleteConfirm = async () => {
+    if (!deleteTeacherId) return;
 
-  // Derived data
-  const teachers = teachersData?.data || [];
-  const totalTeachers = teachersData?.total || 0;
-  const departments = departmentsData || [];
-  const designations = designationsData || [];
-
-  const handleAddTeacher = async () => {
-    createTeacherMutation.mutate(formData, {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Teacher added successfully",
-        });
-        setShowAddDialog(false);
-        resetForm();
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to add teacher",
-          variant: "destructive",
-        });
-      },
-    });
-  };
-
-  const handleEditTeacher = async () => {
-    if (!selectedTeacher) return;
-
-    updateTeacherMutation.mutate(
-      { id: selectedTeacher.id, data: formData },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Success",
-            description: "Teacher updated successfully",
-          });
-          setShowEditDialog(false);
-          resetForm();
-        },
-        onError: (error: any) => {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to update teacher",
-            variant: "destructive",
-          });
-        },
-      }
-    );
-  };
-
-  const handleDeleteTeacher = async () => {
-    if (!selectedTeacher) return;
-
-    deleteTeacherMutation.mutate(selectedTeacher.id, {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Teacher deleted successfully",
-        });
-        setShowDeleteDialog(false);
-        setSelectedTeacher(null);
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to delete teacher",
-          variant: "destructive",
-        });
-      },
-    });
-  };
-
-  const handleViewTeacher = async (teacher: Teacher) => {
-    setSelectedTeacher(teacher);
-    setShowViewDialog(true);
-  };
-
-  const handleEditClick = (teacher: Teacher) => {
-    setSelectedTeacher(teacher);
-    setFormData({
-      first_name: teacher.firstName,
-      last_name: teacher.lastName,
-      email: teacher.email,
-      phone: teacher.phone || "",
-      address: teacher.address || "",
-      department_id: teacher.departmentId,
-      designation_id: teacher.designationId,
-      qualification: teacher.qualification || "",
-      experience: teacher.experience,
-      joining_date: teacher.joiningDate || "",
-      status: teacher.status,
-    });
-    setShowEditDialog(true);
-  };
-
-  const handleDeleteClick = (teacher: Teacher) => {
-    setSelectedTeacher(teacher);
-    setShowDeleteDialog(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      address: "",
-      department_id: undefined,
-      designation_id: undefined,
-      qualification: "",
-      experience: undefined,
-      joining_date: "",
-      status: "active",
-    });
-    setSelectedTeacher(null);
-  };
-
-  const getStatusColor = (status: string) => {
-    if (status === "active" || status === "true") {
-      return "bg-green-100 text-green-800";
+    try {
+      await deleteMutation.mutateAsync(deleteTeacherId);
+      toast.success("Teacher deleted successfully");
+      setDeleteTeacherId(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete teacher");
     }
-    return "bg-gray-100 text-gray-800";
   };
 
-  const getStatusLabel = (status: string) => {
-    if (status === "active" || status === "true") return "Active";
-    return "Inactive";
+  const teachers = teachersData?.data || [];
+  const pagination = {
+    total: teachersData?.total || 0,
+    per_page: teachersData?.per_page || 15,
+    current_page: teachersData?.current_page || 1,
+    last_page: teachersData?.last_page || 1,
   };
 
-  const handleExport = async () => {
-    exportTeachersMutation.mutate(
-      {
-        search: searchQuery,
-        department_id: departmentFilter !== "all" ? parseInt(departmentFilter) : undefined,
-        designation_id: designationFilter !== "all" ? parseInt(designationFilter) : undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-      },
-      {
-        onSuccess: (blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `teachers_${new Date().toISOString().split("T")[0]}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        },
-        onError: (error: any) => {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to export teachers",
-            variant: "destructive",
-          });
-        },
-      }
-    );
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, string> = {
+      active: "bg-green-100 text-green-800",
+      inactive: "bg-gray-100 text-gray-800",
+      suspended: "bg-red-100 text-red-800",
+    };
+    return variants[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Teachers</h1>
-          <p className="text-gray-500 mt-1">Manage teaching staff and assignments</p>
+          <h1 className="text-3xl font-bold">Teachers</h1>
+          <p className="text-gray-600">Manage all teachers in the system</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" disabled>
-            <Upload className="mr-2 h-4 w-4" />
-            Bulk Import
-          </Button>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Teacher
-          </Button>
-        </div>
+        <Button onClick={() => router.push("/admin/teachers/create")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Teacher
+        </Button>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filter Teachers</CardTitle>
+          <CardTitle>Filters & Search</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search teachers..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email, or employee ID..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-10"
               />
             </div>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+
+            <Select
+              value={departmentFilter}
+              onValueChange={(value) => {
+                setDepartmentFilter(value);
+                setPage(1);
+              }}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder="All Departments" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => (
+                {departments.map((dept: any) => (
                   <SelectItem key={dept.id} value={dept.id.toString()}>
                     {dept.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={designationFilter} onValueChange={setDesignationFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select designation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Designations</SelectItem>
-                {designations.map((desig) => (
-                  <SelectItem key={desig.id} value={desig.id.toString()}>
-                    {desig.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="true">Active (Legacy)</SelectItem>
-                <SelectItem value="false">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Teachers Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Teachers List ({totalTeachers})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : teachers.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No teachers found</p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Employee ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Designation</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead style={{ width: "40px" }} className="whitespace-nowrap">
+                      #
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap">Name</TableHead>
+                    <TableHead className="whitespace-nowrap">Email</TableHead>
+                    <TableHead className="whitespace-nowrap">Employee ID</TableHead>
+                    <TableHead className="whitespace-nowrap">Department</TableHead>
+                    <TableHead className="whitespace-nowrap">Designation</TableHead>
+                    <TableHead className="whitespace-nowrap">Joining Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {teachers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                        No teachers found
+                  {teachers.map((teacher: any, index: number) => (
+                    <TableRow key={teacher.id}>
+                      <TableCell
+                        style={{ width: "40px" }}
+                        className="whitespace-nowrap text-gray-500"
+                      >
+                        {(page - 1) * 15 + index + 1}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">
+                        {teacher.user
+                          ? `${teacher.user.firstName} ${teacher.user.lastName}`
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {teacher.user?.email || "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap font-mono text-sm">
+                        {teacher.employeeId || "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {teacher.department?.name || "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {teacher.designation?.name || "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {teacher.joiningDate ? formatDate(teacher.joiningDate) : "-"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Badge className={getStatusBadge(teacher.user?.status || "active")}>
+                          {teacher.user?.status || "active"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/admin/teachers/${teacher.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/admin/teachers/${teacher.id}/edit`)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteTeacherId(teacher.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    teachers.map((teacher) => (
-                      <TableRow key={teacher.id}>
-                        <TableCell className="font-medium">{teacher.employeeId}</TableCell>
-                        <TableCell>{`${teacher.firstName} ${teacher.lastName}`}</TableCell>
-                        <TableCell>{teacher.department?.name || "-"}</TableCell>
-                        <TableCell>{teacher.designation?.name || "-"}</TableCell>
-                        <TableCell>{teacher.email}</TableCell>
-                        <TableCell>{teacher.phone || "-"}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(teacher.status)}>
-                            {getStatusLabel(teacher.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleViewTeacher(teacher)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditClick(teacher)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-600"
-                              onClick={() => handleDeleteClick(teacher)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalTeachers > perPage && (
-            <div className="flex items-center justify-between px-2 py-4">
-              <div className="text-sm text-gray-500">
-                Showing {(currentPage - 1) * perPage + 1} to{" "}
-                {Math.min(currentPage * perPage, totalTeachers)} of {totalTeachers} teachers
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage * perPage >= totalTeachers}
-                >
-                  Next
-                </Button>
-              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Add Teacher Dialog */}
-      <TeacherFormDialog
-        open={showAddDialog}
-        onOpenChange={(open) => {
-          setShowAddDialog(open);
-          if (!open) resetForm();
-        }}
-        title="Add New Teacher"
-        description="Enter the details of the new teacher below."
-        formData={formData}
-        onFormDataChange={setFormData}
-        onSubmit={handleAddTeacher}
-        loading={createTeacherMutation.isPending}
-        departments={departments}
-        designations={designations}
-      />
-
-      {/* Edit Teacher Dialog */}
-      <TeacherFormDialog
-        open={showEditDialog}
-        onOpenChange={(open) => {
-          setShowEditDialog(open);
-          if (!open) resetForm();
-        }}
-        title="Edit Teacher"
-        description="Update the teacher's information below."
-        formData={formData}
-        onFormDataChange={setFormData}
-        onSubmit={handleEditTeacher}
-        loading={updateTeacherMutation.isPending}
-        departments={departments}
-        designations={designations}
-        isEdit
-      />
-
-      {/* View Teacher Dialog */}
-      <TeacherViewDialog
-        open={showViewDialog}
-        onOpenChange={setShowViewDialog}
-        teacher={selectedTeacher}
-      />
+      {/* Pagination */}
+      {pagination.last_page > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Showing {(page - 1) * 15 + 1} to {Math.min(page * 15, pagination.total)} of{" "}
+            {pagination.total}
+            teachers
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>
+              Previous
+            </Button>
+            {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((p) => (
+              <Button
+                key={p}
+                variant={p === page ? "default" : "outline"}
+                onClick={() => setPage(p)}
+              >
+                {p}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              disabled={page === pagination.last_page}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
-      <TeacherDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        teacher={selectedTeacher}
-        onConfirm={handleDeleteTeacher}
-        loading={deleteTeacherMutation.isPending}
-      />
+      <AlertDialog
+        open={deleteTeacherId !== null}
+        onOpenChange={(open) => !open && setDeleteTeacherId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Teacher</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this teacher? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

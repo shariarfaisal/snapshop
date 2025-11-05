@@ -19,17 +19,9 @@ export interface LoginResponse {
     phone?: string | null;
     avatar?: string | null;
     username?: string;
-    institute_id?: number | string;
     roleId?: number | string;
     status?: string;
     roles?: { id: string; name: string }[];
-    institute?: {
-      id: number | string;
-      name: string;
-      email: string;
-      logo?: string | null;
-      primary_color?: string;
-    };
   };
 }
 

@@ -12,20 +12,12 @@ export interface User {
   phone?: string | null;
   avatar?: string | null;
   username?: string;
-  institute_id?: number | string;
   roleId?: number | string;
   status?: string;
   role?: {
     id: number;
     name: string;
     permissions?: Permission[];
-  };
-  institute?: {
-    id: number | string;
-    name: string;
-    email: string;
-    logo?: string | null;
-    primary_color?: string;
   };
 }
 
@@ -54,7 +46,6 @@ export interface AuthStore {
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
   getDisplayName: () => string;
-  getInstituteName: () => string;
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -224,11 +215,5 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return `${user.firstName} ${user.lastName}`;
     }
     return user.name || user.email;
-  },
-
-  // Get institute name
-  getInstituteName: () => {
-    const { user } = get();
-    return user?.institute?.name || "Institute";
   },
 }));

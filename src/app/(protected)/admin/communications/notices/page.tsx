@@ -416,7 +416,6 @@ export default function NoticesPage() {
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit Notice" : "Create Notice"}</DialogTitle>
             <DialogDescription>
-              {isEditing ? "Update notice details" : "Create a new notice for your institute"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

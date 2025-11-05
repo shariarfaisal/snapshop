@@ -27,7 +27,6 @@ interface AdmissionDetail {
   address: string;
   status: 'pending' | 'approved' | 'rejected' | 'admitted';
   remarks?: string;
-  institute: { id: number; name: string };
   schoolClass: { id: number; name: string };
   applyingForClass?: { id: number; name: string };
   fatherName?: string;
@@ -234,7 +233,6 @@ export default function AdmissionDetailPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Institute</label>
-                  <p className="text-gray-900">{application.institute?.name}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Class Applied For</label>

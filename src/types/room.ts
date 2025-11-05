@@ -1,6 +1,5 @@
 export interface Room {
   id: number;
-  institute_id: number;
   room_number: string;
   room_name: string;
   floor?: number;

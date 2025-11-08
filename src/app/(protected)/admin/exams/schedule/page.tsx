@@ -29,7 +29,7 @@ export default function ExamRoutinePage() {
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
 
   // Hooks
-  const { data: academicYearsData } = useAcademicYears({ status: 'active' });
+  const { data: academicYearsData } = useAcademicYears();
   const { data: currentYearData } = useCurrentAcademicYear();
   const { data: examsData, isLoading: loadingExams } = useExams(selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined);
   const { data: schedule = [], isLoading: loading } = useExamSchedule(selectedExamId);

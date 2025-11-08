@@ -63,7 +63,7 @@ export default function ExamParticipantsPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
 
   // Hooks
-  const { data: academicYearsData } = useAcademicYears({ status: 'active' });
+  const { data: academicYearsData } = useAcademicYears();
   const { data: currentYearData } = useCurrentAcademicYear();
   const { data: examsData, isLoading: loadingExams } = useExams(selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined);
   const { data: classesData, isLoading: loadingClasses } = useSchoolClasses({

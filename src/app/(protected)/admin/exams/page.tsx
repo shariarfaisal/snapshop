@@ -25,7 +25,7 @@ export default function ExamsPage() {
 
   // Hooks
   const { data: examsData, isLoading: loading } = useExams(selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined);
-  const { data: academicYearsData } = useAcademicYears({ status: 'active' });
+  const { data: academicYearsData } = useAcademicYears();
   const { data: currentYearData } = useCurrentAcademicYear();
   const deleteExamMutation = useDeleteExam();
 

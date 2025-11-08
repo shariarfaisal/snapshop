@@ -364,7 +364,7 @@ export function ExamScheduleAutomationDialog({
                             />
                           </div>
 
-                          <div className="w-32">
+                          <div className="w-36">
                             <Label className="text-xs font-semibold mb-1 block">Date</Label>
                             <DateInput
                               value={subject.exam_date}
@@ -380,7 +380,7 @@ export function ExamScheduleAutomationDialog({
                             />
                           </div>
 
-                          <div className="w-32">
+                          <div className="w-28">
                             <Label className="text-xs font-semibold mb-1 block">Time</Label>
                             <Input
                               type="time"

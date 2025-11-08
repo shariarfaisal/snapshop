@@ -170,7 +170,8 @@ export interface Payment {
 }
 
 export interface CreatePaymentInput {
-  invoice_id: number;
+  invoice_id?: number;
+  student_id?: number;
   amount: number;
   payment_method: PaymentMethod;
   transaction_id?: string;
@@ -212,4 +213,53 @@ export interface PaymentStatistics {
     count: number;
     total: number;
   }[];
-} 
+}
+
+// Student Ledger types
+export type LedgerEntryType = "invoice" | "payment" | "adjustment";
+
+export interface StudentLedgerEntry {
+  id: number;
+  student_id: number;
+  academic_year_id?: number;
+  academic_year?: any;
+  entry_date: string;
+  entry_type: LedgerEntryType;
+  fee_head_id?: number;
+  fee_head?: FeeHead;
+  description: string;
+  debit_amount: number;
+  credit_amount: number;
+  balance: number;
+  reference_type?: string;
+  reference_id?: number;
+  payment_mode?: PaymentMethod;
+  payment_details?: any;
+  created_by?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentLedgerFilters {
+  academic_year_id?: number | string;
+  from_date?: string;
+  to_date?: string;
+  entry_type?: LedgerEntryType | string;
+}
+
+export interface StudentLedgerSummary {
+  total_debit: number;
+  total_credit: number;
+  opening_balance: number;
+  closing_balance: number;
+}
+
+export interface StudentLedgerResponse {
+  entries: StudentLedgerEntry[];
+  summary: StudentLedgerSummary;
+}
+
+export interface StudentBalanceResponse {
+  student_id: number;
+  balance: number;
+}

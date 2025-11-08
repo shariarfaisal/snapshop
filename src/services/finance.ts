@@ -21,6 +21,10 @@ import {
   PaymentFilters,
   RefundPaymentInput,
   PaymentStatistics,
+  StudentLedgerEntry,
+  StudentLedgerFilters,
+  StudentLedgerResponse,
+  StudentBalanceResponse,
 } from "@/types/finance";
 
 const BASE_URL = "";
@@ -211,8 +215,8 @@ export const financeService = {
 
   // Student Finance APIs
   getStudentInvoices: async (studentId: number) => {
-    const response = await $clientPrivate.get<{ success: boolean; data: Invoice[]; message: string }>(`${BASE_URL}/students/${studentId}/invoices`);
-    return response.data.data;
+    const response = await $clientPrivate.get<{ success: boolean; data: Paginated<Invoice>; message: string }>(`${BASE_URL}/students/${studentId}/invoices`);
+    return response.data.data.data; // Extract the invoices array from the pagination object
   },
 
   getStudentOutstandingDues: async (studentId: number) => {
@@ -229,4 +233,28 @@ export const financeService = {
     }>(`${BASE_URL}/students/${studentId}/outstanding-dues`);
     return response.data.data;
   },
-}; 
+
+  // Student Ledger APIs
+  getStudentLedger: async (studentId: number, filters?: StudentLedgerFilters) => {
+    const queryParams = new URLSearchParams();
+
+    if (filters?.academic_year_id && filters.academic_year_id !== "all") queryParams.append("academic_year_id", filters.academic_year_id.toString());
+    if (filters?.from_date) queryParams.append("from_date", filters.from_date);
+    if (filters?.to_date) queryParams.append("to_date", filters.to_date);
+    if (filters?.entry_type && filters.entry_type !== "all") queryParams.append("entry_type", filters.entry_type);
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    const response = await $clientPrivate.get<{ success: boolean; data: StudentLedgerResponse; message: string }>(`${BASE_URL}/students/${studentId}/ledger${queryString}`);
+    return response.data.data;
+  },
+
+  getStudentBalance: async (studentId: number) => {
+    const response = await $clientPrivate.get<{ success: boolean; data: StudentBalanceResponse; message: string }>(`${BASE_URL}/students/${studentId}/balance`);
+    return response.data.data;
+  },
+
+  recalculateStudentBalance: async (studentId: number) => {
+    const response = await $clientPrivate.post<{ success: boolean; data: StudentBalanceResponse; message: string }>(`${BASE_URL}/students/${studentId}/recalculate-balance`, {});
+    return response.data.data;
+  },
+};

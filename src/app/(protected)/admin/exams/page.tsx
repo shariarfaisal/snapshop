@@ -1,25 +1,47 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, FileText, Calendar, Eye, Edit, Trash2, ClipboardCheck } from "lucide-react";
 import { Exam } from "@/types/exam";
 import Link from "next/link";
 import { useExams, useDeleteExam } from "@/hooks/use-exams";
+import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/use-academic-years";
 import { toast } from "sonner";
 
 export default function ExamsPage() {
   const router = useRouter();
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | null>(null);
 
   // Hooks
-  const { data: examsData, isLoading: loading } = useExams();
+  const { data: examsData, isLoading: loading } = useExams(selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined);
+  const { data: academicYearsData } = useAcademicYears({ status: 'active' });
+  const { data: currentYearData } = useCurrentAcademicYear();
   const deleteExamMutation = useDeleteExam();
 
   // Handle both array and paginated response
   const exams = Array.isArray(examsData) ? examsData : (examsData as any)?.data || [];
+  const academicYears = Array.isArray(academicYearsData) ? academicYearsData : (academicYearsData as any)?.data || [];
+
+  // Set current academic year as default
+  useEffect(() => {
+    if (!selectedAcademicYearId && currentYearData) {
+      const currentYear = currentYearData?.data || currentYearData;
+      if (currentYear?.id) {
+        setSelectedAcademicYearId(currentYear.id.toString());
+      }
+    }
+  }, [currentYearData, selectedAcademicYearId]);
 
   // Calculate stats from exams data
   const stats = useMemo(() => ({
@@ -82,6 +104,35 @@ export default function ExamsPage() {
           </Link>
         </div>
       </div>
+
+      {/* Academic Year Filter */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Filter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1 max-w-xs">
+              <label className="text-sm font-medium mb-2 block">Academic Year</label>
+              <Select 
+                value={selectedAcademicYearId || ""} 
+                onValueChange={setSelectedAcademicYearId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select academic year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year: any) => (
+                    <SelectItem key={year.id} value={year.id.toString()}>
+                      {year.name || `${year.start_year}-${year.end_year}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>

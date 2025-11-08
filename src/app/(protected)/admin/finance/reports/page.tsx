@@ -84,7 +84,7 @@ export default function ReportsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
                 <p className="text-2xl font-bold">
-                  ${invoiceStats?.total_amount?.toFixed(2) || "0.00"}
+                  ${Number(invoiceStats?.total_amount || 0).toFixed(2)}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
@@ -98,7 +98,7 @@ export default function ReportsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Collected</p>
                 <p className="text-2xl font-bold text-green-600">
-                  ${invoiceStats?.paid_amount?.toFixed(2) || "0.00"}
+                  ${Number(invoiceStats?.paid_amount || 0).toFixed(2)}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
@@ -112,7 +112,7 @@ export default function ReportsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  ${invoiceStats?.due_amount?.toFixed(2) || "0.00"}
+                  ${Number(invoiceStats?.due_amount || 0).toFixed(2)}
                 </p>
               </div>
               <FileText className="h-8 w-8 text-orange-600" />
@@ -126,7 +126,7 @@ export default function ReportsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Collection Rate</p>
                 <p className="text-2xl font-bold">
-                  {invoiceStats?.collection_rate?.toFixed(1) || "0.0"}%
+                  {Number(invoiceStats?.collection_rate || 0).toFixed(1)}%
                 </p>
               </div>
               <FileCheck className="h-8 w-8 text-blue-600" />
@@ -212,7 +212,7 @@ export default function ReportsPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Amount</p>
                   <p className="text-2xl font-bold">
-                    ${paymentStats?.total_amount?.toFixed(2) || "0.00"}
+                    ${Number(paymentStats?.total_amount || 0).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -246,8 +246,8 @@ export default function ReportsPage() {
                     <TableCell className="text-right">{method.count}</TableCell>
                     <TableCell className="text-right">${Number(method.total).toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      {paymentStats.total_amount > 0
-                        ? ((Number(method.total) / paymentStats.total_amount) * 100).toFixed(1)
+                      {Number(paymentStats.total_amount || 0) > 0
+                        ? ((Number(method.total) / Number(paymentStats.total_amount)) * 100).toFixed(1)
                         : "0.0"}
                       %
                     </TableCell>
@@ -257,7 +257,7 @@ export default function ReportsPage() {
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right">{paymentStats.total_count}</TableCell>
                   <TableCell className="text-right">
-                    ${paymentStats.total_amount.toFixed(2)}
+                    ${Number(paymentStats.total_amount || 0).toFixed(2)}
                   </TableCell>
                   <TableCell className="text-right">100%</TableCell>
                 </TableRow>
@@ -277,7 +277,7 @@ export default function ReportsPage() {
                 <h3 className="font-semibold text-red-900">Overdue Invoices Alert</h3>
                 <p className="text-sm text-red-700 mt-1">
                   There are {invoiceStats.overdue_invoices} overdue invoices worth $
-                  {invoiceStats.due_amount?.toFixed(2) || "0.00"}. Please follow up with the
+                  {Number(invoiceStats.due_amount || 0).toFixed(2)}. Please follow up with the
                   concerned students/guardians.
                 </p>
               </div>

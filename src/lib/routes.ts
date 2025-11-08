@@ -78,6 +78,7 @@ export const ROUTES = {
   ADMIN_INVOICES_VIEW: (id: string) => `/admin/finance/invoices/${id}`,
   ADMIN_PAYMENTS: "/admin/finance/payments",
   ADMIN_PAYMENTS_CREATE: "/admin/finance/payments/create",
+  ADMIN_STUDENT_LEDGER: "/admin/finance/student-ledger",
   
   // Communication
   ADMIN_COMMUNICATION: "/admin/communication",

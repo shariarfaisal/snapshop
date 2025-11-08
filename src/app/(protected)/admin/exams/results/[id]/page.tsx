@@ -29,8 +29,8 @@ import {
   useMarksByExamSubject,
   useBulkCreateMarks,
   usePublishExamResults,
+  useExamParticipantsByExam,
 } from "@/hooks/use-exams";
-import { useStudents } from "@/hooks/use-student";
 import { toast } from "sonner";
 
 interface StudentMark {
@@ -53,13 +53,10 @@ export default function ExamResultsPage() {
   const [studentMarks, setStudentMarks] = useState<Map<number, StudentMark>>(new Map());
   const [maxMarks, setMaxMarks] = useState(100);
 
-  // Memoize filter object to prevent re-renders
-  const studentFilters = useMemo(() => ({ per_page: "all" }), []);
-
   // Hooks
   const { data: examData, isLoading: examLoading } = useExam(examId);
   const { data: subjectsData } = useExamSubjects(examId);
-  const { data: studentsData } = useStudents(studentFilters);
+  const { data: participantsData, isLoading: participantsLoading } = useExamParticipantsByExam(examId);
   const { data: marksData } = useMarksByExamSubject(examId, selectedSubject);
   const saveMutation = useBulkCreateMarks();
   const publishMutation = usePublishExamResults();
@@ -71,9 +68,12 @@ export default function ExamResultsPage() {
     return Array.isArray(subjectsData) ? subjectsData : [];
   }, [subjectsData]);
 
+  // Extract students from participants and get their user info
   const students = useMemo(() => {
-    return Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
-  }, [studentsData]);
+    if (!participantsData) return [];
+    const participantsArray = Array.isArray(participantsData) ? participantsData : participantsData?.data || [];
+    return participantsArray.map((p: any) => p.student).filter(Boolean);
+  }, [participantsData]);
 
   const existingMarks = useMemo(() => {
     return Array.isArray(marksData) ? marksData : [];
@@ -193,7 +193,7 @@ export default function ExamResultsPage() {
     });
   };
 
-  if (examLoading) {
+  if (examLoading || participantsLoading) {
     return <div className="p-6">Loading...</div>;
   }
 
@@ -264,7 +264,7 @@ export default function ExamResultsPage() {
           </CardHeader>
           <CardContent>
             {students.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No students found</div>
+              <div className="text-center py-8 text-gray-500">No students registered for this exam</div>
             ) : (
               <Table>
                 <TableHeader>

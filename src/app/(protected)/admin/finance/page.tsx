@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, FileText, AlertCircle, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp, FileText, AlertCircle, Loader2, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useInvoiceStatistics, usePayments } from "@/hooks/use-finance";
 
@@ -89,6 +89,12 @@ export default function FinancePage() {
               <Link href="/admin/finance/fee-structure">
                 <FileText className="mr-2 h-4 w-4" />
                 Fee Structure
+              </Link>
+            </Button>
+            <Button className="w-full justify-start" variant="outline" asChild>
+              <Link href="/admin/finance/student-ledger">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Student Ledger
               </Link>
             </Button>
           </CardContent>

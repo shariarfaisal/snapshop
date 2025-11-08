@@ -138,12 +138,22 @@ const navigation: NavigationItem[] = [
     requiredRole: "admin",
     children: [
       {
+        name: "Fee Heads",
+        href: "/admin/finance/fee-heads",
+        permissions: "readAll-feeHead",
+      },
+      {
         name: "Fee Structure",
         href: "/admin/finance/fee-structure",
         permissions: "readAll-feeStructure",
       },
       { name: "Invoices", href: "/admin/finance/invoices", permissions: "readAll-invoice" },
       { name: "Payments", href: "/admin/finance/payments", permissions: "readAll-payment" },
+      {
+        name: "Student Ledger",
+        href: "/admin/finance/student-ledger",
+        permissions: "readAll-studentLedger",
+      },
       { name: "Reports", href: "/admin/finance/reports", permissions: "readAll-financeReport" },
     ],
   },

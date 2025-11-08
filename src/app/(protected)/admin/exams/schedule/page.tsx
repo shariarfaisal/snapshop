@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,23 +20,40 @@ import {
 import { ExamSubject } from "@/types/exam";
 import { useToast } from "@/hooks/use-toast";
 import { useExams, useExamSchedule } from "@/hooks/use-exams";
+import { useAcademicYears, useCurrentAcademicYear } from "@/hooks/use-academic-years";
 
 export default function ExamRoutinePage() {
   const { toast } = useToast();
+  const [selectedAcademicYearId, setSelectedAcademicYearId] = useState<string | null>(null);
   const [selectedExamId, setSelectedExamId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
 
   // Hooks
-  const { data: examsData, isLoading: loadingExams } = useExams();
+  const { data: academicYearsData } = useAcademicYears({ status: 'active' });
+  const { data: currentYearData } = useCurrentAcademicYear();
+  const { data: examsData, isLoading: loadingExams } = useExams(selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined);
   const { data: schedule = [], isLoading: loading } = useExamSchedule(selectedExamId);
 
   // Derived data
+  const academicYears = Array.isArray(academicYearsData) ? academicYearsData : (academicYearsData?.data || []);
   const exams = Array.isArray(examsData) ? examsData : (examsData?.data || []);
 
+  // Set current academic year as default
+  useEffect(() => {
+    if (!selectedAcademicYearId && currentYearData) {
+      const currentYear = currentYearData?.data || currentYearData;
+      if (currentYear?.id) {
+        setSelectedAcademicYearId(currentYear.id.toString());
+      }
+    }
+  }, [currentYearData, selectedAcademicYearId]);
+
   // Set first exam as default when exams load
-  if (exams.length > 0 && selectedExamId === null) {
-    setSelectedExamId(exams[0].id);
-  }
+  useEffect(() => {
+    if (exams.length > 0 && selectedExamId === null) {
+      setSelectedExamId(exams[0].id);
+    }
+  }, [exams, selectedExamId]);
 
   const formatDate = (date?: string) => {
     if (!date) return "TBA";
@@ -96,33 +113,50 @@ export default function ExamRoutinePage() {
         </div>
       </div>
 
-      {/* Exam Selection */}
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Select Exam</CardTitle>
+          <CardTitle className="text-sm">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingExams ? (
-            <div className="flex justify-center items-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+          <div className="flex gap-4">
+            <div className="flex-1 max-w-xs">
+              <label className="text-sm font-medium mb-2 block">Academic Year</label>
+              <Select 
+                value={selectedAcademicYearId || ""} 
+                onValueChange={setSelectedAcademicYearId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select academic year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year: any) => (
+                    <SelectItem key={year.id} value={year.id.toString()}>
+                      {year.name || `${year.start_year}-${year.end_year}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <Select
-              value={selectedExamId?.toString() || ""}
-              onValueChange={(value) => setSelectedExamId(parseInt(value))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select an exam" />
-              </SelectTrigger>
-              <SelectContent>
-                {exams.map((exam) => (
-                  <SelectItem key={exam.id} value={exam.id.toString()}>
-                    {exam.name} - {exam.academic_year?.name || "N/A"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+            <div className="flex-1 max-w-xs">
+              <label className="text-sm font-medium mb-2 block">Select Exam</label>
+              <Select
+                value={selectedExamId?.toString() || ""}
+                onValueChange={(value) => setSelectedExamId(parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an exam" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exams.map((exam) => (
+                    <SelectItem key={exam.id} value={exam.id.toString()}>
+                      {exam.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

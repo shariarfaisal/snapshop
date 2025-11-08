@@ -22,6 +22,7 @@ import {
   useRefundPayment,
   useInvoices,
 } from "@/hooks/use-finance";
+import { useStudents } from "@/hooks/use-student";
 
 export default function PaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +36,8 @@ export default function PaymentsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [paymentMode, setPaymentMode] = useState<"invoice" | "account">("invoice");
+  const [selectedStudentBalance, setSelectedStudentBalance] = useState<number>(0);
   const [editFormData, setEditFormData] = useState({
     payment_date: "",
     payment_method: "cash" as PaymentMethod,
@@ -44,7 +47,8 @@ export default function PaymentsPage() {
   const [refundReason, setRefundReason] = useState("");
 
   const [formData, setFormData] = useState<CreatePaymentInput>({
-    invoice_id: 0,
+    invoice_id: undefined,
+    student_id: undefined,
     amount: 0,
     payment_method: "cash",
     payment_date: new Date().toISOString().split('T')[0],
@@ -67,6 +71,7 @@ export default function PaymentsPage() {
   // Hooks
   const { data: paymentsData, isLoading: loading } = usePayments(paymentFilters, currentPage);
   const { data: invoicesData } = useInvoices(invoiceFilters, 1);
+  const { data: studentsData } = useStudents({ per_page: "all" }, 1);
   const createPaymentMutation = useCreatePayment();
   const updatePaymentMutation = useUpdatePayment();
   const refundPaymentMutation = useRefundPayment();
@@ -75,14 +80,18 @@ export default function PaymentsPage() {
   const payments = paymentsData?.data || [];
   const totalPages = paymentsData?.last_page || 1;
   const invoices = invoicesData?.data || [];
+  const students = studentsData?.data || [];
 
   const handleCreate = () => {
+    setPaymentMode("invoice");
     setFormData({
-      invoice_id: 0,
+      invoice_id: undefined,
+      student_id: undefined,
       amount: 0,
       payment_method: "cash",
       payment_date: new Date().toISOString().split('T')[0],
     });
+    setSelectedStudentBalance(0);
     setIsDialogOpen(true);
   };
 
@@ -92,13 +101,36 @@ export default function PaymentsPage() {
       setFormData({
         ...formData,
         invoice_id: invoice.id,
+        student_id: undefined,
         amount: Number(invoice.due_amount),
       });
     }
   };
 
+  const handleStudentSelect = (studentId: string) => {
+    const student = students.find(s => s.id.toString() === studentId);
+    if (student) {
+      setFormData({
+        ...formData,
+        student_id: student.id,
+        invoice_id: undefined,
+      });
+      setSelectedStudentBalance(Number(student.accountBalance || 0));
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!formData.invoice_id || !formData.amount || !formData.payment_method) {
+    if (paymentMode === "invoice" && !formData.invoice_id) {
+      toast.error("Please select an invoice");
+      return;
+    }
+
+    if (paymentMode === "account" && !formData.student_id) {
+      toast.error("Please select a student");
+      return;
+    }
+
+    if (!formData.amount || !formData.payment_method) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -352,30 +384,96 @@ export default function PaymentsPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>Record a payment against an invoice</DialogDescription>
+            <DialogDescription>Record a payment against an invoice or to student account</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Payment Mode Toggle */}
             <div className="space-y-2">
-              <Label>Invoice *</Label>
-              <Select
-                value={formData.invoice_id.toString()}
-                onValueChange={handleInvoiceSelect}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select invoice" />
-                </SelectTrigger>
-                <SelectContent>
-                  {invoices.map((inv) => (
-                    <SelectItem key={inv.id} value={inv.id.toString()}>
-                      {inv.invoice_number} - {inv.student?.user?.name} (Due: ${Number(inv.due_amount).toFixed(2)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Payment Mode *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={paymentMode === "invoice" ? "default" : "outline"}
+                  onClick={() => {
+                    setPaymentMode("invoice");
+                    setFormData({ ...formData, invoice_id: undefined, student_id: undefined, amount: 0 });
+                    setSelectedStudentBalance(0);
+                  }}
+                  className="w-full"
+                >
+                  Against Invoice
+                </Button>
+                <Button
+                  type="button"
+                  variant={paymentMode === "account" ? "default" : "outline"}
+                  onClick={() => {
+                    setPaymentMode("account");
+                    setFormData({ ...formData, invoice_id: undefined, student_id: undefined, amount: 0 });
+                    setSelectedStudentBalance(0);
+                  }}
+                  className="w-full"
+                >
+                  To Account
+                </Button>
+              </div>
             </div>
+
+            {/* Invoice Selection */}
+            {paymentMode === "invoice" && (
+              <div className="space-y-2">
+                <Label>Invoice *</Label>
+                <Select
+                  value={formData.invoice_id?.toString() || ""}
+                  onValueChange={handleInvoiceSelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select invoice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {invoices.map((inv) => (
+                      <SelectItem key={inv.id} value={inv.id.toString()}>
+                        {inv.invoice_number} - {inv.student?.user?.name} (Due: ${Number(inv.due_amount).toFixed(2)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Student Selection for Account Payment */}
+            {paymentMode === "account" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Student *</Label>
+                  <Select
+                    value={formData.student_id?.toString() || ""}
+                    onValueChange={handleStudentSelect}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students.map((student) => (
+                        <SelectItem key={student.id} value={student.id.toString()}>
+                          {student.user?.firstName} {student.user?.lastName} - {student.admissionNumber}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formData.student_id && (
+                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-md">
+                    <p className="text-sm">
+                      <span className="font-medium">Current Balance:</span>{" "}
+                      <span className="text-red-600 font-bold">${selectedStudentBalance.toFixed(2)}</span>
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
             <div className="space-y-2">
               <Label>Amount *</Label>
               <Input

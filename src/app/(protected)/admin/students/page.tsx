@@ -469,7 +469,7 @@ export default function StudentsPage() {
                           {student.admissionNumber || "-"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {student.school_class?.name || "-"}
+                          {student.schoolClass?.name || "-"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {student.user?.phone || "-"}

@@ -288,3 +288,20 @@ export const usePaymentStatistics = (filters?: { from_date?: string; to_date?: s
     queryFn: () => financeService.getPaymentStatistics(filters),
   });
 };
+
+// Student Finance Hooks
+export const useStudentInvoices = (studentId: number | null) => {
+  return useQuery({
+    queryKey: ["student-invoices", studentId],
+    queryFn: () => financeService.getStudentInvoices(studentId!),
+    enabled: !!studentId,
+  });
+};
+
+export const useStudentOutstandingDues = (studentId: number | null) => {
+  return useQuery({
+    queryKey: ["student-outstanding-dues", studentId],
+    queryFn: () => financeService.getStudentOutstandingDues(studentId!),
+    enabled: !!studentId,
+  });
+};

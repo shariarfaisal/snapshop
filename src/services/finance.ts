@@ -199,13 +199,34 @@ export const financeService = {
 
   getPaymentStatistics: async (filters?: { from_date?: string; to_date?: string; payment_method?: string }) => {
     const queryParams = new URLSearchParams();
-    
+
     if (filters?.from_date) queryParams.append("from_date", filters.from_date);
     if (filters?.to_date) queryParams.append("to_date", filters.to_date);
     if (filters?.payment_method) queryParams.append("payment_method", filters.payment_method);
-    
+
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
     const response = await $clientPrivate.get<{ success: boolean; data: PaymentStatistics; message: string }>(`${BASE_URL}/payments-statistics${queryString}`);
+    return response.data.data;
+  },
+
+  // Student Finance APIs
+  getStudentInvoices: async (studentId: number) => {
+    const response = await $clientPrivate.get<{ success: boolean; data: Invoice[]; message: string }>(`${BASE_URL}/students/${studentId}/invoices`);
+    return response.data.data;
+  },
+
+  getStudentOutstandingDues: async (studentId: number) => {
+    const response = await $clientPrivate.get<{
+      success: boolean;
+      data: {
+        total_due: number;
+        total_overdue: number;
+        overdue_count: number;
+        pending_invoices: number;
+        invoices: Invoice[];
+      };
+      message: string
+    }>(`${BASE_URL}/students/${studentId}/outstanding-dues`);
     return response.data.data;
   },
 }; 

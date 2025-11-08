@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,14 +11,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Eye, Trash2, ChevronLeft, ChevronRight, Loader2, FileText } from "lucide-react";
+import { Plus, Search, Eye, Trash2, ChevronLeft, ChevronRight, Loader2, FileText, CreditCard, AlertCircle, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Invoice, CreateInvoiceInput, InvoiceStatus } from "@/types/finance";
-import { format } from "date-fns";
+import { format, isPast } from "date-fns";
+import { QuickPaymentModal } from "@/components/finance/quick-payment-modal";
 import {
   useInvoices,
   useInvoice,
   useCreateInvoice,
+  useUpdateInvoice,
   useDeleteInvoice,
   useBulkGenerateInvoices,
   useFeeStructures,
@@ -29,12 +32,23 @@ export default function InvoicesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const [editFormData, setEditFormData] = useState({
+    due_date: "",
+    discount_amount: 0,
+    description: "",
+    remarks: "",
+  });
 
   const [formData, setFormData] = useState<CreateInvoiceInput>({
     student_id: 0,
@@ -51,6 +65,8 @@ export default function InvoicesPage() {
   const filters = {
     search: searchQuery || undefined,
     status: statusFilter !== "all" ? (statusFilter as InvoiceStatus) : undefined,
+    from_date: fromDate || undefined,
+    to_date: toDate || undefined,
     per_page: 15,
   };
 
@@ -60,6 +76,7 @@ export default function InvoicesPage() {
   const { data: feeStructuresData } = useFeeStructures({ per_page: 100 }, 1);
   const { data: classesData } = useSchoolClasses();
   const createInvoiceMutation = useCreateInvoice();
+  const updateInvoiceMutation = useUpdateInvoice();
   const deleteInvoiceMutation = useDeleteInvoice();
   const bulkGenerateInvoicesMutation = useBulkGenerateInvoices();
 
@@ -114,6 +131,39 @@ export default function InvoicesPage() {
     setIsDetailsDialogOpen(true);
   };
 
+  const handleQuickPayment = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleEdit = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setEditFormData({
+      due_date: invoice.due_date,
+      discount_amount: Number(invoice.discount_amount),
+      description: invoice.description || "",
+      remarks: invoice.remarks || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateInvoice = async () => {
+    if (!selectedInvoice) return;
+
+    updateInvoiceMutation.mutate(
+      { id: selectedInvoice.id, data: editFormData },
+      {
+        onSuccess: () => {
+          toast.success("Invoice updated successfully!");
+          setIsEditDialogOpen(false);
+        },
+        onError: (error: any) => {
+          toast.error(error.response?.data?.message || "Failed to update invoice");
+        },
+      }
+    );
+  };
+
   const handleDelete = async () => {
     if (!selectedInvoice) return;
 
@@ -161,31 +211,73 @@ export default function InvoicesPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search invoices..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-10"
-              />
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search invoices..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="partially_paid">Partially Paid</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="partially_paid">Partially Paid</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-4 items-end">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="from_date" className="text-sm">From Date</Label>
+                <Input
+                  id="from_date"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="to_date" className="text-sm">To Date</Label>
+                <Input
+                  id="to_date"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              {(fromDate || toDate || searchQuery || statusFilter !== "all") && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                    setFromDate("");
+                    setToDate("");
+                    setCurrentPage(1);
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -212,9 +304,21 @@ export default function InvoicesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                  {invoices.map((invoice) => {
+                    const isOverdue = invoice.status === 'overdue' || (invoice.status !== 'paid' && isPast(new Date(invoice.due_date)));
+                    const canPay = invoice.status === 'pending' || invoice.status === 'partially_paid' || invoice.status === 'overdue';
+
+                    return (
+                    <TableRow
+                      key={invoice.id}
+                      className={isOverdue ? "bg-red-50 hover:bg-red-100" : ""}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {invoice.invoice_number}
+                          {isOverdue && <AlertCircle className="h-4 w-4 text-red-600" />}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {invoice.student?.user?.name || "-"}
                         {invoice.student?.roll_number && (
@@ -229,13 +333,30 @@ export default function InvoicesPage() {
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(invoice.invoice_date), "MMM dd, yyyy")}</TableCell>
-                      <TableCell>{format(new Date(invoice.due_date), "MMM dd, yyyy")}</TableCell>
+                      <TableCell className={isOverdue ? "text-red-600 font-semibold" : ""}>
+                        {format(new Date(invoice.due_date), "MMM dd, yyyy")}
+                      </TableCell>
                       <TableCell className="text-right">${Number(invoice.net_amount).toFixed(2)}</TableCell>
                       <TableCell className="text-right">${Number(invoice.paid_amount).toFixed(2)}</TableCell>
                       <TableCell className="text-right">${Number(invoice.due_amount).toFixed(2)}</TableCell>
                       <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {canPay && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleQuickPayment(invoice)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Pay
+                            </Button>
+                          )}
+                          {invoice.status !== "paid" && invoice.status !== "cancelled" && (
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(invoice)} title="Edit Invoice">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" onClick={() => handleViewDetails(invoice)}>
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -254,7 +375,8 @@ export default function InvoicesPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
 
@@ -528,6 +650,164 @@ export default function InvoicesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Invoice Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-blue-600" />
+              Edit Invoice
+            </DialogTitle>
+            <DialogDescription>
+              Update invoice details for {selectedInvoice?.invoice_number}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedInvoice && (
+            <div className="space-y-4">
+              {/* Current Invoice Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Student:</span>
+                  <span className="font-medium">{selectedInvoice.student?.user?.name || "Unknown"}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Current Gross Amount:</span>
+                  <span className="font-medium">${Number(selectedInvoice.gross_amount).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Current Discount:</span>
+                  <span className="font-medium text-green-600">-${Number(selectedInvoice.discount_amount).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span className="text-gray-600 font-semibold">Current Net Amount:</span>
+                  <span className="font-bold text-lg">${Number(selectedInvoice.net_amount).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Edit Form */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit_due_date">
+                      Due Date <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="edit_due_date"
+                      type="date"
+                      value={editFormData.due_date}
+                      onChange={(e) => setEditFormData({ ...editFormData, due_date: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit_discount">
+                      Discount Amount ($)
+                    </Label>
+                    <Input
+                      id="edit_discount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max={Number(selectedInvoice.gross_amount)}
+                      value={editFormData.discount_amount}
+                      onChange={(e) => setEditFormData({ ...editFormData, discount_amount: parseFloat(e.target.value) || 0 })}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Maximum: ${Number(selectedInvoice.gross_amount).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Preview of new amounts */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">Preview After Changes:</p>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Gross Amount:</span>
+                      <span className="font-medium">${Number(selectedInvoice.gross_amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Discount:</span>
+                      <span className="font-medium text-green-600">-${editFormData.discount_amount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-700">Tax:</span>
+                      <span className="font-medium">${Number(selectedInvoice.tax_amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1">
+                      <span className="font-bold text-blue-900">New Net Amount:</span>
+                      <span className="font-bold text-lg text-blue-900">
+                        ${(Number(selectedInvoice.gross_amount) - editFormData.discount_amount + Number(selectedInvoice.tax_amount)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit_description">Description</Label>
+                  <Textarea
+                    id="edit_description"
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    placeholder="Optional invoice description"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit_remarks">Remarks</Label>
+                  <Textarea
+                    id="edit_remarks"
+                    value={editFormData.remarks}
+                    onChange={(e) => setEditFormData({ ...editFormData, remarks: e.target.value })}
+                    placeholder="Optional remarks or notes"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateInvoiceMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpdateInvoice}
+              disabled={updateInvoiceMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {updateInvoiceMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Update Invoice
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Payment Modal */}
+      <QuickPaymentModal
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        invoice={selectedInvoice}
+      />
     </div>
   );
 }

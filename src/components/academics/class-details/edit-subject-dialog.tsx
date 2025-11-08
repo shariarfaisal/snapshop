@@ -118,11 +118,16 @@ export function EditSubjectDialog({
                     Loading teachers...
                   </SelectItem>
                 ) : (
-                  teachers.map((teacher: any) => (
-                    <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                      {teacher.name}
-                    </SelectItem>
-                  ))
+                  teachers.map((teacher: any) => {
+                    const teacherName = teacher.user
+                      ? `${teacher.user.firstName} ${teacher.user.lastName}`.trim()
+                      : `Teacher ${teacher.id}`;
+                    return (
+                      <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                        {teacherName}
+                      </SelectItem>
+                    );
+                  })
                 )}
               </SelectContent>
             </Select>

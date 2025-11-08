@@ -18,6 +18,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   ArrowLeft,
   Edit,
   Trash2,
@@ -35,10 +43,16 @@ import {
   FileText,
   Activity,
   Clock,
+  AlertCircle,
+  CheckCircle,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { Student } from "@/types/student";
 import { useStudentById, useDeleteStudent } from "@/hooks/use-student";
+import { useStudentInvoices, useStudentOutstandingDues } from "@/hooks/use-finance";
+import { InvoiceStatus } from "@/types/finance";
 
 const getStatusBadge = (status: string) => {
   const variants: Record<string, string> = {
@@ -59,6 +73,18 @@ export default function StudentDetailPage() {
 
   const { data: student, isLoading, error } = useStudentById(studentId);
   const deleteStudentMutation = useDeleteStudent();
+
+  // Fetch finance data
+  const { data: invoices } = useStudentInvoices(studentId);
+  const { data: outstandingDues } = useStudentOutstandingDues(studentId);
+
+  // Calculate finance totals
+  const totalFees = invoices?.reduce((sum, inv) => sum + Number(inv.net_amount), 0) || 0;
+  const totalPaid = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0;
+  const totalDue = outstandingDues?.total_due || 0;
+
+  // Get recent invoices (last 5)
+  const recentInvoices = invoices?.slice(0, 5) || [];
 
   const handleDelete = async () => {
     deleteStudentMutation.mutate(studentId, {
@@ -385,6 +411,23 @@ export default function StudentDetailPage() {
 
         {/* Finance Tab */}
         <TabsContent value="finance" className="space-y-4">
+          {/* Overdue Alert */}
+          {outstandingDues && outstandingDues.overdue_count > 0 && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <AlertCircle className="h-6 w-6 text-red-600 mt-1" />
+                  <div>
+                    <h3 className="font-semibold text-red-900">Overdue Payment Alert</h3>
+                    <p className="text-sm text-red-700 mt-1">
+                      This student has {outstandingDues.overdue_count} overdue invoice(s) with total amount of ${outstandingDues.total_overdue.toFixed(2)}.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -395,27 +438,89 @@ export default function StudentDetailPage() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
-                  <p className="text-sm text-blue-600 font-medium">Total Fees Due</p>
-                  <p className="text-3xl font-bold text-blue-900 mt-2">$0.00</p>
+                  <p className="text-sm text-blue-600 font-medium">Total Fees</p>
+                  <p className="text-3xl font-bold text-blue-900 mt-2">${totalFees.toFixed(2)}</p>
                 </div>
                 <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
                   <p className="text-sm text-green-600 font-medium">Total Paid</p>
-                  <p className="text-3xl font-bold text-green-900 mt-2">$0.00</p>
+                  <p className="text-3xl font-bold text-green-900 mt-2">${totalPaid.toFixed(2)}</p>
                 </div>
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
                   <p className="text-sm text-orange-600 font-medium">Pending Payment</p>
-                  <p className="text-3xl font-bold text-orange-900 mt-2">$0.00</p>
+                  <p className="text-3xl font-bold text-orange-900 mt-2">${totalDue.toFixed(2)}</p>
                 </div>
               </div>
 
               <Separator />
 
               <div className="space-y-3">
-                <h4 className="font-semibold">Recent Invoices</h4>
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No invoices found</p>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold">Recent Invoices</h4>
+                  <Button variant="outline" size="sm" onClick={() => router.push(`/admin/finance/invoices?student=${studentId}`)}>
+                    View All
+                  </Button>
                 </div>
+
+                {!recentInvoices || recentInvoices.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No invoices found</p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                          <TableHead className="text-right">Due</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentInvoices.map((invoice) => {
+                          const getStatusBadge = (status: InvoiceStatus) => {
+                            const config = {
+                              paid: { className: "bg-green-100 text-green-800", icon: CheckCircle },
+                              pending: { className: "bg-yellow-100 text-yellow-800", icon: Clock },
+                              partially_paid: { className: "bg-blue-100 text-blue-800", icon: Clock },
+                              overdue: { className: "bg-red-100 text-red-800", icon: AlertCircle },
+                              cancelled: { className: "bg-gray-100 text-gray-800", icon: AlertCircle },
+                            };
+
+                            const { icon: Icon, className } = config[status] || config.pending;
+
+                            return (
+                              <Badge className={className}>
+                                <Icon className="h-3 w-3 mr-1" />
+                                {status.replace("_", " ").toUpperCase()}
+                              </Badge>
+                            );
+                          };
+
+                          return (
+                            <TableRow key={invoice.id}>
+                              <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                              <TableCell>{format(new Date(invoice.invoice_date), "MMM dd, yyyy")}</TableCell>
+                              <TableCell className={invoice.status === 'overdue' ? 'text-red-600 font-medium' : ''}>
+                                {format(new Date(invoice.due_date), "MMM dd, yyyy")}
+                              </TableCell>
+                              <TableCell className="text-right">${Number(invoice.net_amount).toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-semibold">
+                                <span className={Number(invoice.due_amount) > 0 ? 'text-red-600' : 'text-green-600'}>
+                                  ${Number(invoice.due_amount).toFixed(2)}
+                                </span>
+                              </TableCell>
+                              <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -21,10 +21,13 @@ export default function LandingPage() {
 
   const isLoading = contentLoading || settingsLoading;
 
+  // Extract colors early for loading state
+  const primaryColor = siteSettings?.primaryColor || '#2563eb';
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -32,6 +35,7 @@ export default function LandingPage() {
   // Extract site settings data with fallbacks
   const siteName = siteSettings?.siteName || 'E-Campus';
   const siteTagline = siteSettings?.siteTagline || 'Transforming Education Through Technology';
+  const secondaryColor = siteSettings?.secondaryColor || '#1e40af';
 
   // Fallback data in case API fails
   const heroHeading = content?.heroHeading || "Transform Your Institution With E-Campus";
@@ -87,7 +91,10 @@ export default function LandingPage() {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-20">
+      <section
+        className="text-white py-20"
+        style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor})` }}
+      >
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -100,14 +107,17 @@ export default function LandingPage() {
               <div className="flex gap-4">
                 <Link
                   href={cta1Link}
-                  className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition flex items-center gap-2"
+                  className="bg-white px-8 py-3 rounded-lg font-semibold transition flex items-center gap-2"
+                  style={{ color: primaryColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                 >
                   {cta1Text}
                   <ChevronRight size={20} />
                 </Link>
                 <Link
                   href={cta2Link}
-                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
+                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold transition hover:opacity-80"
                 >
                   {cta2Text}
                 </Link>
@@ -127,7 +137,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, idx) => (
               <div key={idx} className="text-center">
-                <p className="text-4xl font-bold text-blue-600">{stat.value}</p>
+                <p className="text-4xl font-bold" style={{ color: primaryColor }}>{stat.value}</p>
                 <p className="text-gray-600 mt-2">{stat.label}</p>
               </div>
             ))}
@@ -147,7 +157,7 @@ export default function LandingPage() {
                   key={idx}
                   className="bg-white rounded-lg shadow-md p-8 hover:shadow-lg transition"
                 >
-                  <Icon size={40} className="text-blue-600 mb-4" />
+                  <Icon size={40} className="mb-4" style={{ color: primaryColor }} />
                   <h3 className="text-xl font-semibold text-gray-800 mb-3">{feature.title}</h3>
                   <p className="text-gray-600">{feature.description}</p>
                 </div>
@@ -158,7 +168,10 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-16"
+        style={{ background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}
+      >
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">{ctaSectionHeading}</h2>
           <p className="text-xl opacity-90 mb-8">
@@ -166,7 +179,10 @@ export default function LandingPage() {
           </p>
           <Link
             href={ctaSectionButtonLink}
-            className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition inline-flex items-center gap-2"
+            className="bg-white px-8 py-3 rounded-lg font-semibold transition inline-flex items-center gap-2"
+            style={{ color: primaryColor }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
           >
             {ctaSectionButtonText}
             <ChevronRight size={20} />

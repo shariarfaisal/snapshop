@@ -5,16 +5,26 @@ import { Loader2 } from 'lucide-react';
 import { contentService } from '@/services/content.service';
 
 const AboutPage = () => {
+  // Fetch site settings for colors
+  const { data: siteSettings } = useQuery({
+    queryKey: ['public', 'site-settings'],
+    queryFn: contentService.getSiteSettings,
+  });
+
   // Fetch about page content
   const { data: content, isLoading } = useQuery({
     queryKey: ['public', 'about-page-content'],
     queryFn: contentService.getAboutPageContent,
   });
 
+  // Extract colors
+  const primaryColor = siteSettings?.primaryColor || '#2563eb';
+  const secondaryColor = siteSettings?.secondaryColor || '#1e40af';
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -69,7 +79,10 @@ const AboutPage = () => {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-16"
+        style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor})` }}
+      >
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">{heroTitle}</h1>
           <p className="text-xl opacity-90">
@@ -103,7 +116,7 @@ const AboutPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {coreValues.map((value, idx) => (
               <div key={idx} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-                <h3 className="text-xl font-semibold text-blue-600 mb-3">{value.title}</h3>
+                <h3 className="text-xl font-semibold mb-3" style={{ color: primaryColor }}>{value.title}</h3>
                 <p className="text-gray-600">{value.description}</p>
               </div>
             ))}
@@ -118,7 +131,7 @@ const AboutPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {achievements.map((achievement, idx) => (
               <div key={idx} className="text-center">
-                <p className="text-4xl font-bold text-blue-600 mb-2">{achievement.number}</p>
+                <p className="text-4xl font-bold mb-2" style={{ color: primaryColor }}>{achievement.number}</p>
                 <p className="text-gray-600 font-medium">{achievement.label}</p>
               </div>
             ))}
@@ -127,7 +140,7 @@ const AboutPage = () => {
       </section>
 
       {/* Why Choose Us */}
-      <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4">
+      <section className="py-16 px-4" style={{ background: `linear-gradient(to bottom right, ${primaryColor}08, ${secondaryColor}08)` }}>
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800 mb-6">Why Choose {heroTitle.replace('About ', '')}?</h2>
           <div className="grid md:grid-cols-3 gap-8">

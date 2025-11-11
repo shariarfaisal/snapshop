@@ -27,6 +27,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const copyrightText = siteSettings?.copyrightText || '© 2024 E-Campus. All rights reserved.';
   const contactEmail = siteSettings?.contactEmail || 'support@ecampus.com';
   const contactPhone = siteSettings?.contactPhone || '+91 9876543210';
+  const primaryColor = siteSettings?.primaryColor || '#2563eb';
+  const secondaryColor = siteSettings?.secondaryColor || '#1e40af';
 
   const navLinks = navSettings?.mainNavLinks || [
     { href: '/', label: 'Home' },
@@ -59,7 +61,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-gradient-to-r from-blue-600 to-blue-700 text-white sticky top-0 z-50">
+      <nav
+        className="text-white sticky top-0 z-50"
+        style={{
+          background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition">
@@ -80,7 +87,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
               <Link
                 href="/login"
-                className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition flex items-center gap-2"
+                className="bg-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+                style={{ color: primaryColor }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 <LogIn size={18} />
                 Login
@@ -103,7 +113,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block px-4 py-2 hover:bg-blue-500 rounded transition"
+                  className="block px-4 py-2 rounded transition hover:opacity-80"
+                  style={{ backgroundColor: `${secondaryColor}dd` }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}
@@ -111,7 +122,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               ))}
               <Link
                 href="/login"
-                className="block px-4 py-2 bg-white text-blue-600 rounded font-semibold"
+                className="block px-4 py-2 bg-white rounded font-semibold"
+                style={{ color: primaryColor }}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Login

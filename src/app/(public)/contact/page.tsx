@@ -41,11 +41,13 @@ export default function ContactPage() {
     sunday: 'Sunday: Closed',
   };
   const googleMapsUrl = siteSettings?.googleMapsUrl;
+  const primaryColor = siteSettings?.primaryColor || '#2563eb';
+  const secondaryColor = siteSettings?.secondaryColor || '#1e40af';
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -53,7 +55,10 @@ export default function ContactPage() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-16"
+        style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor})` }}
+      >
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
           <p className="text-xl opacity-90">We'd love to hear from you</p>
@@ -69,21 +74,21 @@ export default function ContactPage() {
               <h2 className="text-3xl font-bold text-gray-800 mb-8">Get In Touch</h2>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <Mail className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+                  <Mail className="flex-shrink-0 mt-1" size={24} style={{ color: primaryColor }} />
                   <div>
                     <h3 className="font-semibold text-gray-800">Email</h3>
                     <p className="text-gray-600">{contactEmail}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <Phone className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+                  <Phone className="flex-shrink-0 mt-1" size={24} style={{ color: primaryColor }} />
                   <div>
                     <h3 className="font-semibold text-gray-800">Phone</h3>
                     <p className="text-gray-600">{contactPhone}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <MapPin className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+                  <MapPin className="flex-shrink-0 mt-1" size={24} style={{ color: primaryColor }} />
                   <div>
                     <h3 className="font-semibold text-gray-800">Address</h3>
                     <p className="text-gray-600">{physicalAddress}</p>
@@ -91,7 +96,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+              <div className="mt-8 p-6 rounded-lg" style={{ backgroundColor: `${primaryColor}10` }}>
                 <h3 className="font-semibold text-gray-800 mb-3">Office Hours</h3>
                 {Object.entries(officeHours).map(([key, value]) => (
                   <p key={key} className="text-gray-600">{value}</p>
@@ -103,13 +108,21 @@ export default function ContactPage() {
             <div>
               <h2 className="text-3xl font-bold text-gray-800 mb-8">Send us a Message</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <style jsx>{`
+                  input:focus, textarea:focus {
+                    outline: none;
+                    ring: 2px solid ${primaryColor};
+                    border-color: transparent;
+                  }
+                `}</style>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Your Name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   required
                 />
                 <input
@@ -118,7 +131,8 @@ export default function ContactPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Your Email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   required
                 />
                 <input
@@ -127,7 +141,8 @@ export default function ContactPage() {
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="Phone Number"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                 />
                 <input
                   type="text"
@@ -135,7 +150,8 @@ export default function ContactPage() {
                   value={formData.subject}
                   onChange={handleInputChange}
                   placeholder="Subject"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   required
                 />
                 <textarea
@@ -143,13 +159,17 @@ export default function ContactPage() {
                   value={formData.message}
                   onChange={handleInputChange}
                   placeholder="Your Message"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   rows={5}
                   required
                 />
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                  className="w-full text-white px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  style={{ backgroundColor: primaryColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = secondaryColor}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
                 >
                   <Send size={20} />
                   Send Message

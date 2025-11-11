@@ -23,6 +23,12 @@ interface HelpResource {
 export default function HelpPage() {
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
+  // Fetch site settings for colors
+  const { data: siteSettings } = useQuery({
+    queryKey: ["public", "site-settings"],
+    queryFn: contentService.getSiteSettings,
+  });
+
   // Fetch FAQs
   const { data: faqs = [], isLoading: faqsLoading } = useQuery({
     queryKey: ["public", "faqs"],
@@ -37,6 +43,10 @@ export default function HelpPage() {
   });
 
   const isLoading = faqsLoading || resourcesLoading;
+
+  // Extract colors
+  const primaryColor = siteSettings?.primaryColor || '#2563eb';
+  const secondaryColor = siteSettings?.secondaryColor || '#1e40af';
 
   // Fallback FAQs
   const defaultFaqs: FAQItem[] = [
@@ -122,7 +132,7 @@ export default function HelpPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -130,7 +140,10 @@ export default function HelpPage() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-16"
+        style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor})` }}
+      >
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Help & Support</h1>
           <p className="text-xl opacity-90">Frequently Asked Questions</p>
@@ -159,9 +172,10 @@ export default function HelpPage() {
                     <h3 className="font-semibold text-gray-800">{faq.question}</h3>
                     <ChevronDown
                       size={20}
-                      className={`text-blue-600 transition-transform ${
+                      className={`transition-transform ${
                         expandedFAQ === idx ? "transform rotate-180" : ""
                       }`}
+                      style={{ color: primaryColor }}
                     />
                   </button>
                   {expandedFAQ === idx && (
@@ -177,7 +191,7 @@ export default function HelpPage() {
       </section>
 
       {/* Contact Support */}
-      <section className="bg-blue-50 py-16 px-4">
+      <section className="py-16 px-4" style={{ backgroundColor: `${primaryColor}10` }}>
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Still Have Questions?</h2>
           <p className="text-gray-600 mb-6 text-lg">
@@ -185,7 +199,10 @@ export default function HelpPage() {
           </p>
           <a
             href="/contact"
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition inline-block"
+            className="text-white px-8 py-3 rounded-lg font-semibold transition inline-block"
+            style={{ backgroundColor: primaryColor }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = secondaryColor}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = primaryColor}
           >
             Contact Support
           </a>
@@ -213,7 +230,10 @@ export default function HelpPage() {
                   {resource.link && (
                     <a
                       href={resource.link}
-                      className="mt-4 inline-block text-blue-600 hover:text-blue-700 font-medium"
+                      className="mt-4 inline-block font-medium transition"
+                      style={{ color: primaryColor }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = secondaryColor}
+                      onMouseLeave={(e) => e.currentTarget.style.color = primaryColor}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

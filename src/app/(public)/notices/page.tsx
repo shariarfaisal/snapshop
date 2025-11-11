@@ -17,6 +17,7 @@ import { Search, Calendar, User, AlertCircle, Loader2, ChevronRight } from "luci
 import { format } from "date-fns";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { contentService } from "@/services/content.service";
 
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
@@ -41,6 +42,16 @@ export default function NoticesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("latest");
   const [priorityFilter, setPriorityFilter] = useState("all");
+
+  // Fetch site settings for colors
+  const { data: siteSettings } = useQuery({
+    queryKey: ["public", "site-settings"],
+    queryFn: contentService.getSiteSettings,
+  });
+
+  // Extract colors
+  const primaryColor = siteSettings?.primaryColor || '#2563eb';
+  const secondaryColor = siteSettings?.secondaryColor || '#1e40af';
 
   // Fetch notices
   const { data: noticesData, isLoading } = useQuery({
@@ -124,11 +135,14 @@ export default function NoticesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-12 md:py-16">
+      <div
+        className="text-white py-12 md:py-16"
+        style={{ background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-3">Notices</h1>
-            <p className="text-blue-100 text-lg max-w-2xl mx-auto">
+            <p className="text-lg max-w-2xl mx-auto opacity-90">
               Stay updated with the latest announcements and important information
             </p>
           </div>
@@ -190,7 +204,7 @@ export default function NoticesPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" style={{ color: primaryColor }} />
               <p className="text-gray-600">Loading notices...</p>
             </div>
           </div>
@@ -213,7 +227,8 @@ export default function NoticesPage() {
             {processedNotices.map((notice: Notice) => (
               <Card
                 key={notice.id}
-                className="border-0 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-blue-200"
+                className="border-0 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
+                style={{ '--hover-border-color': `${primaryColor}33` } as React.CSSProperties}
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -292,7 +307,10 @@ export default function NoticesPage() {
                     <div className="flex-shrink-0 md:ml-4">
                       <Button
                         asChild
-                        className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full md:w-auto text-white"
+                        style={{ backgroundColor: primaryColor }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = secondaryColor)}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = primaryColor)}
                       >
                         <Link href={`/notices/${notice.id}`}>
                           Read More

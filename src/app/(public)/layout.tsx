@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Menu, X, LogIn, BookOpen } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Menu, X, BookOpen } from 'lucide-react';
 import { contentService } from '@/services/content.service';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   // Fetch site settings
   const { data: siteSettings } = useQuery({
@@ -76,25 +78,28 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="hover:opacity-80 transition"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Link
-                href="/login"
-                className="bg-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2"
-                style={{ color: primaryColor }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                <LogIn size={18} />
-                Login
-              </Link>
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="transition relative"
+                    style={{
+                      opacity: isActive ? 1 : 0.9,
+                      fontWeight: isActive ? 600 : 400,
+                    }}
+                  >
+                    {link.label}
+                    {isActive && (
+                      <span
+                        className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full"
+                        style={{ backgroundColor: 'white' }}
+                      />
+                    )}
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -109,25 +114,24 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden pb-4 space-y-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="block px-4 py-2 rounded transition hover:opacity-80"
-                  style={{ backgroundColor: `${secondaryColor}dd` }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Link
-                href="/login"
-                className="block px-4 py-2 bg-white rounded font-semibold"
-                style={{ color: primaryColor }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Login
-              </Link>
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="block px-4 py-2 rounded transition hover:opacity-80"
+                    style={{
+                      backgroundColor: isActive ? 'white' : `${secondaryColor}dd`,
+                      color: isActive ? primaryColor : 'white',
+                      fontWeight: isActive ? 600 : 400,
+                    }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

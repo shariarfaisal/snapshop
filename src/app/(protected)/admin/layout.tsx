@@ -173,6 +173,55 @@ const navigation: NavigationItem[] = [
     ],
   },
   {
+    name: "Content Management",
+    icon: FileText,
+    section: "admin",
+    requiredRole: "admin",
+    permissions: "readAll-content",
+    children: [
+      {
+        name: "Dashboard",
+        href: "/admin/content",
+        permissions: "readAll-content",
+      },
+      {
+        name: "Site Settings",
+        href: "/admin/content/site",
+        permissions: "readAll-content",
+      },
+      {
+        name: "Landing Page",
+        href: "/admin/content/landing-page",
+        permissions: "readAll-content",
+      },
+      {
+        name: "About Page",
+        href: "/admin/content/about-page",
+        permissions: "readAll-content",
+      },
+      {
+        name: "FAQs",
+        href: "/admin/content/faqs",
+        permissions: "readAll-content",
+      },
+      {
+        name: "Help Resources",
+        href: "/admin/content/help-resources",
+        permissions: "readAll-content",
+      },
+      {
+        name: "Navigation",
+        href: "/admin/content/navigation",
+        permissions: "readAll-content",
+      },
+      {
+        name: "SEO Settings",
+        href: "/admin/content/seo",
+        permissions: "readAll-content",
+      },
+    ],
+  },
+  {
     name: "Reports",
     href: "/admin/reports",
     icon: BarChart3,

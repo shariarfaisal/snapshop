@@ -49,6 +49,7 @@ export default function ExamResultsPage() {
   const examId = parseInt(params.id as string);
   const subjectId = searchParams.get("subject") ? parseInt(searchParams.get("subject")!) : null;
 
+  const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<number | null>(subjectId);
   const [studentMarks, setStudentMarks] = useState<Map<number, StudentMark>>(new Map());
   const [maxMarks, setMaxMarks] = useState(100);
@@ -68,6 +69,23 @@ export default function ExamResultsPage() {
     return Array.isArray(subjectsData) ? subjectsData : [];
   }, [subjectsData]);
 
+  // Get unique classes from subjects
+  const classes = useMemo(() => {
+    const uniqueClasses = new Map();
+    subjects.forEach((subject) => {
+      if (subject.school_class && subject.class_id) {
+        uniqueClasses.set(subject.class_id, subject.school_class);
+      }
+    });
+    return Array.from(uniqueClasses.values());
+  }, [subjects]);
+
+  // Filter subjects by selected class
+  const filteredSubjects = useMemo(() => {
+    if (!selectedClass) return subjects;
+    return subjects.filter((s) => s.class_id === selectedClass);
+  }, [subjects, selectedClass]);
+
   // Extract students from participants and get their user info
   const students = useMemo(() => {
     if (!participantsData) return [];
@@ -81,10 +99,20 @@ export default function ExamResultsPage() {
 
   // Set default subject when subjects load
   useEffect(() => {
-    if (subjects.length > 0 && !selectedSubject) {
-      setSelectedSubject(subjects[0].subject_id);
+    if (subjects.length > 0 && !selectedClass) {
+      // Set first class as default
+      if (classes.length > 0) {
+        setSelectedClass(classes[0].id);
+      }
     }
-  }, [subjects, selectedSubject]);
+  }, [subjects, classes, selectedClass]);
+
+  // Set default subject when class changes
+  useEffect(() => {
+    if (filteredSubjects.length > 0 && (!selectedSubject || !filteredSubjects.find((s) => s.subject_id === selectedSubject))) {
+      setSelectedSubject(filteredSubjects[0].subject_id);
+    }
+  }, [filteredSubjects, selectedSubject]);
 
   // Update maxMarks when selected subject changes
   useEffect(() => {
@@ -226,28 +254,54 @@ export default function ExamResultsPage() {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Select Subject</CardTitle>
+            <CardTitle>Filters</CardTitle>
             {exam.results_published && (
               <span className="text-sm text-green-600 font-medium">✓ Results Published</span>
             )}
           </div>
         </CardHeader>
         <CardContent>
-          <Select
-            value={selectedSubject?.toString() || ""}
-            onValueChange={(v) => setSelectedSubject(parseInt(v))}
-          >
-            <SelectTrigger className="w-full md:w-[300px]">
-              <SelectValue placeholder="Select a subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.id} value={subject.subject_id.toString()}>
-                  {subject.subject?.name} - {subject.school_class?.name} (Max: {subject.max_marks})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Class Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Class</label>
+              <Select
+                value={selectedClass?.toString() || ""}
+                onValueChange={(v) => setSelectedClass(parseInt(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Subject Filter */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <Select
+                value={selectedSubject?.toString() || ""}
+                onValueChange={(v) => setSelectedSubject(parseInt(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSubjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.subject_id.toString()}>
+                      {subject.subject?.name} (Max: {subject.max_marks})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

@@ -13,6 +13,7 @@ import {
   Book,
   Map,
   DoorOpen,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -144,6 +145,10 @@ export const sidebarConstant: ISidebarConstant = {
         {
           title: "Security",
           url: "/settings/security",
+        },
+        {
+          title: "Public Content",
+          url: "/admin/settings/content",
         },
       ],
     },

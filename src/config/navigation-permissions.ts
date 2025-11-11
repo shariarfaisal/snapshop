@@ -213,6 +213,55 @@ export const NAVIGATION_PERMISSIONS: NavigationPermission[] = [
     label: "Security",
     description: "Manage security settings",
   },
+  // Content Management
+  {
+    path: "/admin/content",
+    permissions: "readAll-content",
+    label: "Content Management",
+    description: "Manage public website content",
+  },
+  {
+    path: "/admin/content/site",
+    permissions: "readAll-content",
+    label: "Site Settings",
+    description: "Manage site settings and metadata",
+  },
+  {
+    path: "/admin/content/landing-page",
+    permissions: "readAll-content",
+    label: "Landing Page",
+    description: "Manage landing page content",
+  },
+  {
+    path: "/admin/content/about-page",
+    permissions: "readAll-content",
+    label: "About Page",
+    description: "Manage about page content",
+  },
+  {
+    path: "/admin/content/faqs",
+    permissions: "readAll-content",
+    label: "FAQs",
+    description: "Manage frequently asked questions",
+  },
+  {
+    path: "/admin/content/help-resources",
+    permissions: "readAll-content",
+    label: "Help Resources",
+    description: "Manage help resources and documentation",
+  },
+  {
+    path: "/admin/content/navigation",
+    permissions: "readAll-content",
+    label: "Navigation",
+    description: "Manage website navigation menus",
+  },
+  {
+    path: "/admin/content/seo",
+    permissions: "readAll-content",
+    label: "SEO Settings",
+    description: "Manage SEO and metadata settings",
+  },
 ];
 
 /**

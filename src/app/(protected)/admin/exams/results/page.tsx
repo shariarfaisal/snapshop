@@ -3,8 +3,21 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -21,14 +34,21 @@ export default function MarksEntryPage() {
   // Hooks
   const { data: academicYearsData } = useAcademicYears();
   const { data: currentYearData } = useCurrentAcademicYear();
-  const { data: examsData, isLoading: examsLoading } = useExams(selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined);
-  const { data: classesData, isLoading: classesLoading } = useSchoolClasses({ status: true, perPage: 100 });
+  const { data: examsData, isLoading: examsLoading } = useExams(
+    selectedAcademicYearId ? { academic_year_id: selectedAcademicYearId } : undefined
+  );
+  const { data: classesData, isLoading: classesLoading } = useSchoolClasses({
+    status: true,
+    perPage: 100,
+  });
   const { data: examSubjects = [], isLoading: subjectsLoading } = useExamSubjects(selectedExamId);
 
   // Derived data
-  const academicYears = Array.isArray(academicYearsData) ? academicYearsData : (academicYearsData?.data || []);
-  const exams = Array.isArray(examsData) ? examsData : (examsData?.data || []);
-  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
+  const academicYears = Array.isArray(academicYearsData)
+    ? academicYearsData
+    : academicYearsData?.data || [];
+  const exams = Array.isArray(examsData) ? examsData : examsData?.data || [];
+  const classes = Array.isArray(classesData) ? classesData : classesData?.data || [];
 
   // Set current academic year as default
   useEffect(() => {
@@ -50,25 +70,34 @@ export default function MarksEntryPage() {
   // Filter exam subjects based on class and status
   const filteredSubjects = examSubjects.filter((subject) => {
     const classMatch = !selectedClassId || subject.school_class?.id === selectedClassId;
-    const statusMatch = !selectedStatus || (subject.marks_entry_status || 'pending') === selectedStatus;
+    const statusMatch =
+      !selectedStatus || (subject.marks_entry_status || "pending") === selectedStatus;
     return classMatch && statusMatch;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "text-green-600";
-      case "in_progress": return "text-yellow-600";
-      case "pending": return "text-gray-600";
-      default: return "text-gray-600";
+      case "completed":
+        return "text-green-600";
+      case "in_progress":
+        return "text-yellow-600";
+      case "pending":
+        return "text-gray-600";
+      default:
+        return "text-gray-600";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed": return <CheckCircle className="h-4 w-4" />;
-      case "in_progress": return <Clock className="h-4 w-4" />;
-      case "pending": return <AlertCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />;
+      case "in_progress":
+        return <Clock className="h-4 w-4" />;
+      case "pending":
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
     }
   };
 
@@ -96,8 +125,8 @@ export default function MarksEntryPage() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Academic Year</label>
-              <Select 
-                value={selectedAcademicYearId || ""} 
+              <Select
+                value={selectedAcademicYearId || ""}
                 onValueChange={setSelectedAcademicYearId}
               >
                 <SelectTrigger>
@@ -135,14 +164,14 @@ export default function MarksEntryPage() {
             <div>
               <label className="text-sm font-medium mb-2 block">Class</label>
               <Select
-                value={selectedClassId?.toString() || ""}
-                onValueChange={(value) => setSelectedClassId(value ? parseInt(value) : null)}
+                value={selectedClassId?.toString() || "all"}
+                onValueChange={(value) => setSelectedClassId(value === "all" ? null : parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Classes</SelectItem>
+                  <SelectItem value="all">All Classes</SelectItem>
                   {classes.map((cls: any) => (
                     <SelectItem key={cls.id} value={cls.id.toString()}>
                       {cls.name}
@@ -154,12 +183,12 @@ export default function MarksEntryPage() {
 
             <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus || "all"} onValueChange={(value) => setSelectedStatus(value === "all" ? "" : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
@@ -168,8 +197,8 @@ export default function MarksEntryPage() {
             </div>
 
             <div className="flex items-end">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => {
                   setSelectedClassId(null);
@@ -215,32 +244,33 @@ export default function MarksEntryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSubjects.map((subject) => (
+                  {filteredSubjects.map((subject) => {
+                    const matchingClass = classes.find(c => c.id === subject.class_id);
+                    return (
                     <TableRow key={subject.id}>
                       <TableCell className="font-medium">
-                        {subject.subject?.name || 'N/A'}
+                        {subject.subject?.name || "N/A"}
                       </TableCell>
-                      <TableCell>
-                        {subject.school_class?.name || 'N/A'}
-                      </TableCell>
+                      <TableCell>{matchingClass?.name || subject.school_class?.name || "N/A"}</TableCell>
                       <TableCell>{subject.max_marks}</TableCell>
                       <TableCell>{subject.pass_marks}</TableCell>
                       <TableCell>
-                        {subject.exam_date 
+                        {subject.exam_date
                           ? new Date(subject.exam_date).toLocaleDateString()
-                          : 'Not scheduled'
-                        }
+                          : "Not scheduled"}
                         {subject.exam_time && (
-                          <span className="text-xs text-gray-500 block">
-                            {subject.exam_time}
-                          </span>
+                          <span className="text-xs text-gray-500 block">{subject.exam_time}</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className={`flex items-center gap-1 ${getStatusColor(subject.marks_entry_status || 'pending')}`}>
-                          {getStatusIcon(subject.marks_entry_status || 'pending')}
+                        <div
+                          className={`flex items-center gap-1 ${getStatusColor(
+                            subject.marks_entry_status || "pending"
+                          )}`}
+                        >
+                          {getStatusIcon(subject.marks_entry_status || "pending")}
                           <span className="text-xs capitalize">
-                            {subject.marks_entry_status || 'pending'}
+                            {subject.marks_entry_status || "pending"}
                           </span>
                         </div>
                       </TableCell>
@@ -253,7 +283,8 @@ export default function MarksEntryPage() {
                         </Link>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -268,9 +299,7 @@ export default function MarksEntryPage() {
             <h3 className="text-lg font-semibold mb-2">No Exams Found</h3>
             <p className="text-gray-600 mb-4">Create an exam first to start entering marks</p>
             <Link href="/admin/exams/setup/create-exam-form">
-              <Button>
-                Create New Exam
-              </Button>
+              <Button>Create New Exam</Button>
             </Link>
           </CardContent>
         </Card>

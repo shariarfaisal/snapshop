@@ -30,6 +30,7 @@ import {
 import { format } from "date-fns";
 import { Search, Download, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Combobox, ComboboxOption } from "@/components/ui/combobox";
 
 export default function StudentLedgerPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
@@ -76,6 +77,12 @@ export default function StudentLedgerPage() {
     (s: any) => s.id === selectedStudentId
   );
 
+  // Build student options for combobox
+  const studentOptions: ComboboxOption[] = (studentsData?.data || []).map((student: any) => ({
+    value: student.id,
+    label: `${student.user?.firstName} ${student.user?.lastName} (${student.admissionNumber})`,
+  }));
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
@@ -108,21 +115,13 @@ export default function StudentLedgerPage() {
               <label className="text-sm font-medium mb-2 block">
                 Select Student
               </label>
-              <Select
-                value={selectedStudentId?.toString() || ""}
+              <Combobox
+                options={studentOptions}
+                value={selectedStudentId || ""}
                 onValueChange={(value) => setSelectedStudentId(Number(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Search and select student..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {studentsData?.data?.map((student: any) => (
-                    <SelectItem key={student.id} value={student.id.toString()}>
-                      {student.user?.firstName} {student.user?.lastName} - {student.admissionNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Search and select student..."
+                searchPlaceholder="Search by name or admission number..."
+              />
             </div>
 
             {/* Academic Year Filter */}

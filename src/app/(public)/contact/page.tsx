@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Mail, Phone, MapPin, Send, Loader2 } from 'lucide-react';
+import { contentService } from '@/services/content.service';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -10,6 +12,12 @@ export default function ContactPage() {
     phone: '',
     subject: '',
     message: '',
+  });
+
+  // Fetch site settings for contact information
+  const { data: siteSettings, isLoading } = useQuery({
+    queryKey: ['public', 'site-settings'],
+    queryFn: contentService.getSiteSettings,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -22,6 +30,25 @@ export default function ContactPage() {
     alert('Thank you for contacting us. We will get back to you soon!');
     setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
   };
+
+  // Extract data with fallbacks
+  const contactEmail = siteSettings?.contactEmail || 'support@ecampus.com';
+  const contactPhone = siteSettings?.contactPhone || '+91 9876543210';
+  const physicalAddress = siteSettings?.physicalAddress || '123 Education Street, Learning City, LC 12345';
+  const officeHours = siteSettings?.officeHours || {
+    weekdays: 'Monday - Friday: 9:00 AM - 6:00 PM',
+    saturday: 'Saturday: 10:00 AM - 2:00 PM',
+    sunday: 'Sunday: Closed',
+  };
+  const googleMapsUrl = siteSettings?.googleMapsUrl;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white">
@@ -45,30 +72,30 @@ export default function ContactPage() {
                   <Mail className="text-blue-600 flex-shrink-0 mt-1" size={24} />
                   <div>
                     <h3 className="font-semibold text-gray-800">Email</h3>
-                    <p className="text-gray-600">support@ecampus.com</p>
+                    <p className="text-gray-600">{contactEmail}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <Phone className="text-blue-600 flex-shrink-0 mt-1" size={24} />
                   <div>
                     <h3 className="font-semibold text-gray-800">Phone</h3>
-                    <p className="text-gray-600">+91 9876543210</p>
+                    <p className="text-gray-600">{contactPhone}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
                   <MapPin className="text-blue-600 flex-shrink-0 mt-1" size={24} />
                   <div>
                     <h3 className="font-semibold text-gray-800">Address</h3>
-                    <p className="text-gray-600">123 Education Street, Learning City, LC 12345</p>
+                    <p className="text-gray-600">{physicalAddress}</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-8 p-6 bg-blue-50 rounded-lg">
                 <h3 className="font-semibold text-gray-800 mb-3">Office Hours</h3>
-                <p className="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                <p className="text-gray-600">Saturday: 10:00 AM - 2:00 PM</p>
-                <p className="text-gray-600">Sunday: Closed</p>
+                {Object.entries(officeHours).map(([key, value]) => (
+                  <p key={key} className="text-gray-600">{value}</p>
+                ))}
               </div>
             </div>
 
@@ -137,9 +164,24 @@ export default function ContactPage() {
       <section className="bg-gray-100 py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Reach Us</h2>
-          <div className="h-96 bg-gray-300 rounded-lg flex items-center justify-center">
-            <p className="text-gray-600">Map would be displayed here</p>
-          </div>
+          {googleMapsUrl ? (
+            <div className="h-96 rounded-lg overflow-hidden">
+              <iframe
+                src={googleMapsUrl}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Location Map"
+              />
+            </div>
+          ) : (
+            <div className="h-96 bg-gray-300 rounded-lg flex items-center justify-center">
+              <p className="text-gray-600">Map location not configured</p>
+            </div>
+          )}
         </div>
       </section>
     </div>

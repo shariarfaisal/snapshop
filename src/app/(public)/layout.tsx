@@ -1,35 +1,60 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Menu, X, LogIn, BookOpen } from 'lucide-react';
+import { contentService } from '@/services/content.service';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
+  // Fetch site settings
+  const { data: siteSettings } = useQuery({
+    queryKey: ['public', 'site-settings'],
+    queryFn: contentService.getSiteSettings,
+  });
+
+  // Fetch navigation settings
+  const { data: navSettings } = useQuery({
+    queryKey: ['public', 'navigation-settings'],
+    queryFn: contentService.getNavigationSettings,
+  });
+
+  // Extract data with fallbacks
+  const siteName = siteSettings?.siteName || 'E-Campus';
+  const siteTagline = siteSettings?.siteTagline || 'Comprehensive Education Management System for modern institutions';
+  const copyrightText = siteSettings?.copyrightText || '© 2024 E-Campus. All rights reserved.';
+  const contactEmail = siteSettings?.contactEmail || 'support@ecampus.com';
+  const contactPhone = siteSettings?.contactPhone || '+91 9876543210';
+
+  const navLinks = navSettings?.mainNavLinks || [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
+    { href: '/notices', label: 'Notices' },
     { href: '/admission/form', label: 'Admission' },
     { href: '/contact', label: 'Contact' },
     { href: '/help', label: 'Help' },
   ];
 
-  const footerLinks = {
-    quickLinks: [
-      { href: '/about', label: 'About Us' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/help', label: 'Help & Support' },
-    ],
-    support: [
-      { label: 'Email: support@ecampus.com' },
-      { label: 'Phone: +91 9876543210' },
-    ],
-    legal: [
-      { href: '#', label: 'Privacy Policy' },
-      { href: '#', label: 'Terms of Service' },
-    ],
-  };
+  const footerQuickLinks = navSettings?.footerQuickLinks || [
+    { href: '/about', label: 'About Us' },
+    { href: '/notices', label: 'Notices' },
+    { href: '/contact', label: 'Contact' },
+    { href: '/help', label: 'Help & Support' },
+  ];
+
+  // Build footer support links dynamically from site settings
+  const footerSupportLinks = [
+    { label: `Email: ${contactEmail}` },
+    { label: `Phone: ${contactPhone}` },
+    { href: '/contact', label: 'Contact Us' },
+  ];
+
+  const footerLegalLinks = navSettings?.footerLegalLinks || [
+    { href: '#', label: 'Privacy Policy' },
+    { href: '#', label: 'Terms of Service' },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -39,7 +64,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition">
               <BookOpen size={32} />
-              <h1 className="text-2xl font-bold">E-Campus</h1>
+              <h1 className="text-2xl font-bold">{siteName}</h1>
             </Link>
 
             {/* Desktop Menu */}
@@ -109,10 +134,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div>
               <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <BookOpen size={24} />
-                E-Campus
+                {siteName}
               </h4>
               <p className="text-gray-400">
-                Comprehensive Education Management System for modern institutions
+                {siteTagline}
               </p>
             </div>
 
@@ -120,7 +145,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div>
               <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-gray-400">
-                {footerLinks.quickLinks.map((link) => (
+                {footerQuickLinks.map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} className="hover:text-white transition">
                       {link.label}
@@ -134,14 +159,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div>
               <h4 className="text-lg font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-gray-400">
-                {footerLinks.support.map((item, idx) => (
-                  <li key={idx}>{item.label}</li>
+                {footerSupportLinks.map((item, idx) => (
+                  <li key={idx}>
+                    {item.href ? (
+                      <Link href={item.href} className="hover:text-white transition">
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <span>{item.label}</span>
+                    )}
+                  </li>
                 ))}
-                <li>
-                  <Link href="/contact" className="hover:text-white transition">
-                    Contact Us
-                  </Link>
-                </li>
               </ul>
             </div>
 
@@ -149,7 +177,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div>
               <h4 className="text-lg font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-gray-400">
-                {footerLinks.legal.map((link) => (
+                {footerLegalLinks.map((link) => (
                   <li key={link.href}>
                     <a href={link.href} className="hover:text-white transition">
                       {link.label}
@@ -162,7 +190,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
           {/* Bottom Bar */}
           <div className="border-t border-gray-700 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 E-Campus. All rights reserved.</p>
+            <p>{copyrightText}</p>
           </div>
         </div>
       </footer>

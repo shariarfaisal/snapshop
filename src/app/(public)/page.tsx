@@ -1,61 +1,88 @@
 "use client";
 
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import {
-  Menu,
-  X,
-  LogIn,
-  BookOpen,
-  Users,
-  Award,
-  MessageSquare,
-  FileText,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
+import { contentService } from "@/services/content.service";
+import { getIconByName } from "@/lib/icon-mapper";
 
 export default function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Fetch landing page content
+  const { data: content, isLoading: contentLoading } = useQuery({
+    queryKey: ['public', 'landing-page-content'],
+    queryFn: contentService.getLandingPageContent,
+  });
 
-  const features = [
-    {
-      icon: BookOpen,
-      title: "Academic Management",
-      description: "Complete management of classes, subjects, timetables, and academic planning.",
-    },
-    {
-      icon: Users,
-      title: "User Management",
-      description: "Comprehensive user management with role-based access for all stakeholders.",
-    },
-    {
-      icon: Award,
-      title: "Attendance & Marks",
-      description: "Track student attendance and manage marks with comprehensive reporting.",
-    },
-    {
-      icon: MessageSquare,
-      title: "Communication",
-      description: "Direct communication channel between teachers, students, and parents.",
-    },
-    {
-      icon: FileText,
-      title: "Reports & Analytics",
-      description: "Generate detailed reports and analytics for better decision making.",
-    },
-    {
-      icon: Menu,
-      title: "Fee Management",
-      description: "Complete fee management with online payment gateway integration.",
-    },
-  ];
+  // Fetch site settings for branding
+  const { data: siteSettings, isLoading: settingsLoading } = useQuery({
+    queryKey: ['public', 'site-settings'],
+    queryFn: contentService.getSiteSettings,
+  });
 
-  const stats = [
+  const isLoading = contentLoading || settingsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  // Extract site settings data with fallbacks
+  const siteName = siteSettings?.siteName || 'E-Campus';
+  const siteTagline = siteSettings?.siteTagline || 'Transforming Education Through Technology';
+
+  // Fallback data in case API fails
+  const heroHeading = content?.heroHeading || "Transform Your Institution With E-Campus";
+  const heroSubheading = content?.heroSubheading || "The complete education management system for modern schools and colleges. Manage admissions, academics, attendance, and communications from one powerful platform.";
+  const heroIcon = content?.heroIcon || "🎓";
+  const cta1Text = content?.cta1Text || "Apply Now";
+  const cta1Link = content?.cta1Link || "/admission/form";
+  const cta2Text = content?.cta2Text || "Learn More";
+  const cta2Link = content?.cta2Link || "/about";
+  const stats = content?.stats || [
     { label: "Active Users", value: "2,500+" },
     { label: "Institutions", value: "50+" },
     { label: "Students", value: "50,000+" },
     { label: "Teachers", value: "2,500+" },
   ];
+  const features = content?.features || [
+    {
+      icon: "BookOpen",
+      title: "Academic Management",
+      description: "Complete management of classes, subjects, timetables, and academic planning.",
+    },
+    {
+      icon: "Users",
+      title: "User Management",
+      description: "Comprehensive user management with role-based access for all stakeholders.",
+    },
+    {
+      icon: "Award",
+      title: "Attendance & Marks",
+      description: "Track student attendance and manage marks with comprehensive reporting.",
+    },
+    {
+      icon: "MessageSquare",
+      title: "Communication",
+      description: "Direct communication channel between teachers, students, and parents.",
+    },
+    {
+      icon: "FileText",
+      title: "Reports & Analytics",
+      description: "Generate detailed reports and analytics for better decision making.",
+    },
+    {
+      icon: "Bell",
+      title: "Fee Management",
+      description: "Complete fee management with online payment gateway integration.",
+    },
+  ];
+  const ctaSectionHeading = content?.ctaSectionHeading || "Ready to Transform Your School?";
+  const ctaSectionDescription = content?.ctaSectionDescription || "Join hundreds of schools that have already moved to digital management with E-Campus.";
+  const ctaSectionButtonText = content?.ctaSectionButtonText || "Start Your Journey";
+  const ctaSectionButtonLink = content?.ctaSectionButtonLink || "/admission/form";
 
   return (
     <div className="bg-white">
@@ -65,31 +92,30 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-                Transform Your Institution With E-Campus
+                {heroHeading}
               </h1>
               <p className="text-xl opacity-90 mb-8 leading-relaxed">
-                The complete education management system for modern schools and colleges. Manage
-                admissions, academics, attendance, and communications from one powerful platform.
+                {heroSubheading}
               </p>
               <div className="flex gap-4">
                 <Link
-                  href="/admission/form"
+                  href={cta1Link}
                   className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition flex items-center gap-2"
                 >
-                  Apply Now
+                  {cta1Text}
                   <ChevronRight size={20} />
                 </Link>
                 <Link
-                  href="/about"
+                  href={cta2Link}
                   className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
                 >
-                  Learn More
+                  {cta2Text}
                 </Link>
               </div>
             </div>
             <div className="bg-white bg-opacity-10 rounded-lg p-8 text-center">
-              <div className="text-6xl mb-4">🎓</div>
-              <p className="text-lg">Transforming Education Through Technology</p>
+              <div className="text-6xl mb-4">{heroIcon}</div>
+              <p className="text-lg">{siteTagline}</p>
             </div>
           </div>
         </div>
@@ -115,7 +141,7 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-center text-gray-800 mb-16">Key Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, idx) => {
-              const Icon = feature.icon;
+              const Icon = getIconByName(feature.icon);
               return (
                 <div
                   key={idx}
@@ -134,15 +160,15 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your School?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">{ctaSectionHeading}</h2>
           <p className="text-xl opacity-90 mb-8">
-            Join hundreds of schools that have already moved to digital management with E-Campus.
+            {ctaSectionDescription}
           </p>
           <Link
-            href="/admission/form"
+            href={ctaSectionButtonLink}
             className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition inline-flex items-center gap-2"
           >
-            Start Your Journey
+            {ctaSectionButtonText}
             <ChevronRight size={20} />
           </Link>
         </div>

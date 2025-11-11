@@ -13,37 +13,40 @@ import {
   XCircle,
 } from 'lucide-react';
 import { admissionService } from '@/services/admissionService';
+import { StudentFormDialog } from '@/components/students/student-form-dialog';
+import { toast } from 'sonner';
 
 interface AdmissionDetail {
   id: number;
   application_number: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   student_name: string;
   email: string;
   phone: string;
   date_of_birth: string;
   gender: string;
   address: string;
-  status: 'pending' | 'approved' | 'rejected' | 'admitted';
+  status: 'pending' | 'approved' | 'rejected' | 'admitted' | 'applied' | 'under_review' | 'shortlisted' | 'test_scheduled' | 'test_passed' | 'interview_scheduled' | 'withdrawn';
   remarks?: string;
-  schoolClass: { id: number; name: string };
-  applyingForClass?: { id: number; name: string };
-  fatherName?: string;
-  fatherPhone?: string;
-  fatherOccupation?: string;
-  motherName?: string;
-  motherPhone?: string;
-  motherOccupation?: string;
-  guardianName?: string;
-  guardianRelation?: string;
-  guardianPhone?: string;
-  previousSchool?: string;
-  previousClass?: string;
+  school_class?: { id: number; name: string };
+  applying_for_class?: { id: number; name: string };
+  admitted_class?: { id: number; name: string };
+  father_name?: string;
+  father_phone?: string;
+  father_occupation?: string;
+  mother_name?: string;
+  mother_phone?: string;
+  mother_occupation?: string;
+  guardian_name?: string;
+  guardian_relation?: string;
+  guardian_phone?: string;
+  previous_school?: string;
+  previous_class?: string;
   documents?: any;
-  reviewedAt?: string;
-  appliedAt: string;
-  createdAt: string;
+  reviewed_at?: string;
+  applied_at: string;
+  created_at: string;
 }
 
 export default function AdmissionDetailPage() {
@@ -58,6 +61,7 @@ export default function AdmissionDetailPage() {
   const [newStatus, setNewStatus] = useState('');
   const [remarks, setRemarks] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAddStudentDialog, setShowAddStudentDialog] = useState(false);
 
   useEffect(() => {
     fetchApplicationDetail();
@@ -100,25 +104,19 @@ export default function AdmissionDetailPage() {
   };
 
   const handleCreateUser = () => {
-    if (!application) return;
-    sessionStorage.setItem(
-      'prefill_student_data',
-      JSON.stringify({
-        firstName: application.first_name,
-        lastName: application.last_name,
-        email: application.email,
-        phone: application.phone,
-        dateOfBirth: application.date_of_birth,
-        gender: application.gender,
-        classId: application.schoolClass?.id,
-        address: application.address,
-        fatherName: application.fatherName,
-        motherName: application.motherName,
-        guardianName: application.guardianName,
-        admissionApplicationId: application.id,
-      })
-    );
-    router.push('/admin/users/create');
+    setShowAddStudentDialog(true);
+  };
+
+  const handleStudentCreated = () => {
+    toast.success('Student created successfully from admission!');
+    setShowAddStudentDialog(false);
+    // Update application status to admitted if desired
+    if (application) {
+      setApplication({
+        ...application,
+        status: 'admitted',
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -183,7 +181,7 @@ export default function AdmissionDetailPage() {
           <div className="flex justify-between items-start mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                {application.first_name} {application.last_name}
+                {application.student_name || `${application.first_name || ''} ${application.last_name || ''}`.trim() || 'Applicant'}
               </h1>
               <p className="text-gray-500 font-mono">{application.application_number}</p>
             </div>
@@ -236,19 +234,19 @@ export default function AdmissionDetailPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Class Applied For</label>
-                  <p className="text-gray-900">{application.applyingForClass?.name || '-'}</p>
+                  <p className="text-gray-900">{application.applying_for_class?.name || '-'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Assigned Class</label>
-                  <p className="text-gray-900">{application.schoolClass?.name || '-'}</p>
+                  <p className="text-gray-900">{application.school_class?.name || application.admitted_class?.name || '-'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Previous School</label>
-                  <p className="text-gray-900">{application.previousSchool || '-'}</p>
+                  <p className="text-gray-900">{application.previous_school || '-'}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600">Previous Class</label>
-                  <p className="text-gray-900">{application.previousClass || '-'}</p>
+                  <p className="text-gray-900">{application.previous_class || '-'}</p>
                 </div>
               </div>
             </div>
@@ -260,56 +258,56 @@ export default function AdmissionDetailPage() {
               Parent/Guardian Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {application.fatherName && (
+              {application.father_name && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-800 mb-2">Father</h3>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Name:</span> {application.fatherName}
+                    <span className="font-medium">Name:</span> {application.father_name}
                   </p>
-                  {application.fatherPhone && (
+                  {application.father_phone && (
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Phone:</span> {application.fatherPhone}
+                      <span className="font-medium">Phone:</span> {application.father_phone}
                     </p>
                   )}
-                  {application.fatherOccupation && (
+                  {application.father_occupation && (
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Occupation:</span> {application.fatherOccupation}
+                      <span className="font-medium">Occupation:</span> {application.father_occupation}
                     </p>
                   )}
                 </div>
               )}
-              {application.motherName && (
+              {application.mother_name && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-800 mb-2">Mother</h3>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Name:</span> {application.motherName}
+                    <span className="font-medium">Name:</span> {application.mother_name}
                   </p>
-                  {application.motherPhone && (
+                  {application.mother_phone && (
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Phone:</span> {application.motherPhone}
+                      <span className="font-medium">Phone:</span> {application.mother_phone}
                     </p>
                   )}
-                  {application.motherOccupation && (
+                  {application.mother_occupation && (
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Occupation:</span> {application.motherOccupation}
+                      <span className="font-medium">Occupation:</span> {application.mother_occupation}
                     </p>
                   )}
                 </div>
               )}
-              {application.guardianName && (
+              {application.guardian_name && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-800 mb-2">Guardian</h3>
                   <p className="text-sm text-gray-600">
-                    <span className="font-medium">Name:</span> {application.guardianName}
+                    <span className="font-medium">Name:</span> {application.guardian_name}
                   </p>
-                  {application.guardianRelation && (
+                  {application.guardian_relation && (
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Relation:</span> {application.guardianRelation}
+                      <span className="font-medium">Relation:</span> {application.guardian_relation}
                     </p>
                   )}
-                  {application.guardianPhone && (
+                  {application.guardian_phone && (
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Phone:</span> {application.guardianPhone}
+                      <span className="font-medium">Phone:</span> {application.guardian_phone}
                     </p>
                   )}
                 </div>
@@ -341,7 +339,7 @@ export default function AdmissionDetailPage() {
               className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
             >
               <Plus size={20} />
-              Create User
+              Add to Student
             </button>
           </div>
         </div>
@@ -395,6 +393,27 @@ export default function AdmissionDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Student Dialog - Pre-filled with admission data */}
+      {application && (
+        <StudentFormDialog
+          open={showAddStudentDialog}
+          onOpenChange={setShowAddStudentDialog}
+          onSuccess={handleStudentCreated}
+          prefillData={{
+            firstName: application.first_name || '',
+            lastName: application.last_name || '',
+            email: application.email,
+            phone: application.phone,
+            gender: application.gender as 'male' | 'female' | 'other',
+            dateOfBirth: application.date_of_birth,
+            schoolClassId: application.applying_for_class?.id || application.school_class?.id,
+            nationality: application.address,
+            parentPhone: application.father_phone || application.mother_phone || '',
+            parentEmail: application.email,
+          }}
+        />
       )}
     </div>
   );

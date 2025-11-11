@@ -114,11 +114,6 @@ export const sidebarConstant: ISidebarConstant = {
       icon: FileText,
     },
     {
-      title: "Notifications",
-      url: "/admin/notifications",
-      icon: Bell,
-    },
-    {
       title: "Settings",
       url: "/settings",
       icon: Settings,

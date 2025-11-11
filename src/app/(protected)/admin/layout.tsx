@@ -165,11 +165,6 @@ const navigation: NavigationItem[] = [
     children: [
       { name: "Notices", href: "/admin/communications/notices", permissions: "readAll-notice" },
       { name: "Messages", href: "/admin/communications/messages", permissions: "readAll-message" },
-      {
-        name: "Notifications",
-        href: "/admin/communications/notifications",
-        permissions: "readAll-notification",
-      },
     ],
   },
   {
@@ -282,22 +277,6 @@ const navigation: NavigationItem[] = [
     requiredRole: "teacher",
     permissions: ["readAll-marks", "create-marks"],
   },
-  {
-    name: "Assignments",
-    href: "/admin/teacher/assignments",
-    icon: ClipboardCheck,
-    section: "teacher",
-    requiredRole: "teacher",
-    permissions: "readAll-assignment",
-  },
-  {
-    name: "Lesson Plans",
-    href: "/admin/teacher/lesson-plans",
-    icon: FileText,
-    section: "teacher",
-    requiredRole: "teacher",
-    permissions: "readAll-lessonPlan",
-  },
 
   // Common Section Divider
   { isDivider: true, dividerLabel: "SETTINGS", section: "common", name: "" },
@@ -349,7 +328,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Auto-expand parent menu items when child is active
   useEffect(() => {
     const activeParent = navigation.find((item) =>
-      item.children?.some((child) => pathname === child.href)
+      item.children?.some((child) => pathname === child.href + "/" || pathname === child.href)
     );
     if (activeParent && !expandedItems.includes(activeParent.name)) {
       setExpandedItems((prev) => [...prev, activeParent.name]);
@@ -492,9 +471,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               .filter((item) => {
                 // Show dividers if the section has visible items
                 if (item.isDivider) {
-                  if (item.requiredRole === "teacher") {
-                    return hasRole("teacher") || hasRole("admin");
-                  }
                   return true; // Show common dividers
                 }
 

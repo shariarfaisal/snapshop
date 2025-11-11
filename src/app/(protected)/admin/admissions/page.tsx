@@ -13,13 +13,14 @@ import { DeleteConfirmationDialog } from '@/components/admissions/delete-confirm
 interface AdmissionApplication {
   id: number;
   application_number: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   student_name: string;
   email: string;
   phone: string;
-  status: 'pending' | 'approved' | 'admitted' | 'rejected';
-  schoolClass: { id: number; name: string };
+  status: 'pending' | 'approved' | 'admitted' | 'rejected' | 'applied' | 'under_review';
+  school_class?: { id: number; name: string };
+  applying_for_class?: { id: number; name: string };
   created_at: string;
   remarks?: string;
 }
@@ -164,10 +165,10 @@ export default function AdminAdmissionsPage() {
                     {applications.map((app: AdmissionApplication, idx: number) => (
                       <tr key={app.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="px-6 py-3 text-sm text-gray-900 font-mono">{app.application_number}</td>
-                        <td className="px-6 py-3 text-sm text-gray-900">{app.first_name} {app.last_name}</td>
+                        <td className="px-6 py-3 text-sm text-gray-900">{app.student_name || `${app.first_name || ''} ${app.last_name || ''}`.trim() || '-'}</td>
                         <td className="px-6 py-3 text-sm text-gray-900">{app.email}</td>
                         <td className="px-6 py-3 text-sm text-gray-900">{app.phone}</td>
-                        <td className="px-6 py-3 text-sm text-gray-900">{app.schoolClass?.name || '-'}</td>
+                        <td className="px-6 py-3 text-sm text-gray-900">{app.applying_for_class?.name || app.schoolClass?.name || '-'}</td>
                         <td className="px-6 py-3 text-sm">{getStatusBadge(app.status)}</td>
                         <td className="px-6 py-3 text-sm text-gray-500">{new Date(app.created_at).toLocaleDateString()}</td>
                         <td className="px-6 py-3 text-sm space-x-2 flex">

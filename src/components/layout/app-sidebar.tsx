@@ -81,6 +81,16 @@ const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
     return pathname === item.url || pathname.startsWith(item.url + "/");
   };
 
+  React.useEffect(() => {
+    const newExpandedItems: Record<string, boolean> = {};
+    sidebarConstant.items.forEach((item) => {
+      if (isItemActive(item)) {
+        newExpandedItems[item.title] = true;
+      }
+    });
+    setExpandedItems(newExpandedItems);
+  }, [pathname]);
+
   const toggleExpand = (title: string) => {
     setExpandedItems((prev) => ({
       ...prev,

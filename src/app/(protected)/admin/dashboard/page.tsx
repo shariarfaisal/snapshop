@@ -12,14 +12,41 @@ import {
   TrendingDown,
   AlertCircle,
   Loader2,
+  Book,
+  Calendar,
+  FileText,
+  BarChart3,
+  Bell,
+  Settings,
+  CreditCard,
+  ClipboardList,
 } from "lucide-react";
 import { useAdminDashboard } from "@/hooks/use-dashboard";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
   const { getDisplayName } = useAuthStore();
+  const router = useRouter();
 
   // Hooks
   const { data: dashboardData, isLoading: loading, error: queryError } = useAdminDashboard();
+
+  // Quick actions with URLs
+  const quickActions = [
+    { icon: Users, title: "Add Student", subtitle: "Register new", url: "/admin/users/create" },
+    { icon: UserCheck, title: "Add Teacher", subtitle: "Register new", url: "/admin/users/create" },
+    { icon: GraduationCap, title: "Create Class", subtitle: "Setup new", url: "/admin/academic" },
+    { icon: DollarSign, title: "Create Invoice", subtitle: "Fee invoice", url: "/admin/finance" },
+    { icon: ClipboardList, title: "Mark Attendance", subtitle: "Daily records", url: "/admin/attendance" },
+    { icon: Book, title: "Grades Entry", subtitle: "Enter marks", url: "/admin/exams" },
+    { icon: Calendar, title: "Timetable", subtitle: "View/manage", url: "/admin/academic" },
+    { icon: BarChart3, title: "Reports", subtitle: "Analytics", url: "/admin/reports" },
+    { icon: FileText, title: "ID Cards", subtitle: "Generate", url: "/admin/students" },
+    { icon: Bell, title: "Announcements", subtitle: "Send notice", url: "/admin/forms" },
+    { icon: CreditCard, title: "Payments", subtitle: "Manage fees", url: "/admin/finance" },
+    { icon: Settings, title: "Settings", subtitle: "Configure", url: "/settings" },
+  ];
 
   // Handle error
   const error = queryError
@@ -105,20 +132,15 @@ export default function AdminDashboard() {
         },
       ];
 
-  const recentActivities = [
-    { type: "admission", message: "New admission application from John Doe", time: "2 hours ago" },
-    { type: "payment", message: "Payment received from Jane Smith - $1,250", time: "3 hours ago" },
-    { type: "exam", message: "Mid-term exam results published for Grade 10", time: "5 hours ago" },
-    { type: "attendance", message: "Daily attendance marked for all classes", time: "1 day ago" },
-  ];
 
-  // Attendance data from API or defaults
-  const attendanceStats = dashboardData?.attendance || {
-    today_total: 2845,
-    today_present: 2456,
-    today_absent: 245,
-    today_percentage: 86.3,
-  };
+
+  // Attendance data from API or defaults (removed - no longer needed)
+  // const attendanceStats = dashboardData?.attendance || {
+  //   today_total: 2845,
+  //   today_present: 2456,
+  //   today_absent: 245,
+  //   today_percentage: 86.3,
+  // };
 
   if (loading) {
     return (
@@ -179,99 +201,29 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900">{activity.message}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        {/* Quick Actions - Expanded */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Users className="h-5 w-5 text-gray-700 mb-2" />
-                <p className="text-sm font-medium text-gray-900">Add Student</p>
-                <p className="text-xs text-gray-500 mt-1">Register new student</p>
-              </button>
-              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <UserCheck className="h-5 w-5 text-gray-700 mb-2" />
-                <p className="text-sm font-medium text-gray-900">Add Teacher</p>
-                <p className="text-xs text-gray-500 mt-1">Register new teacher</p>
-              </button>
-              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <GraduationCap className="h-5 w-5 text-gray-700 mb-2" />
-                <p className="text-sm font-medium text-gray-900">Create Class</p>
-                <p className="text-xs text-gray-500 mt-1">Setup new class</p>
-              </button>
-              <button className="p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <DollarSign className="h-5 w-5 text-gray-700 mb-2" />
-                <p className="text-sm font-medium text-gray-900">Generate Invoice</p>
-                <p className="text-xs text-gray-500 mt-1">Create fee invoice</p>
-              </button>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.title}
+                  href={action.url}
+                  className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <action.icon className="h-5 w-5 text-gray-700 mb-2 mx-auto" />
+                  <p className="text-sm font-medium text-gray-900">{action.title}</p>
+                  <p className="text-xs text-gray-500 mt-1">{action.subtitle}</p>
+                </Link>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Attendance Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Today's Attendance Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-5 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Present</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">
-                {attendanceStats.today_present}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                {attendanceStats.today_percentage}% of students
-              </p>
-            </div>
-            <div className="p-5 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Absent</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">{attendanceStats.today_absent}</p>
-              <p className="text-xs text-gray-500 mt-2">Total marked</p>
-            </div>
-            <div className="p-5 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Total Records</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">
-                {attendanceStats.today_total}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">Today</p>
-            </div>
-            <div className="p-5 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Attendance Rate</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">
-                {attendanceStats.today_percentage}%
-              </p>
-              <p className="text-xs text-gray-500 mt-2">Overall</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

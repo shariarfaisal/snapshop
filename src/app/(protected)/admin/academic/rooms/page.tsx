@@ -40,7 +40,16 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Pencil, Trash2, Loader2, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { CreateRoomRequest } from "@/services/api/room";
 import type { Room } from "@/types/room";
 import { useToast } from "@/hooks/use-toast";
@@ -88,7 +97,7 @@ export default function RoomsPage() {
 
   // Handle API response format - memoized to prevent infinite loop
   const rooms = useMemo(() => {
-    return Array.isArray(roomsData) ? roomsData : (roomsData?.data || []);
+    return Array.isArray(roomsData) ? roomsData : roomsData?.data || [];
   }, [roomsData]);
 
   const error = roomsError ? String(roomsError) : "";
@@ -97,9 +106,10 @@ export default function RoomsPage() {
     let filtered = rooms;
 
     if (searchQuery) {
-      filtered = filtered.filter((room) =>
-        room.room_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        room.room_name.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (room) =>
+          room.room_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          room.room_name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -278,7 +288,7 @@ export default function RoomsPage() {
       {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="space-y-4">
+          <div className="flex gap-4 flex-wrap items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -289,7 +299,10 @@ export default function RoomsPage() {
                   className="pl-10"
                 />
               </div>
-              <Select value={itemsPerPage.toString()} onValueChange={(val) => setItemsPerPage(parseInt(val))}>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(val) => setItemsPerPage(parseInt(val))}
+              >
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -301,8 +314,11 @@ export default function RoomsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-4">
-              <Select value={filterRoomType || "all-types"} onValueChange={(value) => setFilterRoomType(value === "all-types" ? "" : value)}>
+            <div className="flex items-center gap-4">
+              <Select
+                value={filterRoomType || "all-types"}
+                onValueChange={(value) => setFilterRoomType(value === "all-types" ? "" : value)}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
@@ -315,7 +331,10 @@ export default function RoomsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={filterStatus || "all-status"} onValueChange={(value) => setFilterStatus(value === "all-status" ? "" : value)}>
+              <Select
+                value={filterStatus || "all-status"}
+                onValueChange={(value) => setFilterStatus(value === "all-status" ? "" : value)}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -331,26 +350,29 @@ export default function RoomsPage() {
       </Card>
 
       {/* Dialog */}
-      <Dialog open={open} onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          handleCloseDialog();
-          resetForm();
-        }
-      }}>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            handleCloseDialog();
+            resetForm();
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle>{editMode ? 'Edit' : 'Add'} Room</DialogTitle>
+              <DialogTitle>{editMode ? "Edit" : "Add"} Room</DialogTitle>
               <DialogDescription>
-                {editMode ? 'Update the' : 'Create a new'} room for your institution.
+                {editMode ? "Update the" : "Create a new"} room for your institution.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="room_number">Room Number *</Label>
-                  <Input 
-                    id="room_number" 
+                  <Input
+                    id="room_number"
                     placeholder="e.g., A101"
                     value={formData.room_number}
                     onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
@@ -359,20 +381,22 @@ export default function RoomsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="capacity">Capacity *</Label>
-                  <Input 
-                    id="capacity" 
+                  <Input
+                    id="capacity"
                     type="number"
                     min="1"
                     value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacity: parseInt(e.target.value) })
+                    }
                     required
                   />
                 </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="room_name">Room Name *</Label>
-                <Input 
-                  id="room_name" 
+                <Input
+                  id="room_name"
                   placeholder="e.g., Mathematics Lab"
                   value={formData.room_name}
                   onChange={(e) => setFormData({ ...formData, room_name: e.target.value })}
@@ -382,7 +406,10 @@ export default function RoomsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="room_type">Room Type *</Label>
-                  <Select value={formData.room_type} onValueChange={(val) => setFormData({ ...formData, room_type: val })}>
+                  <Select
+                    value={formData.room_type}
+                    onValueChange={(val) => setFormData({ ...formData, room_type: val })}
+                  >
                     <SelectTrigger id="room_type">
                       <SelectValue />
                     </SelectTrigger>
@@ -397,18 +424,23 @@ export default function RoomsPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="floor">Floor</Label>
-                  <Input 
-                    id="floor" 
+                  <Input
+                    id="floor"
                     type="number"
                     value={formData.floor || ""}
-                    onChange={(e) => setFormData({ ...formData, floor: e.target.value ? parseInt(e.target.value) : undefined })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        floor: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
                   />
                 </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
-                <Input 
-                  id="description" 
+                <Input
+                  id="description"
                   placeholder="Add any additional notes..."
                   value={formData.description || ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -422,7 +454,9 @@ export default function RoomsPage() {
                   onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="status" className="cursor-pointer">Room is active</Label>
+                <Label htmlFor="status" className="cursor-pointer">
+                  Room is active
+                </Label>
               </div>
             </div>
             <DialogFooter>
@@ -447,7 +481,7 @@ export default function RoomsPage() {
                     Saving...
                   </>
                 ) : (
-                  `${editMode ? 'Update' : 'Save'} Room`
+                  `${editMode ? "Update" : "Save"} Room`
                 )}
               </Button>
             </DialogFooter>
@@ -464,7 +498,9 @@ export default function RoomsPage() {
         <Card>
           <CardContent className="text-center py-16">
             <p className="text-gray-500">
-              {searchQuery ? "No rooms found matching your search." : "No rooms found. Create one to get started."}
+              {searchQuery
+                ? "No rooms found matching your search."
+                : "No rooms found. Create one to get started."}
             </p>
           </CardContent>
         </Card>
@@ -507,16 +543,16 @@ export default function RoomsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => handleOpenDialog(room)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               onClick={() => handleOpenDeleteDialog(room)}
                             >
@@ -538,7 +574,9 @@ export default function RoomsPage() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredRooms.length)}</span> of <span className="font-medium">{filteredRooms.length}</span> results
+                    Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+                    <span className="font-medium">{Math.min(endIndex, filteredRooms.length)}</span>{" "}
+                    of <span className="font-medium">{filteredRooms.length}</span> results
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -581,8 +619,8 @@ export default function RoomsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the room <strong>{roomToDelete?.room_name}</strong>.
-              This action cannot be undone.
+              This will permanently delete the room <strong>{roomToDelete?.room_name}</strong>. This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

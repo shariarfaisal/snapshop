@@ -63,6 +63,7 @@ interface StudentFormDialogProps {
   onOpenChange: (open: boolean) => void;
   student?: Student | null;
   onSuccess?: () => void;
+  prefillData?: Partial<StudentFormValues>;
 }
 
 export function StudentFormDialog({
@@ -70,6 +71,7 @@ export function StudentFormDialog({
   onOpenChange,
   student,
   onSuccess,
+  prefillData,
 }: StudentFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [classes, setClasses] = useState<any[]>([]);
@@ -125,10 +127,33 @@ export function StudentFormDialog({
       if (student.schoolClassId) {
         loadSections(student.schoolClassId);
       }
+    } else if (prefillData) {
+      form.reset({
+        firstName: prefillData.firstName || "",
+        lastName: prefillData.lastName || "",
+        email: prefillData.email || "",
+        phone: prefillData.phone || "",
+        gender: prefillData.gender,
+        admissionNumber: prefillData.admissionNumber || "",
+        schoolClassId: prefillData.schoolClassId?.toString() || "",
+        sectionId: prefillData.sectionId?.toString() || "",
+        rollNumber: prefillData.rollNumber || "",
+        dateOfBirth: prefillData.dateOfBirth || "",
+        bloodGroup: prefillData.bloodGroup,
+        nationality: prefillData.nationality || "",
+        parentPhone: prefillData.parentPhone || "",
+        parentEmail: prefillData.parentEmail || "",
+        enrollmentDate: prefillData.enrollmentDate || "",
+        status: "active",
+      });
+
+      if (prefillData.schoolClassId) {
+        loadSections(prefillData.schoolClassId as number);
+      }
     } else {
       form.reset();
     }
-  }, [student, open]);
+  }, [student, open, prefillData]);
 
   const loadClasses = async () => {
     try {
@@ -179,9 +204,13 @@ export function StudentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{student ? "Edit Student" : "Add New Student"}</DialogTitle>
+          <DialogTitle>{student ? "Edit Student" : prefillData ? "Create Student from Admission" : "Add New Student"}</DialogTitle>
           <DialogDescription>
-            {student ? "Update student information" : "Enter student information to create a new account"}
+            {student 
+              ? "Update student information" 
+              : prefillData 
+                ? "Review and update student information from the admission application"
+                : "Enter student information to create a new account"}
           </DialogDescription>
         </DialogHeader>
 

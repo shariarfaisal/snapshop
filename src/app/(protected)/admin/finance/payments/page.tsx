@@ -5,12 +5,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Eye, ChevronLeft, ChevronRight, Loader2, Pencil, RotateCcw, Printer } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Pencil,
+  RotateCcw,
+  Printer,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Payment, CreatePaymentInput, PaymentMethod } from "@/types/finance";
 import { format } from "date-fns";
@@ -51,7 +82,7 @@ export default function PaymentsPage() {
     student_id: undefined,
     amount: 0,
     payment_method: "cash",
-    payment_date: new Date().toISOString().split('T')[0],
+    payment_date: new Date().toISOString().split("T")[0],
   });
 
   // Build filters
@@ -89,14 +120,14 @@ export default function PaymentsPage() {
       student_id: undefined,
       amount: 0,
       payment_method: "cash",
-      payment_date: new Date().toISOString().split('T')[0],
+      payment_date: new Date().toISOString().split("T")[0],
     });
     setSelectedStudentBalance(0);
     setIsDialogOpen(true);
   };
 
   const handleInvoiceSelect = (invoiceId: string) => {
-    const invoice = invoices.find(inv => inv.id.toString() === invoiceId);
+    const invoice = invoices.find((inv) => inv.id.toString() === invoiceId);
     if (invoice) {
       setFormData({
         ...formData,
@@ -108,7 +139,7 @@ export default function PaymentsPage() {
   };
 
   const handleStudentSelect = (studentId: string) => {
-    const student = students.find(s => s.id.toString() === studentId);
+    const student = students.find((s) => s.id.toString() === studentId);
     if (student) {
       setFormData({
         ...formData,
@@ -248,7 +279,9 @@ export default function PaymentsPage() {
             </div>
             <div className="flex gap-4 items-end">
               <div className="flex-1 space-y-2">
-                <Label htmlFor="from_date" className="text-sm">From Date</Label>
+                <Label htmlFor="from_date" className="text-sm">
+                  From Date
+                </Label>
                 <Input
                   id="from_date"
                   type="date"
@@ -260,7 +293,9 @@ export default function PaymentsPage() {
                 />
               </div>
               <div className="flex-1 space-y-2">
-                <Label htmlFor="to_date" className="text-sm">To Date</Label>
+                <Label htmlFor="to_date" className="text-sm">
+                  To Date
+                </Label>
                 <Input
                   id="to_date"
                   type="date"
@@ -315,9 +350,17 @@ export default function PaymentsPage() {
                     <TableRow key={payment.id}>
                       <TableCell className="font-medium">{payment.payment_number}</TableCell>
                       <TableCell>{payment.invoice?.invoice_number || "-"}</TableCell>
-                      <TableCell>{payment.student?.user?.name || payment.invoice?.student?.user?.name || "-"}</TableCell>
-                      <TableCell>{format(new Date(payment.payment_date), "MMM dd, yyyy")}</TableCell>
-                      <TableCell className="text-right">${Number(payment.amount).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {payment.student?.user?.firstName +
+                          " " +
+                          payment?.student?.user?.lastName || "-"}
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(payment.payment_date), "MMM dd, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${Number(payment.amount).toFixed(2)}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{payment.payment_method.replace("_", " ")}</Badge>
                       </TableCell>
@@ -328,15 +371,31 @@ export default function PaymentsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleViewDetails(payment)} title="View Details">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewDetails(payment)}
+                            title="View Details"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                           {payment.status === "completed" && (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(payment)} title="Edit Payment">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(payment)}
+                                title="Edit Payment"
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleRefund(payment)} title="Refund Payment" className="text-orange-600 hover:text-orange-700">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRefund(payment)}
+                                title="Refund Payment"
+                                className="text-orange-600 hover:text-orange-700"
+                              >
                                 <RotateCcw className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" title="Print Receipt">
@@ -387,7 +446,9 @@ export default function PaymentsPage() {
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>Record a payment against an invoice or to student account</DialogDescription>
+            <DialogDescription>
+              Record a payment against an invoice or to student account
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {/* Payment Mode Toggle */}
@@ -399,7 +460,12 @@ export default function PaymentsPage() {
                   variant={paymentMode === "invoice" ? "default" : "outline"}
                   onClick={() => {
                     setPaymentMode("invoice");
-                    setFormData({ ...formData, invoice_id: undefined, student_id: undefined, amount: 0 });
+                    setFormData({
+                      ...formData,
+                      invoice_id: undefined,
+                      student_id: undefined,
+                      amount: 0,
+                    });
                     setSelectedStudentBalance(0);
                   }}
                   className="w-full"
@@ -411,7 +477,12 @@ export default function PaymentsPage() {
                   variant={paymentMode === "account" ? "default" : "outline"}
                   onClick={() => {
                     setPaymentMode("account");
-                    setFormData({ ...formData, invoice_id: undefined, student_id: undefined, amount: 0 });
+                    setFormData({
+                      ...formData,
+                      invoice_id: undefined,
+                      student_id: undefined,
+                      amount: 0,
+                    });
                     setSelectedStudentBalance(0);
                   }}
                   className="w-full"
@@ -435,7 +506,8 @@ export default function PaymentsPage() {
                   <SelectContent>
                     {invoices.map((inv) => (
                       <SelectItem key={inv.id} value={inv.id.toString()}>
-                        {inv.invoice_number} - {inv.student?.user?.name} (Due: ${Number(inv.due_amount).toFixed(2)})
+                        {inv.invoice_number} - {inv.student?.user?.name} (Due: $
+                        {Number(inv.due_amount).toFixed(2)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -448,27 +520,24 @@ export default function PaymentsPage() {
               <>
                 <div className="space-y-2">
                   <Label>Student *</Label>
-                  <Select
+                  <Combobox
+                    options={students.map((student) => ({
+                      value: student.id.toString(),
+                      label: `${student.user?.firstName} ${student.user?.lastName} - ${student.admissionNumber}`,
+                    }))}
                     value={formData.student_id?.toString() || ""}
                     onValueChange={handleStudentSelect}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {students.map((student) => (
-                        <SelectItem key={student.id} value={student.id.toString()}>
-                          {student.user?.firstName} {student.user?.lastName} - {student.admissionNumber}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search and select student..."
+                    searchPlaceholder="Search by name or admission number..."
+                  />
                 </div>
                 {formData.student_id && (
                   <div className="bg-amber-50 border border-amber-200 p-3 rounded-md">
                     <p className="text-sm">
                       <span className="font-medium">Current Balance:</span>{" "}
-                      <span className="text-red-600 font-bold">${selectedStudentBalance.toFixed(2)}</span>
+                      <span className="text-red-600 font-bold">
+                        ${selectedStudentBalance.toFixed(2)}
+                      </span>
                     </p>
                   </div>
                 )}
@@ -479,7 +548,9 @@ export default function PaymentsPage() {
               <Input
                 type="number"
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })
+                }
                 min="0"
                 step="0.01"
               />
@@ -488,7 +559,9 @@ export default function PaymentsPage() {
               <Label>Payment Method *</Label>
               <Select
                 value={formData.payment_method}
-                onValueChange={(v: PaymentMethod) => setFormData({ ...formData, payment_method: v })}
+                onValueChange={(v: PaymentMethod) =>
+                  setFormData({ ...formData, payment_method: v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -531,7 +604,11 @@ export default function PaymentsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createPaymentMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={createPaymentMutation.isPending}
+            >
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={createPaymentMutation.isPending}>
@@ -557,7 +634,9 @@ export default function PaymentsPage() {
                 <div>
                   <Label>Status</Label>
                   <div className="mt-1">
-                    <Badge variant={selectedPayment.status === "completed" ? "default" : "secondary"}>
+                    <Badge
+                      variant={selectedPayment.status === "completed" ? "default" : "secondary"}
+                    >
                       {selectedPayment.status}
                     </Badge>
                   </div>
@@ -570,17 +649,25 @@ export default function PaymentsPage() {
                 </div>
                 <div>
                   <Label>Student</Label>
-                  <p className="text-sm mt-1">{selectedPayment.student?.user?.name || selectedPayment.invoice?.student?.user?.name || "-"}</p>
+                  <p className="text-sm mt-1">
+                    {selectedPayment.student?.user?.name ||
+                      selectedPayment.invoice?.student?.user?.name ||
+                      "-"}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Payment Date</Label>
-                  <p className="text-sm mt-1">{format(new Date(selectedPayment.payment_date), "MMM dd, yyyy")}</p>
+                  <p className="text-sm mt-1">
+                    {format(new Date(selectedPayment.payment_date), "MMM dd, yyyy")}
+                  </p>
                 </div>
                 <div>
                   <Label>Amount</Label>
-                  <p className="text-sm mt-1 font-bold">${Number(selectedPayment.amount).toFixed(2)}</p>
+                  <p className="text-sm mt-1 font-bold">
+                    ${Number(selectedPayment.amount).toFixed(2)}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -613,7 +700,9 @@ export default function PaymentsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Payment</DialogTitle>
-            <DialogDescription>Update payment details for {selectedPayment?.payment_number}</DialogDescription>
+            <DialogDescription>
+              Update payment details for {selectedPayment?.payment_number}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -628,7 +717,9 @@ export default function PaymentsPage() {
               <Label>Payment Method *</Label>
               <Select
                 value={editFormData.payment_method}
-                onValueChange={(v: PaymentMethod) => setEditFormData({ ...editFormData, payment_method: v })}
+                onValueChange={(v: PaymentMethod) =>
+                  setEditFormData({ ...editFormData, payment_method: v })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -648,7 +739,9 @@ export default function PaymentsPage() {
               <Label>Transaction ID</Label>
               <Input
                 value={editFormData.transaction_id}
-                onChange={(e) => setEditFormData({ ...editFormData, transaction_id: e.target.value })}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, transaction_id: e.target.value })
+                }
                 placeholder="Optional"
               />
             </div>
@@ -663,7 +756,11 @@ export default function PaymentsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={updatePaymentMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updatePaymentMutation.isPending}
+            >
               Cancel
             </Button>
             <Button onClick={handleUpdatePayment} disabled={updatePaymentMutation.isPending}>
@@ -682,14 +779,16 @@ export default function PaymentsPage() {
             <DialogDescription>
               Are you sure you want to refund payment {selectedPayment?.payment_number}?
               <br />
-              <span className="text-red-600 font-semibold">Amount: ${Number(selectedPayment?.amount).toFixed(2)}</span>
+              <span className="text-red-600 font-semibold">
+                Amount: ${Number(selectedPayment?.amount).toFixed(2)}
+              </span>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md">
               <p className="text-sm text-yellow-800">
-                <strong>Warning:</strong> This action will mark the payment as refunded and update the related invoice.
-                This cannot be undone.
+                <strong>Warning:</strong> This action will mark the payment as refunded and update
+                the related invoice. This cannot be undone.
               </p>
             </div>
             <div className="space-y-2">
@@ -704,7 +803,11 @@ export default function PaymentsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRefundDialogOpen(false)} disabled={refundPaymentMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsRefundDialogOpen(false)}
+              disabled={refundPaymentMutation.isPending}
+            >
               Cancel
             </Button>
             <Button

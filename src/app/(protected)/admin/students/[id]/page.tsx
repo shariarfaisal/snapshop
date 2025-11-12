@@ -79,12 +79,13 @@ export default function StudentDetailPage() {
   const { data: outstandingDues } = useStudentOutstandingDues(studentId);
 
   // Calculate finance totals
-  const totalFees = invoices?.reduce((sum, inv) => sum + Number(inv.net_amount), 0) || 0;
-  const totalPaid = invoices?.reduce((sum, inv) => sum + Number(inv.paid_amount), 0) || 0;
+  const invoicesData = invoices?.data || [];
+  const totalFees = invoicesData.reduce((sum, inv) => sum + Number(inv.net_amount), 0);
+  const totalPaid = invoicesData.reduce((sum, inv) => sum + Number(inv.paid_amount), 0);
   const totalDue = outstandingDues?.total_due || 0;
 
   // Get recent invoices (last 5)
-  const recentInvoices = invoices?.slice(0, 5) || [];
+  const recentInvoices = invoicesData.slice(0, 5);
 
   const handleDelete = async () => {
     deleteStudentMutation.mutate(studentId, {

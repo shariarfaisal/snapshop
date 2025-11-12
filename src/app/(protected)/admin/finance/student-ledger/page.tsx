@@ -28,12 +28,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Search, Download, RefreshCw } from "lucide-react";
+import { Search, Download, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Combobox, ComboboxOption } from "@/components/ui/combobox";
 
 export default function StudentLedgerPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<StudentLedgerFilters>({
     academic_year_id: "all",
     from_date: "",
@@ -55,10 +56,10 @@ export default function StudentLedgerPage() {
 
   // Fetch ledger data
   const { data: ledgerData, isLoading, refetch } = useQuery({
-    queryKey: ["student-ledger", selectedStudentId, filters],
+    queryKey: ["student-ledger", selectedStudentId, filters, currentPage],
     queryFn: () => {
       if (!selectedStudentId) return null;
-      return financeService.getStudentLedger(selectedStudentId, filters);
+      return financeService.getStudentLedger(selectedStudentId, filters, currentPage, 50);
     },
     enabled: !!selectedStudentId,
   });
@@ -136,11 +137,11 @@ export default function StudentLedgerPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select academic year" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Years</SelectItem>
-                  {academicYearsData?.data?.map((year: any) => (
+                  {academicYearsData?.map((year: any) => (
                     <SelectItem key={year.id} value={year.id.toString()}>
                       {year.name}
                     </SelectItem>
@@ -272,7 +273,7 @@ export default function StudentLedgerPage() {
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8">Loading ledger...</div>
-            ) : !ledgerData || ledgerData.entries.length === 0 ? (
+            ) : !ledgerData || !ledgerData.entries.data || ledgerData.entries.data.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No ledger entries found for this student.
               </div>
@@ -291,7 +292,7 @@ export default function StudentLedgerPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {ledgerData.entries.map((entry) => (
+                    {ledgerData.entries.data.map((entry) => (
                       <TableRow key={entry.id}>
                         <TableCell>
                           {format(new Date(entry.entry_date), "dd MMM yyyy")}
@@ -364,6 +365,35 @@ export default function StudentLedgerPage() {
                           {formatCurrency(ledgerData.summary.closing_balance)}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pagination Controls */}
+                {ledgerData && ledgerData.entries.last_page > 1 && (
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      Page {ledgerData.entries.current_page} of {ledgerData.entries.last_page}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={ledgerData.entries.current_page === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage((p) => Math.min(ledgerData.entries.last_page, p + 1))}
+                        disabled={ledgerData.entries.current_page === ledgerData.entries.last_page}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 )}

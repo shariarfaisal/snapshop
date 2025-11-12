@@ -255,7 +255,7 @@ export interface StudentLedgerSummary {
 }
 
 export interface StudentLedgerResponse {
-  entries: StudentLedgerEntry[];
+  entries: import('./index').Paginated<StudentLedgerEntry>;
   summary: StudentLedgerSummary;
 }
 

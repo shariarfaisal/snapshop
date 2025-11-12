@@ -328,7 +328,7 @@ export default function StudentAttendancePage() {
                       <TableCell>{format(new Date(record.date), "EEEE")}</TableCell>
                       <TableCell>{getStatusBadge(record.status)}</TableCell>
                       <TableCell>{record.period || "-"}</TableCell>
-                      <TableCell>{record.schoolClass?.name || "-"}</TableCell>
+                      <TableCell>{record.school_class?.name || "-"}</TableCell>
                       <TableCell>{record.section?.name || "-"}</TableCell>
                       <TableCell className="max-w-xs truncate">{record.remarks || "-"}</TableCell>
                       <TableCell className="text-sm text-gray-600">

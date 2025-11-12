@@ -474,6 +474,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   return true; // Show common dividers
                 }
 
+                // For teacher section items, check if user has teacher profile
+                if (item.section === "teacher") {
+                  return user?.teacher !== null && user?.teacher !== undefined;
+                }
+
                 // For items with children, show if user has permission for ANY child
                 if (item.children && item.children.length > 0) {
                   return hasPermissionForChildren(item.children);

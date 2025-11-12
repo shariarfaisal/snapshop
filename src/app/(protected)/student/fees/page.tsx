@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, CreditCard, DollarSign, AlertCircle, Clock, CheckCircle, Loader2, FileText } from "lucide-react";
+import { Download, CreditCard, DollarSign, AlertCircle, Clock, CheckCircle, Loader2, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { useStudentInvoices, useStudentOutstandingDues } from "@/hooks/use-finance";
 import { format } from "date-fns";
 import { InvoiceStatus } from "@/types/finance";
@@ -35,12 +35,17 @@ const getStatusBadge = (status: InvoiceStatus) => {
 
 export default function StudentFeesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch student data
-  const { data: invoices, isLoading: invoicesLoading } = useStudentInvoices(TEMP_STUDENT_ID);
+  const { data: invoicesData, isLoading: invoicesLoading } = useStudentInvoices(TEMP_STUDENT_ID, currentPage, 10);
   const { data: outstandingDues, isLoading: duesLoading } = useStudentOutstandingDues(TEMP_STUDENT_ID);
 
   const loading = invoicesLoading || duesLoading;
+
+  // Derived data
+  const invoices = invoicesData?.data || [];
+  const totalPages = invoicesData?.last_page || 1;
 
   // Filter invoices
   const filteredInvoices = statusFilter === "all"
@@ -225,6 +230,35 @@ export default function StudentFeesPage() {
                   </div>
                 );
               })}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

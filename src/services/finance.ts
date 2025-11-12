@@ -214,9 +214,14 @@ export const financeService = {
   },
 
   // Student Finance APIs
-  getStudentInvoices: async (studentId: number) => {
-    const response = await $clientPrivate.get<{ success: boolean; data: Paginated<Invoice>; message: string }>(`${BASE_URL}/students/${studentId}/invoices`);
-    return response.data.data.data; // Extract the invoices array from the pagination object
+  getStudentInvoices: async (studentId: number, page: number = 1, perPage: number = 15) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("page", page.toString());
+    queryParams.append("per_page", perPage.toString());
+
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    const response = await $clientPrivate.get<{ success: boolean; data: Paginated<Invoice>; message: string }>(`${BASE_URL}/students/${studentId}/invoices${queryString}`);
+    return response.data.data; // Return the full paginated response
   },
 
   getStudentOutstandingDues: async (studentId: number) => {
@@ -235,13 +240,15 @@ export const financeService = {
   },
 
   // Student Ledger APIs
-  getStudentLedger: async (studentId: number, filters?: StudentLedgerFilters) => {
+  getStudentLedger: async (studentId: number, filters?: StudentLedgerFilters, page: number = 1, perPage: number = 50) => {
     const queryParams = new URLSearchParams();
 
     if (filters?.academic_year_id && filters.academic_year_id !== "all") queryParams.append("academic_year_id", filters.academic_year_id.toString());
     if (filters?.from_date) queryParams.append("from_date", filters.from_date);
     if (filters?.to_date) queryParams.append("to_date", filters.to_date);
     if (filters?.entry_type && filters.entry_type !== "all") queryParams.append("entry_type", filters.entry_type);
+    queryParams.append("page", page.toString());
+    queryParams.append("per_page", perPage.toString());
 
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
     const response = await $clientPrivate.get<{ success: boolean; data: StudentLedgerResponse; message: string }>(`${BASE_URL}/students/${studentId}/ledger${queryString}`);

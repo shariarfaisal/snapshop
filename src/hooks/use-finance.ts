@@ -290,10 +290,10 @@ export const usePaymentStatistics = (filters?: { from_date?: string; to_date?: s
 };
 
 // Student Finance Hooks
-export const useStudentInvoices = (studentId: number | null) => {
+export const useStudentInvoices = (studentId: number | null, page: number = 1, perPage: number = 15) => {
   return useQuery({
-    queryKey: ["student-invoices", studentId],
-    queryFn: () => financeService.getStudentInvoices(studentId!),
+    queryKey: ["student-invoices", studentId, page, perPage],
+    queryFn: () => financeService.getStudentInvoices(studentId!, page, perPage),
     enabled: !!studentId,
   });
 };

@@ -19,6 +19,8 @@ export interface User {
     name: string;
     permissions?: Permission[];
   };
+  teacher?: any | null;
+  student?: any | null;
 }
 
 export interface AuthStore {

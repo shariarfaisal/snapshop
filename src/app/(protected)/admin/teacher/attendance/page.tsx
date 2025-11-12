@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,96 +21,37 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Calendar,
   CheckCircle,
   XCircle,
   Clock,
-  Filter,
   Loader2,
   ChevronLeft,
   ChevronRight,
   Plus,
-  Download,
 } from "lucide-react";
-import { toast } from "sonner";
-import {
-  AttendanceRecord,
-  AttendanceFilters,
-  AttendanceStatistics,
-  AttendanceStatus,
-} from "@/types/attendance";
 import { format } from "date-fns";
 import Link from "next/link";
-import { useAttendance, useAttendanceStatistics, useExportAttendance } from "@/hooks/use-attendance";
-import { useSchoolClasses } from "@/hooks/use-school-classes";
-import { useSections } from "@/hooks/use-sections";
+import { useTeacherAttendance } from "@/hooks/use-teacher-attendance";
 
 export default function TeacherAttendancePage() {
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Filters
-  const [filters, setFilters] = useState<AttendanceFilters>({
-    class_id: "all",
-    section_id: "all",
+  const [filters, setFilters] = useState({
+    classId: undefined as number | undefined,
     status: "all",
-    date: "",
     from_date: "",
     to_date: "",
     per_page: 15,
+    page: currentPage,
   });
 
-  // Hooks
-  const { data: attendanceData, isLoading: loading } = useAttendance(filters, currentPage);
-  const { data: statsData } = useAttendanceStatistics(filters);
-  const { data: classesData } = useSchoolClasses({ per_page: "all" });
-  const { data: sectionsData } = useSections(
-    filters.class_id !== "all" ? { classId: parseInt(filters.class_id as string) } : undefined
-  );
-  const exportMutation = useExportAttendance();
+  const { data: attendanceData, isLoading } = useTeacherAttendance(filters);
 
-  // Handle API response formats
   const attendance = attendanceData?.data || [];
-  const totalPages = attendanceData?.last_page || 1;
-  const total = attendanceData?.total || 0;
-  const statistics = statsData || null;
-  const classes = Array.isArray(classesData) ? classesData : (classesData?.data || []);
-  const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
+  const totalPages = attendanceData?.pagination?.last_page || attendanceData?.last_page || 1;
+  const total = attendanceData?.pagination?.total || attendanceData?.total || 0;
 
-  const handleExport = () => {
-    exportMutation.mutate(filters, {
-      onSuccess: (data) => {
-        if (data.length === 0) {
-          toast.info("No attendance records to export");
-          return;
-        }
-
-        // Convert to CSV
-        const headers = Object.keys(data[0] || {});
-        const csv = [
-          headers.join(","),
-          ...data.map((row) =>
-            headers.map((header) => `"${row[header as keyof typeof row] || ""}"`).join(",")
-          ),
-        ].join("\n");
-
-        // Download
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `attendance_${new Date().toISOString().split("T")[0]}.csv`;
-        a.click();
-
-        toast.success("Attendance exported successfully");
-      },
-      onError: (error: any) => {
-        toast.error(error.response?.data?.message || "Failed to export attendance");
-      },
-    });
-  };
-
-  const getStatusBadge = (status: AttendanceStatus) => {
-    const variants: Record<AttendanceStatus, string> = {
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, string> = {
       present: "bg-green-100 text-green-800",
       absent: "bg-red-100 text-red-800",
       late: "bg-yellow-100 text-yellow-800",
@@ -118,10 +59,10 @@ export default function TeacherAttendancePage() {
       sick_leave: "bg-purple-100 text-purple-800",
       other_leave: "bg-gray-100 text-gray-800",
     };
-    return variants[status];
+    return variants[status] || "bg-gray-100 text-gray-800";
   };
 
-  const getStatusIcon = (status: AttendanceStatus) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case "present":
         return <CheckCircle className="h-4 w-4" />;
@@ -135,130 +76,29 @@ export default function TeacherAttendancePage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Attendance History</h1>
           <p className="text-gray-500 mt-1">View attendance records for your classes</p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/admin/teacher/attendance/mark">
-              <Plus className="mr-2 h-4 w-4" />
-              Mark Attendance
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={handleExport} disabled={exportMutation.isPending}>
-            {exportMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Export CSV
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/admin/teacher/attendance/mark">
+            <Plus className="mr-2 h-4 w-4" />
+            Mark Attendance
+          </Link>
+        </Button>
       </div>
-
-      {/* Statistics Cards */}
-      {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Present</p>
-                  <p className="text-2xl font-bold text-green-600">{statistics.present}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Absent</p>
-                  <p className="text-2xl font-bold text-red-600">{statistics.absent}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Late</p>
-                  <p className="text-2xl font-bold text-yellow-600">{statistics.late}</p>
-                </div>
-                <Clock className="h-8 w-8 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div>
-                <p className="text-sm text-gray-600">Attendance Rate</p>
-                <p className="text-2xl font-bold">{statistics.present_percentage.toFixed(1)}%</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Select
-              value={filters.class_id?.toString() || "all"}
-              onValueChange={(value) => {
-                setFilters((prev) => ({ ...prev, class_id: value, section_id: "all" }));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id.toString()}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filters.section_id?.toString() || "all"}
-              onValueChange={(value) => {
-                setFilters((prev) => ({ ...prev, section_id: value }));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Sections" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sections</SelectItem>
-                {sections.map((sec) => (
-                  <SelectItem key={sec.id} value={sec.id.toString()}>
-                    {sec.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={filters.status?.toString() || "all"}
-              onValueChange={(value) => {
-                setFilters((prev) => ({ ...prev, status: value as any }));
+              value={filters.status}
+              onValueChange={(val) => {
+                setFilters((prev) => ({ ...prev, status: val, page: 1 }));
                 setCurrentPage(1);
               }}
             >
@@ -270,7 +110,6 @@ export default function TeacherAttendancePage() {
                 <SelectItem value="present">Present</SelectItem>
                 <SelectItem value="absent">Absent</SelectItem>
                 <SelectItem value="late">Late</SelectItem>
-                <SelectItem value="half_day">Half Day</SelectItem>
                 <SelectItem value="sick_leave">Sick Leave</SelectItem>
                 <SelectItem value="other_leave">Other Leave</SelectItem>
               </SelectContent>
@@ -280,7 +119,7 @@ export default function TeacherAttendancePage() {
               placeholder="From Date"
               value={filters.from_date}
               onChange={(e) => {
-                setFilters((prev) => ({ ...prev, from_date: e.target.value }));
+                setFilters((prev) => ({ ...prev, from_date: e.target.value, page: 1 }));
                 setCurrentPage(1);
               }}
             />
@@ -289,7 +128,7 @@ export default function TeacherAttendancePage() {
               placeholder="To Date"
               value={filters.to_date}
               onChange={(e) => {
-                setFilters((prev) => ({ ...prev, to_date: e.target.value }));
+                setFilters((prev) => ({ ...prev, to_date: e.target.value, page: 1 }));
                 setCurrentPage(1);
               }}
             />
@@ -303,7 +142,7 @@ export default function TeacherAttendancePage() {
           <CardTitle>Attendance Records ({total})</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
@@ -319,7 +158,7 @@ export default function TeacherAttendancePage() {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -343,7 +182,7 @@ export default function TeacherAttendancePage() {
                             ? `${record.student.user.firstName} ${record.student.user.lastName}`
                             : "N/A"}
                         </TableCell>
-                        <TableCell>{record.schoolClass?.name || "-"}</TableCell>
+                        <TableCell>{record.school_class?.name || "-"}</TableCell>
                         <TableCell>{record.section?.name || "-"}</TableCell>
                         <TableCell>
                           <Badge className={getStatusBadge(record.status)}>
